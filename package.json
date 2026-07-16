@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
-    "test:settings-source": "node tests/static/ciphertalk-settings-source.test.mjs"
+    "test:settings-source": "node tests/static/ciphertalk-settings-source.test.mjs",
+    "test:settings-boundary": "node tests/static/settings-platform-boundary.test.mjs"
   },
   "dependencies": {
     "@gravity-ui/icons": "2.20.0",

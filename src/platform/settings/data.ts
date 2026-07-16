@@ -1,0 +1,33 @@
+import {
+  getExportPreferences,
+  saveExportPreferences,
+  restoreExportPreferences,
+  exportNote,
+  getCacheUsage,
+  clearCache,
+  listLogs,
+  readLog,
+  setLogLevel,
+  clearLogs,
+  openAppDataDirectory,
+  openExportDirectory,
+  openLogDirectory,
+  openDocumentation,
+} from '../../lib/bridge';
+
+export const dataPlatform = {
+  getExportPreferences,
+  saveExportPreferences,
+  restoreExportPreferences,
+  exportNote,
+  getCacheUsage,
+  clearCache,
+  listLogs,
+  readLog,
+  setLogLevel,
+  clearLogs,
+  openAppDataDirectory,
+  openExportDirectory,
+  openLogDirectory,
+  openDocumentation,
+} as const;
