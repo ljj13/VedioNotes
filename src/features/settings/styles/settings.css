@@ -1,0 +1,17 @@
+/* Derived from ILoveBingLu/CipherTalk src/pages/SettingsPage.css
+ * source commit: b5b580c5af7672a729a0c7fc10b8b1511fe6d478
+ * modified for the VedioNotes five-page Settings subtree.
+ */
+.cipher-settings-root {
+  min-width: 0;
+  min-height: 100%;
+  color: var(--text);
+  background: var(--surface);
+  isolation: isolate;
+}
+
+.cipher-settings-root *,
+.cipher-settings-root *::before,
+.cipher-settings-root *::after {
+  box-sizing: border-box;
+}
