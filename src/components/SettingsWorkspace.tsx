@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import type { AppPreferences, AppProfiles, LocalModelStatus, SenseVoiceLanguage, SenseVoiceStatus, TranscriptionMode, TranscriptionProfile } from '../lib/types';
+import type { SenseVoiceLanguage, TranscriptionMode, TranscriptionProfile } from '../lib/types';
 import type { SettingsSection } from '../lib/workbenchNavigation';
+import type { SettingsEntryProps } from '../features/settings/settingsTypes';
 import { setActiveProfile, setTranscriptionPreferences } from '../lib/bridge';
 import CudaRuntimeManager from './CudaRuntimeManager';
 import LocalModelManager from './LocalModelManager';
@@ -13,22 +14,7 @@ import DataManagementSettings from './settings/DataManagementSettings';
 import AppearanceSettings from './settings/AppearanceSettings';
 import AboutSettings from './settings/AboutSettings';
 
-type Props = {
-  section: SettingsSection;
-  profiles: AppProfiles;
-  localModels: LocalModelStatus[];
-  preferences: AppPreferences;
-  theme: 'light' | 'dark';
-  sidebarCollapsed: boolean;
-  onSelectSection: (section: SettingsSection) => void;
-  onReturn: () => void;
-  onProfilesChanged: () => void;
-  onModelsChanged: () => void;
-  onPreferencesChanged: (preferences: AppPreferences) => void;
-  onSenseVoiceStatusChanged: (status: SenseVoiceStatus) => void;
-  onToggleTheme: () => void;
-  onToggleSidebar: () => void;
-};
+type Props = SettingsEntryProps;
 
 type TranscriptionTab = 'cpu' | 'gpu' | 'online';
 

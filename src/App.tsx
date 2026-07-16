@@ -25,7 +25,7 @@ import ProfileSelectors from './components/ProfileSelectors';
 import FallbackNotice from './components/FallbackNotice';
 import MigrationNotice from './components/MigrationNotice';
 import WorkbenchShell from './components/WorkbenchShell';
-import SettingsWorkspace from './components/SettingsWorkspace';
+import SettingsEntry from './features/settings/SettingsEntry';
 import CreateWorkspace from './components/CreateWorkspace';
 import HomeWorkspace from './components/HomeWorkspace';
 import ProgressWorkspace, { BackgroundTaskPill } from './components/ProgressWorkspace';
@@ -462,7 +462,7 @@ function App() {
         />
       )}
       {navigation.view === 'settings' && preferences && (
-        <SettingsWorkspace
+        <SettingsEntry
           section={navigation.settingsSection}
           profiles={profiles ?? { schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: null, fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] }}
           localModels={localModels}
