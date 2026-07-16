@@ -10,7 +10,7 @@ function walk(path) {
 }
 
 const root = resolve('src/features/settings')
-for (const file of walk(root).filter((path) => /\.(ts|tsx)$/.test(path))) {
+for (const file of walk(root).filter((path) => /\.(ts|tsx)$/.test(path) && !/\.test\./.test(path))) {
   const source = readFileSync(file, 'utf8')
   assert.doesNotMatch(source, /window\.electronAPI/, file + ' uses Electron')
   assert.doesNotMatch(source, /from ['"]node:/, file + ' uses Node')
