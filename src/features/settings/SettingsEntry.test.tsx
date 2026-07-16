@@ -33,12 +33,12 @@ const baseProps: SettingsEntryProps = {
 };
 
 describe('SettingsEntry', () => {
-  it('renders legacy SettingsWorkspace by default', () => {
-    render(<SettingsEntry {...baseProps} />);
+  it('renders legacy SettingsWorkspace when env override is legacy', () => {
+    render(<SettingsEntry {...baseProps} implementation="legacy" />);
     expect(screen.getByTestId('legacy-settings')).toBeTruthy();
   });
 
-  it('renders CipherSettingsShell when implementation is cipher', async () => {
+  it('renders CipherSettingsShell by default', async () => {
     await act(async () => {
       render(<SettingsEntry {...baseProps} implementation="cipher" section="ai" />);
     });
