@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:settings-source": "node tests/static/ciphertalk-settings-source.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

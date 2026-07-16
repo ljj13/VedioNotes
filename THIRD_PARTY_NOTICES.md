@@ -65,3 +65,21 @@ The derived file `src-tauri/assets/models-dev-standard.json` was generated offli
 - Transformation: deterministic filtering, base-URL normalization, and summary-eligibility annotation; no network fetch is performed by the generator or normal application startup
 
 Provider names, model identifiers, capability metadata, documentation URLs, and pricing metadata remain attributable to their respective upstream providers and the models.dev data source. Inclusion in the catalog does not imply endorsement or bundled access credentials. Users remain responsible for provider terms, account eligibility, and API charges.
+
+## CipherTalk Settings frontend
+
+The VedioNotes Settings user interface is a selective source transplant of five retained pages from [ILoveBingLu/CipherTalk](https://github.com/ILoveBingLu/CipherTalk) at source commit `b5b580c5af7672a729a0c7fc10b8b1511fe6d478`.
+
+Retained source files:
+
+- `src/components/settings/SettingsLayout.tsx` — settings shell composition adapted for VedioNotes' five-page layout
+- `src/components/settings/tabs/AppearanceTab.tsx` — appearance controls adapted to VedioNotes appearance preferences
+- `src/components/settings/tabs/SttTab.tsx` — speech-to-text modes adapted to VedioNotes SenseVoice/Whisper/online profiles
+- `src/components/ai/AISummarySettings.tsx` — large-model and AI capability controls adapted to VedioNotes' 116-provider catalog and platform layer
+- `src/components/settings/tabs/DataManagementTab.tsx` — data management adapted to VedioNotes cache/log/export operations
+- `src/components/settings/tabs/AboutTab.tsx` — about composition using VedioNotes branding and component inventory
+- `src/pages/SettingsPage.css` — settings styles scoped under `.cipher-settings-root`
+
+Modifications: CipherTalk's React Router, Zustand, HeroUI, Electron, and WeChat-specific call sites were replaced with a typed `src/platform/settings` compatibility layer that forwards to VedioNotes' existing Tauri bridge. CipherTalk's Database Decryption, Security, Memory, Plugins, account, tray, updater, and Electron packaging code was not copied. The transplanted code runs on Tauri 2, WebView2/Wry, and VedioNotes' Rust backend.
+
+License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0). Copyright © 2026 ILoveBingLu. The full license text is available at `docs/licenses/CipherTalk-CC-BY-NC-SA-4.0.txt` and at [creativecommons.org/licenses/by-nc-sa/4.0/legalcode](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
