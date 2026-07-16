@@ -1,7 +1,7 @@
 [package]
-name = "video-distiller"
+name = "VedioNotes"
 version = "0.0.1"
-description = "Douyin Video Distiller - Core Distillation Desktop App"
+description = "VedioNotes desktop application"
 authors = ["you"]
 edition = "2021"
 

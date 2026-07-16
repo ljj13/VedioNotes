@@ -3,7 +3,7 @@ import type { SettingsSection } from '../../lib/workbenchNavigation';
 type Item = { id: SettingsSection; label: string };
 
 export default function SettingsNav({ items, value, onChange }: { items: Item[]; value: SettingsSection; onChange: (value: SettingsSection) => void }) {
-  return <nav className="settings-tabs-v2" aria-label="设置导航" role="tablist">
+  return <nav className="settings-tabs settings-tabs-v2" aria-label="设置导航" role="tablist">
     {items.map((item) => <button
       key={item.id}
       type="button"

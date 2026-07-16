@@ -97,6 +97,7 @@ describe('SettingsWorkspace', () => {
 
     rerender(<SettingsWorkspace {...baseProps} section="ai" />);
     expect(screen.getByRole('tab', { name: '大模型' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '预设管理' }));
     expect(screen.getByLabelText('summary profile manager')).toBeTruthy();
   });
 

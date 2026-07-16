@@ -39,6 +39,7 @@ src-tauri/binaries/ffmpeg-*.exe
 
 # Agent-local planning and prototype workspace
 .superpowers/
+.reasonix/
 task_plan.md
 findings.md
 progress.md

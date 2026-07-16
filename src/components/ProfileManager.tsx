@@ -19,6 +19,7 @@ interface ProfileManagerProps {
   profiles: AppProfiles;
   onProfilesChanged: () => void;
   defaultTab?: 'transcription' | 'summary';
+  createRequest?: number;
 }
 
 type ManagerTab = 'transcription' | 'summary';
@@ -27,6 +28,7 @@ export default function ProfileManager({
   profiles,
   onProfilesChanged,
   defaultTab,
+  createRequest = 0,
 }: ProfileManagerProps) {
   const tab: ManagerTab = defaultTab ?? 'transcription';
   const [editing, setEditing] = useState<{
@@ -41,6 +43,10 @@ export default function ProfileManager({
   const [fallbackError, setFallbackError] = useState<string | null>(null);
   const [activeError, setActiveError] = useState<string | null>(null);
   const [testConfirm, setTestConfirm] = useState<{ profileType: string; profileId: string } | null>(null);
+
+  useEffect(() => {
+    if (createRequest > 0) setEditing({ action: 'create' });
+  }, [createRequest]);
 
   // Check credential readiness for all profiles in this tab
   useEffect(() => {

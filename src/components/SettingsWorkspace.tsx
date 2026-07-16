@@ -168,18 +168,20 @@ function SpeechToTextPanel({
 export default function SettingsWorkspace(props: Props) {
   const selected = sections.find((item) => item.id === props.section) ?? sections[1];
   return (
-    <section className="settings-workspace settings-workspace-v2" aria-label="设置工作区">
-      <header className="settings-workspace-header">
-        <div><span className="settings-eyebrow">SETTINGS</span><h1>设置中心</h1><p>转写、总结、模型和数据配置都保留在设置内部。</p></div>
-        <button type="button" className="settings-return" onClick={props.onReturn} aria-label="返回工作台"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg><span>返回工作台</span></button>
-      </header>
+    <section className="settings-page settings-workspace settings-workspace-v2" aria-label="设置工作区">
       <SettingsNav items={sections} value={props.section} onChange={props.onSelectSection} />
-      <div className="settings-pane-v2" aria-label={selected.label}>
-        {props.section === 'appearance' && <AppearanceSettings preferences={props.preferences} sidebarCollapsed={props.sidebarCollapsed} onPreferencesChanged={props.onPreferencesChanged} onToggleSidebar={props.onToggleSidebar} />}
-        {props.section === 'transcription' && <SpeechToTextPanel {...props} />}
-        {props.section === 'ai' && <AiAccessSettings profiles={props.profiles} onProfilesChanged={props.onProfilesChanged} />}
-        {props.section === 'data' && <DataManagementSettings initialLogLevel={props.preferences.logLevel ?? 'info'} />}
-        {props.section === 'about' && <AboutSettings />}
+      <button type="button" className="settings-return settings-return-floating" onClick={props.onReturn} aria-label="返回工作台">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+        <span>返回工作台</span>
+      </button>
+      <div className="settings-body settings-scroll-area">
+        <div className="settings-pane-v2 tab-content" aria-label={selected.label}>
+          {props.section === 'appearance' && <AppearanceSettings preferences={props.preferences} sidebarCollapsed={props.sidebarCollapsed} onPreferencesChanged={props.onPreferencesChanged} onToggleSidebar={props.onToggleSidebar} />}
+          {props.section === 'transcription' && <SpeechToTextPanel {...props} />}
+          {props.section === 'ai' && <AiAccessSettings profiles={props.profiles} onProfilesChanged={props.onProfilesChanged} />}
+          {props.section === 'data' && <DataManagementSettings initialLogLevel={props.preferences.logLevel ?? 'info'} />}
+          {props.section === 'about' && <AboutSettings />}
+        </div>
       </div>
     </section>
   );

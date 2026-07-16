@@ -1,4 +1,4 @@
-# 视频核心提炼 (video-distiller)
+# VedioNotes
 
 一个轻量级 Windows 桌面应用，用于把本地媒体或支持的视频链接整理为可检索的核心提炼笔记。
 
@@ -213,7 +213,7 @@ OpenAI 兼容转写与总结服务的基础地址支持以下三种形式，应�
 
 ```powershell
 # 安装依赖
-cd video-distiller
+cd VedioNotes
 npm install
 
 # 运行开发服务器
@@ -227,7 +227,7 @@ cd src-tauri && cargo test  # Rust 测试
 npm run tauri -- build --no-bundle
 ```
 
-构建成功后可直接检查 `src-tauri\target\release\video-distiller.exe`。调试阶段不需要运行安装包；只有明确准备发布时才使用带 bundle 的生产构建。Rust 全量测试在内存受限的 Windows 机器上建议设置 `CARGO_BUILD_JOBS=1` 并使用 `cargo test --offline --jobs 1`。
+构建成功后可直接检查 `src-tauri\target\release\VedioNotes.exe`。调试阶段不需要运行安装包；只有明确准备发布时才使用带 bundle 的生产构建。Rust 全量测试在内存受限的 Windows 机器上建议设置 `CARGO_BUILD_JOBS=1` 并使用 `cargo test --offline --jobs 1`。
 
 ### 测试清单（发布前验证）
 
@@ -266,7 +266,7 @@ npm run tauri -- build --no-bundle
 ## 架构
 
 ```
-video-distiller/
+VedioNotes/
 ├── src/                          # React + TypeScript 界面层
 │   ├── App.tsx                   # 应用状态、任务生命周期和八路由装配
 │   ├── lib/types.ts              # 前后端共享的 TypeScript 契约

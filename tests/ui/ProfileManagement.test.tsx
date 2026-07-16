@@ -172,6 +172,7 @@ async function openSettings(profileType: 'transcription' | 'summary' = 'transcri
   await waitFor(() => expect(screen.getByRole('region', { name: '设置工作区' })).toBeInTheDocument());
   if (profileType === 'summary') {
     await user.click(screen.getByRole('tab', { name: 'AI 接入' }));
+    await user.click(await screen.findByRole('button', { name: '预设管理' }));
   } else {
     await user.click(screen.getByRole('tab', { name: '在线模式' }));
   }

@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 describe('WorkbenchShell', () => {
-  it('renders expanded navigation without the redundant top bar', () => {
+  it('renders expanded navigation; hides window top bar outside Tauri', () => {
     render(<WorkbenchShell {...baseProps} />);
 
     expect(screen.getByRole('navigation', { name: '主导航' })).toBeTruthy();
@@ -36,7 +36,7 @@ describe('WorkbenchShell', () => {
     expect(screen.getByRole('button', { name: '历史任务' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '设置' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '收起侧边栏' })).toBeTruthy();
-    expect(document.querySelector('.workbench-topbar')).toBeNull();
+    expect(document.querySelector('.window-top-bar')).toBeNull(); // hidden outside Tauri
     expect(screen.queryByRole('heading', { name: '新建提炼' })).toBeNull();
     expect(screen.queryByText('视频核心提炼')).toBeNull();
     expect(screen.queryByText('从视频链接或本地媒体提炼可检索笔记')).toBeNull();
@@ -63,10 +63,10 @@ describe('WorkbenchShell', () => {
   });
 
   it('collapses to accessible icon controls while keeping the ready dot visible', () => {
-    const { container } = render(<WorkbenchShell {...baseProps} navigation={{ ...navigation, sidebarCollapsed: true }} />);
+    render(<WorkbenchShell {...baseProps} navigation={{ ...navigation, sidebarCollapsed: true }} />);
 
     const sidebar = document.querySelector('.workbench-sidebar') as HTMLElement;
-    expect(container.firstElementChild?.classList.contains('sidebar-collapsed')).toBe(true);
+    expect(document.querySelector('.app-container.workbench-app')?.classList.contains('sidebar-collapsed')).toBe(true);
     const labels = Array.from(sidebar.querySelectorAll('.sidebar-label'));
     expect(labels.length).toBeGreaterThan(0);
     labels.forEach((label) => expect(label.getAttribute('aria-hidden')).toBe('true'));

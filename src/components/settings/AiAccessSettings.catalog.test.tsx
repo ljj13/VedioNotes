@@ -22,7 +22,7 @@ vi.mock('../../lib/bridge', () => ({
 }));
 
 vi.mock('../ProfileManager', () => ({
-  default: () => <div aria-label="自定义总结配置管理">custom profiles</div>,
+  default: () => <section aria-label="预设管理">custom profiles</section>,
 }));
 
 const catalog: SummaryProviderCatalogEntry[] = [
@@ -92,6 +92,25 @@ describe('AI provider catalog workflow', () => {
       credential: { type: 'bearer', apiKey: 'secret-for-test' },
     }));
     expect(onProfilesChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports API key visibility, model refresh, preset actions, and live summary updates', async () => {
+    render(<AiAccessSettings profiles={profiles} onProfilesChanged={() => {}} />);
+    const user = userEvent.setup();
+
+    const apiKey = await screen.findByLabelText('AI API Key');
+    expect(apiKey.getAttribute('type')).toBe('password');
+    await user.type(apiKey, 'visible-secret');
+    await user.click(screen.getByRole('button', { name: '显示 API Key' }));
+    expect(apiKey.getAttribute('type')).toBe('text');
+    expect(screen.getByText(/vis.*et/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '刷新模型列表' }));
+    await waitFor(() => expect(bridgeMocks.getSummaryProviderCatalog).toHaveBeenCalledTimes(2));
+
+    expect(screen.getByRole('button', { name: '添加预设' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '预设管理' }));
+    expect(screen.getByRole('region', { name: '总结服务' })).toBeTruthy();
   });
 
   it('shows ineligible catalog models as disabled with the backend reason', async () => {

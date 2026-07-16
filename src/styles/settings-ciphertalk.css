@@ -1,0 +1,110 @@
+/* CipherTalk settings visual contract — scoped to the settings workspace. */
+.settings-workspace-v2 {
+  --settings-control-height: 42px;
+  --settings-radius: 8px;
+  --settings-card-gap: 20px;
+}
+
+.settings-workspace-v2 .settings-feature {
+  gap: 20px;
+}
+
+.settings-workspace-v2 .settings-tabs-v2,
+.settings-workspace-v2 .settings-segments {
+  min-width: 0;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: var(--surface-hover);
+}
+
+.settings-workspace-v2 .settings-tabs-v2 button,
+.settings-workspace-v2 .settings-segments button {
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.settings-workspace-v2 .settings-tabs-v2 button.active,
+.settings-workspace-v2 .settings-segments button.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, #111827 9%, transparent);
+}
+
+.settings-workspace-v2 .settings-surface,
+.settings-workspace-v2 .ai-profile-manager {
+  border-radius: var(--settings-radius);
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.settings-workspace-v2 .settings-card-heading h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.settings-workspace-v2 .settings-field > input,
+.settings-workspace-v2 .input-with-action input,
+.settings-workspace-v2 .searchable-combobox > input,
+.settings-workspace-v2 .readonly-setting {
+  min-height: var(--settings-control-height);
+  border-radius: var(--settings-radius);
+  border-color: var(--border);
+  background: var(--surface-hover);
+  font-size: 13px;
+}
+
+.settings-workspace-v2 .searchable-combobox-chevron {
+  top: 12px;
+}
+
+.settings-workspace-v2 .searchable-combobox-menu,
+.settings-workspace-v2 .styled-select-menu {
+  border-radius: var(--settings-radius);
+  background: var(--surface);
+  box-shadow: 0 10px 28px color-mix(in srgb, #111827 14%, transparent);
+  backdrop-filter: none;
+}
+
+.settings-workspace-v2 .searchable-combobox-option,
+.settings-workspace-v2 .styled-select-option {
+  min-height: 44px;
+  border-radius: 6px;
+}
+
+.settings-workspace-v2 .primary-action,
+.settings-workspace-v2 .secondary-action,
+.settings-workspace-v2 .field-icon-action {
+  border-radius: var(--settings-radius);
+  box-shadow: none;
+}
+
+.settings-workspace-v2 .compact-action {
+  min-height: 34px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
+.settings-workspace-v2 .primary-action:hover {
+  box-shadow: none;
+}
+
+.settings-workspace-v2 .ai-card-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.settings-workspace-v2 .provider-summary dl div {
+  min-height: 38px;
+  align-items: center;
+}
+
+.settings-workspace-v2 .local-save-notice {
+  border-radius: var(--settings-radius);
+}
+
+@media (max-width: 1050px) {
+  .settings-workspace-v2 .provider-side-stack {
+    order: 2;
+  }
+}

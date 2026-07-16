@@ -37,6 +37,7 @@ import ErrorPanel from './components/ErrorPanel';
 import { initialWorkbenchNavigationState, workbenchNavigationReducer } from './lib/workbenchNavigation';
 import type { PrimaryWorkbenchView, SettingsSection } from './lib/workbenchNavigation';
 import './styles/app.css';
+import './styles/settings-ciphertalk.css';
 
 type AppView = 'idle' | 'running' | 'success' | 'error';
 
@@ -460,10 +461,10 @@ function App() {
           onOpenTasks={() => handleNavigate('tasks')}
         />
       )}
-      {navigation.view === 'settings' && profiles && preferences && (
+      {navigation.view === 'settings' && preferences && (
         <SettingsWorkspace
           section={navigation.settingsSection}
-          profiles={profiles}
+          profiles={profiles ?? { schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: null, fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] }}
           localModels={localModels}
           preferences={preferences}
           theme={theme}

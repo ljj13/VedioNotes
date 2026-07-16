@@ -31,6 +31,8 @@ const protocolLabels: Record<string, string> = {
 
 export default function AiAccessSettings({ profiles, onProfilesChanged }: { profiles: AppProfiles; onProfilesChanged: () => void }) {
   const [mode, setMode] = useState<AiMode>('llm');
+  const [showProfiles, setShowProfiles] = useState(false);
+  const [createProfileRequest, setCreateProfileRequest] = useState(0);
   const [settings, setSettings] = useState<CapabilitySettings | null>(null);
   const [status, setStatus] = useState<CapabilityStatus | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -55,12 +57,27 @@ export default function AiAccessSettings({ profiles, onProfilesChanged }: { prof
   };
 
   return (
-    <section className="settings-feature" aria-label="AI 接入设置">
-      <header className="settings-feature-header"><h2>AI 接入配置</h2><p>管理总结模型、检索增强、显式联网、朗读、作图和本地智能体。</p></header>
-      <div className="settings-segments settings-segments-scroll" role="tablist" aria-label="AI 接入类型">
-        {aiModes.map((item) => <button key={item.id} type="button" role="tab" aria-selected={mode === item.id} className={mode === item.id ? 'active' : ''} onClick={() => setMode(item.id)}>{item.label}</button>)}
-      </div>
-      {mode === 'llm' && <LargeModelSettings profiles={profiles} onProfilesChanged={onProfilesChanged} />}
+    <section className="settings-feature ai-access-workspace" aria-label="AI 接入设置">
+      <header className="ai-access-header">
+        <div className="settings-feature-header"><h2>AI 接入配置</h2><p>管理第三方 AI 服务商、模型、API 密钥和扩展能力。</p></div>
+        <div className="settings-segments settings-segments-scroll" role="tablist" aria-label="AI 接入类型">
+          {aiModes.map((item) => <button key={item.id} type="button" role="tab" aria-selected={mode === item.id} className={mode === item.id ? 'active' : ''} onClick={() => setMode(item.id)}>{item.label}</button>)}
+        </div>
+      </header>
+      {mode === 'llm' && (
+        <>
+          <div className="ai-preset-actions">
+            <button type="button" className="primary-action compact-action" onClick={() => { setShowProfiles(true); setCreateProfileRequest((value) => value + 1); }}>
+              <span aria-hidden="true">+</span> 添加预设
+            </button>
+            <button type="button" className="secondary-action compact-action" aria-expanded={showProfiles} onClick={() => setShowProfiles((value) => !value)}>
+              预设管理
+            </button>
+          </div>
+          <LargeModelSettings profiles={profiles} onProfilesChanged={onProfilesChanged} onOpenProfiles={() => setShowProfiles(true)} />
+          {showProfiles && <section className="ai-profile-manager" aria-label="总结服务"><ProfileManager profiles={profiles} onProfilesChanged={onProfilesChanged} defaultTab="summary" createRequest={createProfileRequest} /></section>}
+        </>
+      )}
       {mode !== 'llm' && loadError && <div className="settings-status warning" role="alert">{loadError}</div>}
       {mode !== 'llm' && !settings && !loadError && <div className="settings-status info" role="status">正在读取 AI 扩展能力配置…</div>}
       {settings && mode === 'vector' && <VectorSettings config={settings.vector} status={status?.vector} onChange={(vector) => setSettings({ ...settings, vector })} onStatusChange={(item) => setStatusItem('vector', item)} />}
@@ -73,18 +90,21 @@ export default function AiAccessSettings({ profiles, onProfilesChanged }: { prof
   );
 }
 
-function LargeModelSettings({ profiles, onProfilesChanged }: { profiles: AppProfiles; onProfilesChanged: () => void }) {
+function LargeModelSettings({ profiles, onProfilesChanged, onOpenProfiles }: { profiles: AppProfiles; onProfilesChanged: () => void; onOpenProfiles: () => void }) {
   const [catalog, setCatalog] = useState<SummaryProviderCatalogEntry[]>([]);
   const [providerId, setProviderId] = useState('');
   const [model, setModel] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const activeProfile = profiles.summaryProfiles.find((profile) => profile.id === profiles.activeSummaryProfileId) ?? profiles.summaryProfiles[0];
   const selectedProvider = catalog.find((provider) => provider.id === providerId);
   const eligibleModels = selectedProvider?.models.filter((entry) => entry.summaryEligible) ?? [];
+  const maskedApiKey = apiKey ? `${apiKey.slice(0, 3)}${'*'.repeat(Math.max(4, apiKey.length - 5))}${apiKey.slice(-2)}` : '保持已保存凭据';
 
   useEffect(() => {
     let active = true;
@@ -111,7 +131,7 @@ function LargeModelSettings({ profiles, onProfilesChanged }: { profiles: AppProf
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [activeProfile?.baseUrl, activeProfile?.id, activeProfile?.model]);
+  }, [activeProfile?.baseUrl, activeProfile?.id, activeProfile?.model, catalogRevision]);
 
   const providerOptions = useMemo(() => catalog.map((provider) => ({
     value: provider.id,
@@ -136,6 +156,11 @@ function LargeModelSettings({ profiles, onProfilesChanged }: { profiles: AppProf
     setMessage('');
   };
 
+  const refreshCatalog = () => {
+    setMessage('');
+    setCatalogRevision((value) => value + 1);
+  };
+
   const save = async () => {
     if (!selectedProvider || !model.trim() || saving) return;
     setSaving(true);
@@ -157,21 +182,27 @@ function LargeModelSettings({ profiles, onProfilesChanged }: { profiles: AppProf
     }
   };
   return <div className="settings-two-column llm-layout" role="tabpanel">
-    <div className="settings-stack">
-      <article className="settings-surface">
-        <div className="settings-card-heading"><div><h3>大模型接入</h3><p>从内置 models.dev 快照选择服务商与模型；选择只修改草稿，保存时原子启用。</p></div><span className="status-chip success">{catalog.length} 家服务商</span></div>
-        <div className="settings-form-grid">
-          <label className="settings-field"><span>服务商</span><SearchableCombobox label="搜索 AI 服务商" value={providerId} options={providerOptions} onChange={selectProvider} placeholder={loading ? '正在读取服务商目录…' : '搜索 116 家服务商'} disabled={loading} /></label>
-          <label className="settings-field"><span>协议</span><div className="readonly-setting" aria-label="AI 协议">{selectedProvider ? protocolLabels[selectedProvider.protocol] ?? selectedProvider.protocol : '—'}</div></label>
-          <label className="settings-field wide"><span>服务地址</span><input aria-label="AI 服务地址" value={baseUrl} onChange={(event) => setBaseUrl(event.currentTarget.value)} placeholder={selectedProvider?.baseUrl ?? 'https://…'} spellCheck={false} /></label>
-          <label className="settings-field"><span>模型</span><SearchableCombobox label="搜索或输入 AI 模型" value={model} options={modelOptions} onChange={setModel} allowCustom placeholder={selectedProvider ? `搜索 ${selectedProvider.models.length} 个模型或输入自定义 ID` : '先选择服务商'} disabled={!selectedProvider} /></label>
-          <label className="settings-field"><span>API Key</span><input aria-label="AI API Key" type="password" autoComplete="new-password" value={apiKey} onChange={(event) => setApiKey(event.currentTarget.value)} placeholder="留空保持已保存凭据" /></label>
-        </div>
-        <div className="settings-actions"><button type="button" className="primary-action" disabled={!selectedProvider || !model.trim() || saving || loading} onClick={() => void save()}>{saving ? '保存中…' : '保存并启用'}</button></div>
-        {message && <div className={`settings-status ${message.includes('已保存') ? 'success' : 'warning'}`} role={message.includes('已保存') ? 'status' : 'alert'}>{message}</div>}
-      </article>
-      <section aria-label="总结服务"><ProfileManager profiles={profiles} onProfilesChanged={onProfilesChanged} defaultTab="summary" /></section>
-    </div>
-    <aside className="settings-surface provider-summary"><div className="provider-avatar">{selectedProvider?.displayName.slice(0, 1) ?? '?'}</div><h3>{selectedProvider?.displayName ?? '未选择服务商'}</h3><p>{selectedProvider?.description || '从目录选择服务商后查看协议和模型信息。'}</p><dl><div><dt>协议</dt><dd>{selectedProvider ? protocolLabels[selectedProvider.protocol] ?? selectedProvider.protocol : '—'}</dd></div><div><dt>模型</dt><dd>{model || '—'}</dd></div><div><dt>可总结模型</dt><dd>{eligibleModels.length}</dd></div><div><dt>地址</dt><dd>{baseUrl || '—'}</dd></div></dl></aside>
+    <article className="settings-surface ai-connection-card">
+      <div className="settings-card-heading">
+        <div><h3>接入参数</h3><p>从内置 models.dev 目录选择服务商与模型，保存后立即设为当前服务。</p></div>
+        <div className="provider-avatar provider-avatar-small" aria-hidden="true">{selectedProvider?.displayName.slice(0, 1) ?? '?'}</div>
+      </div>
+      <div className="settings-form-grid ai-provider-form">
+        <label className="settings-field wide"><span>服务商</span><SearchableCombobox label="搜索 AI 服务商" value={providerId} options={providerOptions} onChange={selectProvider} placeholder={loading ? '正在读取服务商目录…' : `搜索 ${catalog.length || 116} 家服务商`} disabled={loading} /></label>
+        <label className="settings-field"><span>服务地址</span><input aria-label="AI 服务地址" value={baseUrl} onChange={(event) => setBaseUrl(event.currentTarget.value)} placeholder={selectedProvider?.baseUrl ?? 'https://…'} spellCheck={false} /></label>
+        <label className="settings-field"><span>协议</span><div className="readonly-setting" aria-label="AI 协议">{selectedProvider ? protocolLabels[selectedProvider.protocol] ?? selectedProvider.protocol : '—'}</div></label>
+        <label className="settings-field wide"><span>API Key</span><div className="input-with-action"><input aria-label="AI API Key" type={showApiKey ? 'text' : 'password'} autoComplete="new-password" value={apiKey} onChange={(event) => setApiKey(event.currentTarget.value)} placeholder="留空保持已保存凭据" /><button type="button" className="field-icon-action" aria-label={showApiKey ? '隐藏 API Key' : '显示 API Key'} onClick={() => setShowApiKey((value) => !value)}>{showApiKey ? '隐藏' : '显示'}</button></div></label>
+        <label className="settings-field wide"><span>模型</span><div className="model-field-row"><SearchableCombobox label="搜索或输入 AI 模型" value={model} options={modelOptions} onChange={setModel} allowCustom placeholder={selectedProvider ? `搜索 ${selectedProvider.models.length} 个模型或输入自定义 ID` : '先选择服务商'} disabled={!selectedProvider} /><button type="button" className="field-icon-action model-refresh-action" aria-label="刷新模型列表" disabled={loading} onClick={refreshCatalog}>刷新</button></div></label>
+      </div>
+      <div className="settings-actions ai-card-footer"><button type="button" className="secondary-action compact-action" onClick={onOpenProfiles}>测试连接</button><button type="button" className="primary-action compact-action" aria-label="保存并启用" disabled={!selectedProvider || !model.trim() || saving || loading} onClick={() => void save()}>{saving ? '保存中…' : '保存当前服务商'}</button></div>
+      {message && <div className={`settings-status ${message.includes('已保存') ? 'success' : 'warning'}`} role={message.includes('已保存') ? 'status' : 'alert'}>{message}</div>}
+    </article>
+    <aside className="provider-side-stack">
+      <section className="settings-surface provider-summary">
+        <div className="provider-summary-header"><div className="provider-avatar">{selectedProvider?.displayName.slice(0, 1) ?? '?'}</div><div><h3>{selectedProvider?.displayName ?? '未选择服务商'}</h3><p>{selectedProvider?.description || 'OpenAI 兼容接口'}</p></div></div>
+        <dl><div><dt>协议</dt><dd>{selectedProvider ? protocolLabels[selectedProvider.protocol] ?? selectedProvider.protocol : '—'}</dd></div><div><dt>模型</dt><dd title={model}>{model || '未选择'}</dd></div><div><dt>密钥</dt><dd>{maskedApiKey}</dd></div><div><dt>可总结模型</dt><dd>{eligibleModels.length}</dd></div><div><dt>地址</dt><dd title={baseUrl}>{baseUrl || '—'}</dd></div></dl>
+      </section>
+      <div className="settings-status local-save-notice"><strong>本地保存</strong><span>API Key 仅保存在本地。模型刷新与连接测试会向当前服务商发起请求。</span></div>
+    </aside>
   </div>;
 }
