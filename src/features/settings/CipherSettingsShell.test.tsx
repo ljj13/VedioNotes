@@ -5,6 +5,19 @@ import type { SettingsEntryProps } from './settingsTypes';
 
 vi.mock('@tauri-apps/api', () => ({}));
 
+const platformMock = vi.hoisted(() => ({
+  getCatalog: vi.fn().mockResolvedValue([]),
+  getCacheUsage: vi.fn().mockResolvedValue({ totalBytes: 0, categories: [] }),
+  listLogs: vi.fn().mockResolvedValue([]),
+  getAboutSnapshot: vi.fn().mockResolvedValue({ appVersion: '0.0.1', tauriVersion: '2', frontendVersion: '19', rustVersion: '1.91', appDataDir: '', exportDir: '', logDir: '', components: [] }),
+  getSenseVoiceStatus: vi.fn().mockResolvedValue({ state: 'missing', selectedModel: 'int8', runtimeReady: false, tokensReady: false, modelPath: null, models: [], downloadedBytes: 0, totalBytes: 0 }),
+  saveTranscription: vi.fn().mockResolvedValue({}),
+}));
+vi.mock('../../platform/settings', () => ({
+  settingsPlatform: { ai: platformMock, data: platformMock, about: platformMock, transcription: platformMock, preferences: platformMock },
+  attachLateSafeListener: vi.fn(),
+}));
+
 const baseProps: SettingsEntryProps = {
   section: 'appearance',
   profiles: { schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: null, fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] },
@@ -30,7 +43,7 @@ describe('CipherSettingsShell', () => {
     expect(screen.getByText('AI 接入')).toBeTruthy();
     expect(screen.getByText('数据管理')).toBeTruthy();
     expect(screen.getByText('关于')).toBeTruthy();
-    expect(await screen.findByTestId('ai-tab')).toBeTruthy();
+    expect(await screen.findByText(/大语言模型/)).toBeTruthy();
   });
 
   it('calls onReturn when back button is clicked', () => {
