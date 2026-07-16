@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task 05 visual fixture</title>
+    <script>
+      const entry = {
+        id: 7,
+        title: '格林函数与边值问题：从直觉到推导',
+        source: 'https://www.bilibili.com/video/BV1fixture',
+        noteTemplate: 'core_distillation',
+        noteStyle: 'academic',
+        createdAt: '2026-07-15T08:00:00Z',
+        markdownPath: 'fixture.md',
+        transcriptPath: 'fixture.txt',
+        thumbnailPath: null,
+        screenshotPaths: [],
+        favorite: true,
+        tags: ['数学', '偏微分方程'],
+        lastOpenedAt: '2026-07-15T09:00:00Z',
+      };
+      window.__TAURI_INTERNALS__ = {
+        invoke(command) {
+          if (command === 'search_library') return Promise.resolve({
+            entries: [entry, { ...entry, id: 8, title: '特殊函数的渐近展开', favorite: false, tags: ['特殊函数'] }],
+            tags: [{ id: 1, name: '数学', noteCount: 2 }, { id: 2, name: '偏微分方程', noteCount: 1 }],
+            total: 2,
+          });
+          if (command === 'get_history_markdown') return Promise.resolve('# 格林函数与边值问题\n\n## 核心结论\n\n格林函数把线性边值问题转化为源项与核函数的积分。\n\n## 关键依据\n\n- 边界条件决定格林函数的具体形式。\n- 对称算子通常带来互易关系。\n- 奇点结构对应基本解。\n\n> 结论和证据均可回到原始材料核对。');
+          if (command === 'mark_note_opened' || command === 'set_note_favorite' || command === 'set_note_tags') return Promise.resolve(entry);
+          if (command === 'delete_history') return Promise.resolve();
+          if (command === 'ask_history_note') return Promise.resolve([
+            { role: 'user', content: '核心结论是什么？' },
+            { role: 'assistant', content: '这篇笔记的核心结论是：格林函数通过积分核把线性边值问题转化为可计算的积分表达。' },
+          ]);
+          if (command === 'list_task_records') return Promise.resolve([
+            { id: 1, taskId: 'task-1', title: '格林函数与边值问题', sourceLabel: 'Bilibili', state: 'succeeded', startedAt: '2026-07-15T08:00:00Z', finishedAt: '2026-07-15T08:04:57Z', durationMs: 297000, transcriptionProfileId: 'local', transcriptionProfileName: '本地 Whisper', transcriptionModel: 'small', summaryProfileId: 'deepseek', summaryProfileName: 'DeepSeek', summaryModel: 'v4', compute: 'cuda', noteId: 7, errorCode: null, diagnosticLogId: null },
+            { id: 2, taskId: 'task-2', title: '一段没有字幕的访谈视频', sourceLabel: 'YouTube', state: 'failed', startedAt: '2026-07-14T10:00:00Z', finishedAt: '2026-07-14T10:01:04Z', durationMs: 64000, transcriptionProfileId: 'sensevoice', transcriptionProfileName: 'SenseVoice', transcriptionModel: 'int8', summaryProfileId: 'deepseek', summaryProfileName: 'DeepSeek', summaryModel: 'v4', compute: 'cpu', noteId: null, errorCode: 'transcription_failed', diagnosticLogId: 'app-diagnostics' },
+          ]);
+          if (command === 'retry_task_record') return Promise.resolve({ source: { kind: 'bilibili_url', url: 'https://www.bilibili.com/video/BV1fixture' }, options: { note_template: 'core_distillation', include_screenshots: false, note_style: 'academic' }, transcriptionProfileId: 'sensevoice', summaryProfileId: 'deepseek' });
+          return Promise.reject(new Error(`Unhandled visual fixture command: ${command}`));
+        },
+        transformCallback() { return 1; },
+        unregisterCallback() {},
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./task05.tsx"></script>
+  </body>
+</html>
