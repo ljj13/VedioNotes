@@ -119,6 +119,8 @@ const implementation = override
 | settings-privacy-boundary.test.mjs | pass (14 files) |
 | complete-workbench-capabilities.test.mjs | pass (63 flows) |
 | task13-settings-visual-matrix.mjs | pass (119 checks, 98 visual combinations) |
+| cargo check --offline | pass (Finished dev profile in 32.80s) |
+| cargo test --offline | pass (9 tests: 7+2 ok, 0 failed, 1 ignored) |
 
 ## 视觉矩阵覆盖
 
@@ -133,6 +135,4 @@ const implementation = override
 
 ## 尚未完成的内容
 
-- Rust 验证（cargo test/check）尚未在本次返工中运行
-- README 中 VITE_SETTINGS_IMPLEMENTATION 说明待更新
-- 视觉矩阵为静态分析，未做像素级渲染对比
+- 视觉矩阵为静态分析，未做像素级渲染对比（环境中无 Playwright/Puppeteer 可用）

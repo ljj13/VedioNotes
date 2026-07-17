@@ -229,6 +229,22 @@ npm run tauri -- build --no-bundle
 
 构建成功后可直接检查 `src-tauri\target\release\VedioNotes.exe`。调试阶段不需要运行安装包；只有明确准备发布时才使用带 bundle 的生产构建。Rust 全量测试在内存受限的 Windows 机器上建议设置 `CARGO_BUILD_JOBS=1` 并使用 `cargo test --offline --jobs 1`。
 
+### 设置界面实现切换
+
+设置界面默认使用从 CipherTalk 选择性移植的新实现（`CipherSettingsShell`）。`VITE_SETTINGS_IMPLEMENTATION` 是 **Vite 构建期**环境变量，不是运行时变量——现有 EXE 内不能在运行时切换实现。
+
+- 默认（不设置或设置为非 `legacy`）：使用 `CipherSettingsShell`。
+- `VITE_SETTINGS_IMPLEMENTATION=legacy`：回退到旧 `SettingsWorkspace`，仅用于排查问题。
+
+```powershell
+# 默认构建（使用 CipherSettingsShell）
+npm run tauri -- build --no-bundle
+
+# 回退构建（使用旧 SettingsWorkspace）
+$env:VITE_SETTINGS_IMPLEMENTATION='legacy'
+npm run tauri -- build --no-bundle
+```
+
 ### 测试清单（发布前验证）
 
 - [ ] `F:\1.mp4`：点击选择或拖入后，界面显示完整路径并进入处理
@@ -263,6 +279,8 @@ npm run tauri -- build --no-bundle
 
 工作台设计参考了 MIT 许可的 BiliNote；详情见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。BiliNote 仅作为只读参考，未复制其代码。
 
+设置界面从 CipherTalk（CC BY-NC-SA 4.0）选择性移植，固定源码提交 `b5b580c5af7672a729a0c7fc10b8b1511fe6d478`。移植内容限定为五页设置 UI 和视觉 CSS，排除了 Electron updater、窗口操作、托盘、微信、数据库解密和 React Router。源码清单见 `src/features/settings/sourceManifest.ts`，完整审查报告见 `outputs/ciphertalk-settings-transplant-review.md`。
+
 ## 架构
 
 ```
@@ -273,10 +291,17 @@ VedioNotes/
 │   ├── lib/bridge.ts             # 类型化 Tauri invoke/event 桥接
 │   ├── lib/capabilityContract.ts # 控件→Bridge→Rust 能力矩阵
 │   ├── components/               # 首页、创建、进度、结果、笔记库、问答、任务、设置
-│   │   ├── SettingsWorkspace.tsx # 外观/转写/AI/数据/关于
+│   │   ├── SettingsWorkspace.tsx # 外观/转写/AI/数据/关于（legacy 回退）
 │   │   ├── SenseVoiceManager.tsx # CPU 运行时与模型生命周期
 │   │   ├── SearchableCombobox.tsx # models.dev 服务商/模型搜索与自定义输入
-│   │   └── settings/             # AI 七子页、数据、外观和关于
+│   │   └── settings/             # AI 七子页、数据、外观和关于（legacy 页）
+│   ├── features/settings/        # CipherTalk 移植的设置界面（默认入口）
+│   │   ├── SettingsEntry.tsx     # 默认 cipher / legacy 回退入口
+│   │   ├── CipherSettingsShell.tsx  # 五页导航 Shell
+│   │   ├── tabs/                 # 外观、语音转文字、AI 接入、数据管理、关于
+│   │   └── sourceManifest.ts     # 源码提交固定和许可证
+│   ├── platform/settings/        # 设置平台适配器（类型化转发到 bridge）
+│   └── styles/cipher-settings.css # CipherTalk 视觉 CSS（限定 .cipher-settings-root）
 │   └── styles/app.css            # 主题、响应式工作台和自定义下拉
 ├── src-tauri/                    # Rust/Tauri 后端
 │   ├── src/
