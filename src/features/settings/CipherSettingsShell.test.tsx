@@ -7,6 +7,13 @@ vi.mock('@tauri-apps/api', () => ({}));
 
 const platformMock = vi.hoisted(() => ({
   getCatalog: vi.fn().mockResolvedValue([]),
+  getCapabilitySettings: vi.fn().mockResolvedValue({ schemaVersion: 1, vector: { enabled: false, providerId: '', endpoint: '', model: '', collection: '', dimensions: null }, rerank: { enabled: false, providerId: '', endpoint: '', model: '' }, webSearch: { enabled: false, providerId: '', endpoint: '', maxResults: 10 }, tts: { enabled: false, providerId: '', endpoint: '', model: '', voice: '' }, image: { enabled: false, providerId: '', endpoint: '', model: '', size: '' }, localAgent: { enabled: false, providerId: '', executable: '', arguments: [], timeoutSeconds: 60 } }),
+  getCapabilityStatus: vi.fn().mockResolvedValue({ vector: { enabled: false, configured: false, credentialReady: false, providerId: '' }, rerank: { enabled: false, configured: false, credentialReady: false, providerId: '' }, webSearch: { enabled: false, configured: false, credentialReady: false, providerId: '' }, tts: { enabled: false, configured: false, credentialReady: false, providerId: '' }, image: { enabled: false, configured: false, credentialReady: false, providerId: '' }, localAgent: { enabled: false, configured: false, credentialReady: false, providerId: '' } }),
+  getCudaRuntimeStatus: vi.fn().mockResolvedValue({ state: 'unavailable', gpuName: null, version: '', computeMode: 'auto', message: null }),
+  listLocalModels: vi.fn().mockResolvedValue([]),
+  onLocalModelDownloadProgress: vi.fn().mockResolvedValue(() => {}),
+  onCudaRuntimeDownloadProgress: vi.fn().mockResolvedValue(() => {}),
+  setLocalComputeMode: vi.fn().mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto', transcriptionMode: 'sensevoice_cpu', sensevoiceModel: 'int8', sensevoiceLanguages: ['zh'], appearance: { theme: 'system', compactDensity: false, reducedMotion: false } }),
   getCacheUsage: vi.fn().mockResolvedValue({ totalBytes: 0, categories: [] }),
   listLogs: vi.fn().mockResolvedValue([]),
   getAboutSnapshot: vi.fn().mockResolvedValue({ appVersion: '0.0.1', tauriVersion: '2', frontendVersion: '19', rustVersion: '1.91', appDataDir: '', exportDir: '', logDir: '', components: [] }),
@@ -43,7 +50,7 @@ describe('CipherSettingsShell', () => {
     expect(screen.getByText('AI 接入')).toBeTruthy();
     expect(screen.getByText('数据管理')).toBeTruthy();
     expect(screen.getByText('关于')).toBeTruthy();
-    expect(await screen.findByText(/大语言模型/)).toBeTruthy();
+    expect(await screen.findByText('AI 接入')).toBeTruthy();
   });
 
   it('calls onReturn when back button is clicked', () => {
