@@ -58,8 +58,11 @@ const bridge = vi.hoisted(() => ({
   readLog: vi.fn(),
   setLogLevel: vi.fn(),
   clearLogs: vi.fn(),
+  getPreferences: vi.fn(),
+  setMarkdownOutputDir: vi.fn(),
 }));
 vi.mock('../../lib/bridge', () => bridge);
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 
 import { settingsPlatform } from './index';
 import { attachLateSafeListener } from './events';

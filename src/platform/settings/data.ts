@@ -13,7 +13,16 @@ import {
   openExportDirectory,
   openLogDirectory,
   openDocumentation,
+  getPreferences,
+  setMarkdownOutputDir,
 } from '../../lib/bridge';
+import { open as openDirectoryDialog } from '@tauri-apps/plugin-dialog';
+
+async function chooseExportDirectory(): Promise<string | null> {
+  const selected = await openDirectoryDialog({ directory: true, multiple: false });
+  if (!selected || Array.isArray(selected)) return null;
+  return selected as string;
+}
 
 export const dataPlatform = {
   getExportPreferences,
@@ -30,4 +39,7 @@ export const dataPlatform = {
   openExportDirectory,
   openLogDirectory,
   openDocumentation,
+  getPreferences,
+  setMarkdownOutputDir,
+  chooseExportDirectory,
 } as const;

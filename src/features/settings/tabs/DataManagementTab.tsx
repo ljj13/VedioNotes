@@ -10,6 +10,7 @@ import type {
   LogTail,
   ExportPreferences,
   ExportFormat,
+  AppPreferences,
 } from '../../../lib/types';
 import type { SettingsEntryProps } from '../settingsTypes';
 
@@ -56,16 +57,24 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
   const [exportDraft, setExportDraft] = useState<ExportPreferences | null>(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  // Markdown output directory state
+  const [preferences, setPreferences] = useState<AppPreferences | null>(null);
+  const [dirPending, setDirPending] = useState(false);
+  const [dirError, setDirError] = useState<string | null>(null);
+  const [dirStatus, setDirStatus] = useState<string | null>(null);
+
   useEffect(() => {
     Promise.all([
       settingsPlatform.data.getCacheUsage(),
       settingsPlatform.data.listLogs(),
       settingsPlatform.data.getExportPreferences(),
-    ]).then(([usage, logList, prefs]) => {
+      settingsPlatform.data.getPreferences(),
+    ]).then(([usage, logList, prefs, appPrefs]) => {
       setCacheUsage(usage);
       setLogs(logList);
       setExportPrefs(prefs);
       setExportDraft(prefs);
+      setPreferences(appPrefs);
       setLoading(false);
     }).catch((e) => {
       setError(`加载数据失败: ${e instanceof Error ? e.message : String(e)}`);
@@ -136,6 +145,38 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       setSuccess('导出偏好已恢复默认');
     } catch (e) {
       setError(`恢复默认失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const handleChooseMarkdownDir = async () => {
+    setDirPending(true);
+    setDirError(null);
+    setDirStatus(null);
+    try {
+      const selectedPath = await settingsPlatform.data.chooseExportDirectory();
+      if (!selectedPath) return;
+      const updated = await settingsPlatform.data.setMarkdownOutputDir(selectedPath);
+      setPreferences(updated);
+      setDirStatus('Markdown 输出目录已更新');
+    } catch (e) {
+      setDirError(`选择目录失败: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDirPending(false);
+    }
+  };
+
+  const handleRestoreDefaultMarkdownDir = async () => {
+    setDirPending(true);
+    setDirError(null);
+    setDirStatus(null);
+    try {
+      const updated = await settingsPlatform.data.setMarkdownOutputDir(null);
+      setPreferences(updated);
+      setDirStatus('已恢复系统默认 Markdown 输出目录');
+    } catch (e) {
+      setDirError(`恢复默认失败: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDirPending(false);
     }
   };
 
@@ -221,6 +262,31 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
             </div>
           </Card>
         )}
+      </section>
+
+      {/* Markdown Output Directory */}
+      <section className="cipher-data-section">
+        <h3>Markdown 输出目录</h3>
+        <Card className="cipher-export-card">
+          <div className="cipher-field-group">
+            <label htmlFor="markdown-dir-display">当前输出目录</label>
+            <code id="markdown-dir-display" className="cipher-path-value">
+              {preferences
+                ? preferences.markdownOutputDir || '系统默认：视频\\VedioNotes'
+                : '正在读取...'}
+            </code>
+          </div>
+          {dirError && <div role="alert" className="cipher-error-banner"><CircleExclamation width={16} /> {dirError}</div>}
+          {dirStatus && <div role="status" className="cipher-success-banner"><CircleCheck width={16} /> {dirStatus}</div>}
+          <div className="cipher-model-actions">
+            <Button variant="primary" onClick={handleChooseMarkdownDir} isDisabled={dirPending}>
+              {dirPending ? '选择中…' : '选择目录'}
+            </Button>
+            <Button variant="ghost" onClick={handleRestoreDefaultMarkdownDir} isDisabled={dirPending}>
+              <ArrowRotateLeft width={14} />恢复默认
+            </Button>
+          </div>
+        </Card>
       </section>
 
       {/* Cache Management */}

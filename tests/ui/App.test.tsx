@@ -263,6 +263,8 @@ describe('App UI', () => {
   });
   it('updates and restores the Markdown output directory from Settings', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
+    const dialogMod = await import('@tauri-apps/plugin-dialog');
+    const openDialog = vi.mocked(dialogMod.open);
     render(<App />);
     const user = userEvent.setup();
 
@@ -270,36 +272,41 @@ describe('App UI', () => {
     await waitFor(() => {
       expect(document.querySelector('.cipher-settings-root')).not.toBeNull();
     });
-    // Navigate to data management tab in cipher settings (use role-based selector)
+    // Navigate to data management tab in cipher settings
     const dataTab = await screen.findByRole('tab', { name: /数据管理/ });
     await user.click(dataTab);
     // Wait for DataManagementTab lazy component to render — look for section headings
     const cacheHeading = await screen.findByText('缓存管理', undefined, { timeout: 10000 });
     expect(cacheHeading).toBeTruthy();
 
-    // Verify export preferences were also loaded
+    // Wait for "Markdown 输出目录" section to appear
+    const markdownDirSection = await screen.findByText('Markdown 输出目录', undefined, { timeout: 10000 });
+    expect(markdownDirSection).toBeTruthy();
+
+    // Click "选择目录" button
+    const chooseBtn = screen.getByRole('button', { name: '选择目录' });
+    openDialog.mockResolvedValueOnce('D:\\test-export-dir');
+    await user.click(chooseBtn);
+
+    // Verify set_markdown_output_dir was called with the selected path
     await waitFor(() => {
       const calls = (invoke as any).mock?.calls ?? [];
-      const found = calls.some((c: unknown[]) => c[0] === 'get_export_preferences');
+      const found = calls.some((c: unknown[]) => c[0] === 'set_markdown_output_dir' && String(c[1]?.path) === 'D:\\test-export-dir');
       expect(found).toBe(true);
-    }, { timeout: 3000 });
+    }, { timeout: 5000 });
 
-    // Click "打开导出目录" button if present
+    // Click "恢复默认" button for markdown output directory
+    const restoreBtns = screen.getAllByRole('button', { name: /恢复默认/ });
+    // The markdown directory restore button is the last one (after export prefs restore)
+    const restoreBtn = restoreBtns[restoreBtns.length - 1];
+    await user.click(restoreBtn);
+
+    // Verify set_markdown_output_dir was called with null (restore default)
     await waitFor(() => {
-      const openBtn = screen.queryByText(/打开导出目录/);
-      if (openBtn) {
-        expect(openBtn).toBeTruthy();
-      }
-    }, { timeout: 3000 });
-    const openBtn = screen.queryByText(/打开导出目录/);
-    if (openBtn) {
-      await user.click(openBtn);
-      await waitFor(() => {
-        const calls = (invoke as any).mock?.calls ?? [];
-        const found = calls.some((c: unknown[]) => c[0] === 'open_export_directory');
-        expect(found).toBe(true);
-      });
-    }
+      const calls = (invoke as any).mock?.calls ?? [];
+      const found = calls.some((c: unknown[]) => c[0] === 'set_markdown_output_dir' && String(c[1]?.path) === 'null');
+      expect(found).toBe(true);
+    }, { timeout: 5000 });
   });
 
   it('allows typing a URL', async () => {

@@ -19,6 +19,8 @@ function walk(path) {
   let results = [];
   for (const name of readdirSync(path)) {
     if (name === 'node_modules' || name === '.git' || name === 'dist' || name === 'target' || name.startsWith('.reasonix')) continue;
+    // Skip plan/review documents that contain code examples with placeholder secrets
+    if (path.includes('superpowers')) continue;
     const child = join(path, name);
     const stat = statSync(child);
     if (stat.isDirectory()) {
@@ -31,7 +33,7 @@ function walk(path) {
 }
 
 const repoRoot = resolve('.');
-const scanDirs = ['src', 'src-tauri/src', 'src-tauri/tests', 'tests', 'scripts'];
+const scanDirs = ['src', 'src-tauri/src', 'src-tauri/tests', 'tests', 'scripts', 'docs'];
 const docFiles = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'ATTRIBUTION.md'];
 
 let allFiles = [];
@@ -65,7 +67,17 @@ function check(file, source, ruleId, pattern, description) {
       const trimmed = lines[i].trim();
       // Skip comment lines
       if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
-      violations.push({ file, line: i + 1, ruleId, description, excerpt: trimmed.substring(0, 100) });
+      // Skip redacted/security patterns and doc examples for PRIV-001
+      if (ruleId === 'PRIV-001' && (
+        trimmed.includes('[redacted]') ||
+        trimmed.includes('dummy') ||
+        trimmed.includes('example') ||
+        trimmed.includes('stored-secret') ||
+        trimmed.includes('new-secret') ||
+        trimmed.includes('test-secret') ||
+        trimmed.startsWith('///')
+      )) continue;
+      violations.push({ file, line: i + 1, ruleId, description });
     }
   }
 }
@@ -82,21 +94,6 @@ for (const file of allFiles) {
       /\b(?:password|secret|apiKey|api_key|token)\s*[:=]\s*['"][^'"]{8,}['"]/i,
       'hardcoded secret literal (8+ chars) in production code');
 
-    // Exclude the redacted() method pattern: api_key: "[redacted]"
-    // This is a security pattern, not a leak
-    for (let i = violations.length - 1; i >= 0; i--) {
-      const v = violations[i];
-      if (v.ruleId === 'PRIV-001' && v.excerpt.includes('[redacted]')) {
-        violations.splice(i, 1);
-      }
-    }
-    // Also exclude doc comment examples like /// {"apiKey": "..."}
-    for (let i = violations.length - 1; i >= 0; i--) {
-      const v = violations[i];
-      if (v.ruleId === 'PRIV-001' && (v.excerpt.includes('///') || v.excerpt.includes('test') || v.excerpt.includes('dummy') || v.excerpt.includes('example'))) {
-        violations.splice(i, 1);
-      }
-    }
   }
 
   // PRIV-002: Credentials written to console output (all files)
@@ -136,9 +133,8 @@ for (const file of allFiles) {
 if (violations.length > 0) {
   console.error(`Repository privacy scan FAILED: ${violations.length} violation(s)`);
   for (const v of violations) {
-    const relPath = v.file.replace(repoRoot + '\\', '').replace(repoRoot + '/', '');
+    const relPath = v.file.replace(repoRoot + '\\', '').replace(repoRoot + '/', '').replace(/\\/g, '/');
     console.error(`  ${relPath}:${v.line}  [${v.ruleId}]  ${v.description}`);
-    console.error(`    > ${v.excerpt}`);
   }
   process.exit(1);
 } else {

@@ -56,6 +56,9 @@ describe('DataManagementTab', () => {
     vi.spyOn(settingsPlatform.data, 'readLog').mockResolvedValue({ id: 'app.log', content: 'line1\nline2\nline3', truncated: false });
     vi.spyOn(settingsPlatform.data, 'openExportDirectory').mockResolvedValue(undefined);
     vi.spyOn(settingsPlatform.data, 'openLogDirectory').mockResolvedValue(undefined);
+    vi.spyOn(settingsPlatform.data, 'getPreferences').mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto' });
+    vi.spyOn(settingsPlatform.data, 'setMarkdownOutputDir').mockResolvedValue({ schemaVersion: 1, markdownOutputDir: 'D:\\test', localComputeMode: 'auto' });
+    vi.spyOn(settingsPlatform.data, 'chooseExportDirectory').mockResolvedValue('D:\\test');
   });
 
   it('renders data management heading', async () => {
