@@ -55,8 +55,15 @@ describe('AiAccessTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(settingsPlatform.ai, 'getCatalog').mockResolvedValue([mockProvider, anthropicProvider]);
-    vi.spyOn(settingsPlatform.ai, 'getCapabilitySettings').mockResolvedValue(null);
-    vi.spyOn(settingsPlatform.ai, 'getCapabilityStatus').mockResolvedValue({});
+    vi.spyOn(settingsPlatform.ai, 'getCapabilitySettings').mockResolvedValue(null as any);
+    vi.spyOn(settingsPlatform.ai, 'getCapabilityStatus').mockResolvedValue({
+      vector: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      rerank: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      webSearch: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      tts: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      image: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      localAgent: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+    } as any);
     vi.spyOn(settingsPlatform.ai, 'hasCredential').mockResolvedValue(false);
     vi.spyOn(settingsPlatform.ai, 'saveAndActivate').mockResolvedValue({ schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: 'openai:gpt-4o', fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] });
   });
@@ -203,11 +210,22 @@ describe('AiAccessTab', () => {
 
   it('switches to capability sub-tabs and loads settings', async () => {
     vi.spyOn(settingsPlatform.ai, 'getCapabilitySettings').mockResolvedValue({
+      schemaVersion: 1,
       vector: { enabled: false, providerId: '', endpoint: '', model: '', collection: '', dimensions: null },
-    });
+      rerank: { enabled: false, providerId: '', endpoint: '', model: '' },
+      webSearch: { enabled: false, providerId: '', endpoint: '', maxResults: 5 },
+      tts: { enabled: false, providerId: '', endpoint: '', model: '', voice: '' },
+      image: { enabled: false, providerId: '', endpoint: '', model: '', size: '1024x1024' },
+      localAgent: { enabled: false, providerId: '', executable: '', arguments: [], timeoutSeconds: 120 },
+    } as any);
     vi.spyOn(settingsPlatform.ai, 'getCapabilityStatus').mockResolvedValue({
-      vector: { enabled: false },
-    });
+      vector: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      rerank: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      webSearch: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      tts: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      image: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+      localAgent: { enabled: false, configured: false, credentialReady: false, providerId: '' },
+    } as any);
     render(<AiAccessTab {...baseProps} />);
     await screen.findByText('OpenAI');
     // Click on a capability sub-tab
