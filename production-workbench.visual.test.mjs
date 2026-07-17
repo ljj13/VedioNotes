@@ -192,7 +192,7 @@ if (settingsMode) {
     if (probe.result.value) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  const settingsReady = await send('Runtime.evaluate', { expression: `Boolean(document.querySelector('.settings-workspace'))`, returnByValue: true });
+  const settingsReady = await send('Runtime.evaluate', { expression: `Boolean(document.querySelector('.settings-workspace') || document.querySelector('.cipher-settings-root'))`, returnByValue: true });
   assert.equal(settingsReady.result.value, true, 'settings visual mode must enter the Settings workspace');
 
   const section = mode.startsWith('settings-data') ? 'data'
@@ -203,7 +203,14 @@ if (settingsMode) {
   const destination = settingsTopLabels[section];
   expectedSetting = destination;
   await send('Runtime.evaluate', {
-    expression: `(() => { const destination = ${JSON.stringify(destination)}; [...document.querySelectorAll('.settings-tabs-v2 [role="tab"]')].find((button) => button.textContent.trim() === destination)?.click(); return true; })()`,
+    expression: `(() => {
+      const destination = ${JSON.stringify(destination)};
+      // Try cipher settings tabs first, fall back to legacy settings-tabs-v2
+      let tab = [...document.querySelectorAll('.cipher-settings-tabs [role="tab"]')].find((b) => b.textContent.trim() === destination);
+      if (!tab) tab = [...document.querySelectorAll('.settings-tabs-v2 [role="tab"]')].find((b) => b.textContent.trim() === destination);
+      tab?.click();
+      return !!tab;
+    })()`,
     returnByValue: true,
   });
   await new Promise((resolve) => setTimeout(resolve, 180));
@@ -215,7 +222,14 @@ if (settingsMode) {
     const subtab = settingsSubLabels[subModeKey];
     expectedSubtab = subtab;
     await send('Runtime.evaluate', {
-      expression: `(() => { const subtab = ${JSON.stringify(subtab)}; [...document.querySelectorAll('.settings-segments [role="tab"]')].find((button) => button.textContent.trim() === subtab)?.click(); return true; })()`,
+      expression: `(() => {
+        const subtab = ${JSON.stringify(subtab)};
+        let btn = [...document.querySelectorAll('.cipher-ai-subtabs [role="tab"]')].find((b) => b.textContent.trim() === subtab);
+        if (!btn) btn = [...document.querySelectorAll('.cipher-mode-tabs [role="tab"]')].find((b) => b.textContent.trim() === subtab);
+        if (!btn) btn = [...document.querySelectorAll('.settings-segments [role="tab"]')].find((b) => b.textContent.trim() === subtab);
+        btn?.click();
+        return !!btn;
+      })()`,
       returnByValue: true,
     });
     await new Promise((resolve) => setTimeout(resolve, 180));
@@ -391,8 +405,8 @@ const inspected = await send('Runtime.evaluate', {
     sidebarScrollTop: Math.round(document.querySelector('.workbench-sidebar').scrollTop),
     contentScrollTop: Math.round(document.querySelector('.workbench-content').scrollTop),
     activePrimary: document.querySelector('.sidebar-nav [aria-current="page"]')?.getAttribute('aria-label') ?? null,
-    activeSetting: document.querySelector('.settings-tabs-v2 [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null,
-    activeSubtab: document.querySelector('.settings-segments [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null,
+    activeSetting: (document.querySelector('.cipher-settings-tabs [role="tab"][aria-selected="true"]') || document.querySelector('.settings-tabs-v2 [role="tab"][aria-selected="true"]'))?.textContent.trim() ?? null,
+    activeSubtab: (document.querySelector('.cipher-ai-subtabs [role="tab"][aria-selected="true"]') || document.querySelector('.settings-segments [role="tab"][aria-selected="true"]'))?.textContent.trim() ?? null,
     aiProtocolDisabled: document.querySelector('button[aria-label="AI 协议"]')?.disabled ?? null,
     collapsedLabels: [...document.querySelectorAll('.workbench-sidebar .sidebar-label')].map((element) => ({
       maxWidth: getComputedStyle(element).maxWidth,
