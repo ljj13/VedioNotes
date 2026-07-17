@@ -43,4 +43,24 @@ assert.match(css, /sidebar-collapsed[^}]*grid-template-columns:\s*88px/, 'collap
 assert.match(css, /is-collapsed \.sidebar-label[^}]*max-width:\s*0/, 'collapsed sidebar removes label width')
 assert.match(sidebar, /ready-dot/, 'collapsed sidebar keeps the service status dot')
 
+// ---- Cipher settings structure (new transplant) ----
+const cipherEntry = read('src/features/settings/SettingsEntry.tsx')
+const cipherShell = read('src/features/settings/CipherSettingsShell.tsx')
+const cipherCss = read('src/styles/cipher-settings.css')
+const sourceManifest = read('src/features/settings/sourceManifest.ts')
+
+assert.match(cipherEntry, /'legacy' \? 'legacy' : 'cipher'/, 'SettingsEntry defaults to cipher')
+assert.match(cipherShell, /cipher-settings-root/, 'CipherSettingsShell uses cipher-settings-root class')
+assert.match(cipherShell, /cipher-settings-body/, 'CipherSettingsShell uses cipher-settings-body class')
+assert.match(cipherCss, /\.cipher-settings-root\s*\{/, 'cipher-settings.css scopes to .cipher-settings-root')
+assert.match(cipherCss, /\.cipher-confirm-overlay/, 'cipher CSS has confirm dialog styles')
+assert.match(cipherCss, /\.cipher-error-banner/, 'cipher CSS has error banner')
+assert.match(cipherCss, /\.cipher-success-banner/, 'cipher CSS has success banner')
+assert.match(cipherCss, /\.cipher-empty-state/, 'cipher CSS has empty state')
+assert.ok(cipherCss.includes('@media'), 'cipher CSS has responsive breakpoints')
+
+// Source manifest verifies CipherTalk commit
+assert.match(sourceManifest, /b5b580c5af7672a729a0c7fc10b8b1511fe6d478/, 'source manifest locks CipherTalk commit')
+assert.match(sourceManifest, /CC BY-NC-SA/, 'source manifest declares CC BY-NC-SA license')
+
 console.log('production settings structure: pass')
