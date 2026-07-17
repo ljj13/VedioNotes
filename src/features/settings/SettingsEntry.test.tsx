@@ -1,5 +1,5 @@
 import { render, screen, act } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import SettingsEntry from './SettingsEntry';
 import type { SettingsEntryProps } from './settingsTypes';
 
@@ -19,7 +19,7 @@ const baseProps: SettingsEntryProps = {
   section: 'appearance',
   profiles: { schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: null, fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] },
   localModels: [],
-  preferences: { schemaVersion: 1, markdownOutputDir: null, transcriptionMode: 'online_profile', sensevoiceModel: 'int8', sensevoiceLanguages: ['zh'], localComputeMode: 'auto', appearance: { theme: 'system', compactDensity: false, reducedMotion: false } },
+  preferences: { schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto', appearance: { theme: 'system', compactDensity: false, reducedMotion: false } },
   theme: 'dark',
   sidebarCollapsed: false,
   onSelectSection: vi.fn(),
@@ -33,16 +33,37 @@ const baseProps: SettingsEntryProps = {
 };
 
 describe('SettingsEntry', () => {
-  it('renders legacy SettingsWorkspace when env override is legacy', () => {
-    render(<SettingsEntry {...baseProps} implementation="legacy" />);
-    expect(screen.getByTestId('legacy-settings')).toBeTruthy();
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it('renders CipherSettingsShell by default', async () => {
+  it('defaults to CipherSettingsShell when no implementation prop is passed', async () => {
+    vi.stubEnv('VITE_SETTINGS_IMPLEMENTATION', '');
+    await act(async () => {
+      render(<SettingsEntry {...baseProps} section="ai" />);
+    });
+    expect(screen.getByTestId('cipher-settings')).toBeTruthy();
+    expect(screen.queryByTestId('legacy-settings')).toBeNull();
+  });
+
+  it('renders legacy SettingsWorkspace when implementation is explicitly legacy', () => {
+    render(<SettingsEntry {...baseProps} implementation="legacy" />);
+    expect(screen.getByTestId('legacy-settings')).toBeTruthy();
+    expect(screen.queryByTestId('cipher-settings')).toBeNull();
+  });
+
+  it('renders CipherSettingsShell when implementation is explicitly cipher', async () => {
     await act(async () => {
       render(<SettingsEntry {...baseProps} implementation="cipher" section="ai" />);
     });
     expect(screen.getByTestId('cipher-settings')).toBeTruthy();
     expect(screen.getByTestId('cipher-settings').getAttribute('data-section')).toBe('ai');
+  });
+
+  it('falls back to legacy when VITE_SETTINGS_IMPLEMENTATION=legacy and no override', async () => {
+    vi.stubEnv('VITE_SETTINGS_IMPLEMENTATION', 'legacy');
+    render(<SettingsEntry {...baseProps} />);
+    expect(screen.getByTestId('legacy-settings')).toBeTruthy();
+    expect(screen.queryByTestId('cipher-settings')).toBeNull();
   });
 });

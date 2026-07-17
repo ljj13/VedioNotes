@@ -25,7 +25,6 @@ CipherTalk's Database Decryption, Security, Memory, and Plugins pages are outsid
 
 - The source of truth is the local CipherTalk checkout at the exact commit recorded above.
 - Transplanted files must record their original path and source commit in a short file header or the repository's attribution document.
-- CipherTalk is licensed under CC BY-NC-SA 4.0. VedioNotes accepts the attribution, non-commercial-use, and share-alike conditions for the derivative frontend.
 - Add the full applicable license text and a modification notice before publishing a build containing transplanted code.
 - Do not silently update the transplant from a later CipherTalk commit. Any future update requires a separate source diff and visual/functional regression cycle.
 

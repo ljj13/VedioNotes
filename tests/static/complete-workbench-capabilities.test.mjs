@@ -45,7 +45,10 @@ const sources = {
 for (const route of ['home', 'create', 'progress', 'result', 'library', 'qa', 'tasks', 'settings']) {
   assert.match(sources.navigation, new RegExp(`['"]${route}['"]`), `navigation declares ${route}`);
 }
-for (const component of ['HomeWorkspace', 'CreateWorkspace', 'ProgressWorkspace', 'ResultWorkspace', 'LibraryWorkspace', 'QaWorkspace', 'TaskHistoryWorkspace', 'SettingsWorkspace']) {
+const componentToCheck = [
+  'HomeWorkspace', 'CreateWorkspace', 'ProgressWorkspace', 'ResultWorkspace', 'LibraryWorkspace', 'QaWorkspace', 'TaskHistoryWorkspace', 'SettingsEntry',
+];
+for (const component of componentToCheck) {
   has(sources.app, component, `App mounts the real ${component}`);
 }
 for (const label of ['首页', '新建提炼', '笔记库', 'AI 问答', '历史任务', '设置']) {

@@ -9,7 +9,7 @@ export default function SettingsEntry({
   ...props
 }: SettingsEntryProps & { implementation?: 'legacy' | 'cipher' }) {
   const implementation = override
-    ?? (import.meta.env.VITE_SETTINGS_IMPLEMENTATION === 'cipher' ? 'cipher' : 'legacy');
+    ?? (import.meta.env.VITE_SETTINGS_IMPLEMENTATION === 'legacy' ? 'legacy' : 'cipher');
   if (implementation === 'legacy') return <LegacySettingsWorkspace {...props} />;
   return (
     <Suspense fallback={<div role="status">正在加载设置…</div>}>

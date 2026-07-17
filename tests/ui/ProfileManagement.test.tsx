@@ -153,6 +153,14 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).__mockInvokeImpl__ = null;
   const spy = (globalThis as Record<string, unknown>).__invokeSpyRef__ as ReturnType<typeof vi.fn> | undefined;
   if (spy) spy.mockClear();
+  // ProfileManagement tests verify the existing ProfileManager/editor contracts
+  // through the legacy SettingsWorkspace. The cipher settings rework will add
+  // equivalent coverage as each page is fully ported.
+  vi.stubEnv('VITE_SETTINGS_IMPLEMENTATION', 'legacy');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 async function startTask() {
