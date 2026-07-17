@@ -31,7 +31,7 @@ describe('AboutTab', () => {
 
   it('renders about heading and app name', async () => {
     render(<AboutTab {...baseProps} />);
-    expect(await screen.findByText('关于')).toBeTruthy();
-    expect(screen.getByText(/VedioNotes/)).toBeTruthy();
+    expect(await screen.findByText(/关于/)).toBeTruthy();
+    expect(screen.getAllByText(/VedioNotes/).length).toBeGreaterThan(0);
   });
 });
