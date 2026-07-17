@@ -307,19 +307,17 @@ export default function AiAccessTab({ profiles, onProfilesChanged }: SettingsEnt
               </div>
 
               {/* API Key draft input */}
-              {selectedProvider.protocol !== 'anthropic' && (
-                <div className="cipher-field-group">
-                  <label htmlFor="ai-apikey-input">API Key（仅本次输入，不会读取已保存的密钥）</label>
-                  <input
-                    id="ai-apikey-input"
-                    type="password"
-                    className="cipher-input"
-                    placeholder="输入 API Key…"
-                    value={secretDraft?.type === 'bearer' ? secretDraft.apiKey : ''}
-                    onChange={(e) => setSecretDraft(e.target.value ? { type: 'bearer', apiKey: e.target.value } : null)}
-                  />
-                </div>
-              )}
+              <div className="cipher-field-group">
+              <label htmlFor="ai-apikey-input">API Key（仅本次输入，不会读取已保存的密钥）</label>
+              <input
+                id="ai-apikey-input"
+                type="password"
+                className="cipher-input"
+                placeholder="输入 API Key…"
+                value={secretDraft?.type === 'bearer' ? secretDraft.apiKey : ''}
+                onChange={(e) => setSecretDraft(e.target.value ? { type: 'bearer', apiKey: e.target.value } : null)}
+              />
+              </div>
 
               {/* Save and Activate */}
               <Button
@@ -515,5 +513,3 @@ function CapabilityPanel({
     </div>
   );
 }
-
-
