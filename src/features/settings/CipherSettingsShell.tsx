@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react';
 import { Tabs, ScrollShadow } from '@heroui/react';
 import type { SettingsEntryProps } from './settingsTypes';
 import type { CipherSettingsPageId } from './sourceManifest';
+import '../../styles/cipher-settings.css';
 
 const AppearanceTab = lazy(() => import('./tabs/AppearanceTab'));
 const TranscriptionTab = lazy(() => import('./tabs/TranscriptionTab'));
