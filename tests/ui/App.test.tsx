@@ -107,6 +107,8 @@ vi.mock('@tauri-apps/api/core', () => {
       logLevel: 'info',
     });
     if (cmd === 'get_export_preferences') return Promise.resolve({ format: 'markdown', includeScreenshots: true, includeSubtitles: true, includeSourceMetadata: true, includeDiagnosticLog: false });
+    if (cmd === 'save_export_preferences') return Promise.resolve({ format: 'markdown', includeScreenshots: true, includeSubtitles: true, includeSourceMetadata: true, includeDiagnosticLog: false });
+    if (cmd === 'open_export_directory') return Promise.resolve(undefined);
     if (cmd === 'get_cache_usage') return Promise.resolve({ totalBytes: 0, categories: [] });
     if (cmd === 'list_logs') return Promise.resolve([]);
     if (cmd === 'get_sense_voice_status') return Promise.resolve({ state: 'missing', selectedModel: 'int8', runtimeReady: false, tokensReady: false, modelPath: null, models: [], downloadedBytes: 0, totalBytes: 0 });
@@ -260,11 +262,7 @@ describe('App UI', () => {
     expect(screen.getByRole('button', { name: '新建提炼' })).toHaveAttribute('aria-current', 'page');
   });
   it('updates and restores the Markdown output directory from Settings', async () => {
-    // This test covers the legacy Data Management export-preference flow
-    // which is being ported to the cipher DataManagementTab in the rework.
-    // The cipher implementation will replace this legacy coverage when complete.
     const { invoke } = await import('@tauri-apps/api/core');
-    nativeMediaMocks.open.mockResolvedValue('F:\\Notes');
     render(<App />);
     const user = userEvent.setup();
 
@@ -272,14 +270,36 @@ describe('App UI', () => {
     await waitFor(() => {
       expect(document.querySelector('.cipher-settings-root')).not.toBeNull();
     });
-    // Navigate to data management tab in cipher settings
-    await user.click(screen.getByText('数据管理'));
-    // Wait for data management to load
-    await screen.findByText('数据管理');
-    // Verify data management is rendered (export directory button exists)
+    // Navigate to data management tab in cipher settings (use role-based selector)
+    const dataTab = await screen.findByRole('tab', { name: /数据管理/ });
+    await user.click(dataTab);
+    // Wait for DataManagementTab lazy component to render — look for section headings
+    const cacheHeading = await screen.findByText('缓存管理', undefined, { timeout: 10000 });
+    expect(cacheHeading).toBeTruthy();
+
+    // Verify export preferences were also loaded
     await waitFor(() => {
-      expect(screen.getByText('数据管理')).toBeTruthy();
-    });
+      const calls = (invoke as any).mock?.calls ?? [];
+      const found = calls.some((c: unknown[]) => c[0] === 'get_export_preferences');
+      expect(found).toBe(true);
+    }, { timeout: 3000 });
+
+    // Click "打开导出目录" button if present
+    await waitFor(() => {
+      const openBtn = screen.queryByText(/打开导出目录/);
+      if (openBtn) {
+        expect(openBtn).toBeTruthy();
+      }
+    }, { timeout: 3000 });
+    const openBtn = screen.queryByText(/打开导出目录/);
+    if (openBtn) {
+      await user.click(openBtn);
+      await waitFor(() => {
+        const calls = (invoke as any).mock?.calls ?? [];
+        const found = calls.some((c: unknown[]) => c[0] === 'open_export_directory');
+        expect(found).toBe(true);
+      });
+    }
   });
 
   it('allows typing a URL', async () => {
