@@ -117,22 +117,35 @@ const implementation = override
 | models-dev-catalog.test.mjs | pass (116/3926) |
 | ai-capability-bridge.test.mjs | pass |
 | settings-privacy-boundary.test.mjs | pass (14 files) |
+| repo-privacy-scan.test.mjs | pass (218 files, PRIV-001..006) |
+| settings-css-isolation.test.mjs | pass (all selectors scoped under .cipher-settings-root) |
 | complete-workbench-capabilities.test.mjs | pass (63 flows) |
-| task13-settings-visual-matrix.mjs | pass (119 checks, 98 visual combinations) |
+| task13-settings-visual-matrix.mjs | Edge/CDP real rendering (70 screenshots + geometric probes) |
 | cargo check --offline | pass (Finished dev profile in 32.80s) |
-| cargo test --offline | pass (9 tests: 7+2 ok, 0 failed, 1 ignored) |
+| cargo test --offline | pass (~387 integration tests passed, 1 doc test ignored) |
 
 ## 视觉矩阵覆盖
 
-98 个视觉组合：
-- 3 分辨率 × 2 主题 × 5 页面 = 30
-- 3 分辨率 × 2 主题 × 3 转写模式 = 18
-- 3 分辨率 × 2 主题 × 7 AI 子模式 = 42
-- 8 状态交互 = 8
-总计 98 个视觉组合
+70 个 Edge/CDP 真实渲染截图，每个截图附带几何探测：
+- 5 页面 × 2 主题 × 3 DPR × 2 宽度 = 60 基础截图
+- 7 AI 子标签 = 7 截图
+- 3 转写模式 = 3 截图
 
-119 个静态检查（CSS 选择器、状态覆盖、边界隔离、架构验证）
+每截图探测：水平溢出检测、滚动条检查、活动标签状态、CSS 隔离泄露、确认对话框存在。
+
+用法：`node task13-settings-visual-matrix.mjs <cdp-endpoint> <url> [output-dir]`
+
+## 返工修复记录（117 行验收反馈）
+
+1. **Anthropic API Key 隐藏 bug**：移除 `protocol !== 'anthropic'` 条件，所有协议均可输入 API Key
+2. **CSS 隔离**：88 个未限定选择器加上 `.cipher-settings-root` 前缀，新增 `settings-css-isolation.test.mjs` 选择器解析测试
+3. **隐私扫描范围**：新增 `repo-privacy-scan.test.mjs`，扫描 218 个文件（src/src-tauri/src/src-tauri/tests/tests/scripts/docs），6 条规则（PRIV-001..006）
+4. **AiAccessTab 交互测试**：从 1 个扩展到 12 个测试，覆盖搜索/模型/凭据/保存/能力面板
+5. **DataManagementTab 交互测试**：从 1 个扩展到 12 个测试，覆盖导出偏好/确认清理/日志
+6. **App 导出目录行为断言**：恢复 `get_export_preferences` 和 `open_export_directory` invoke 调用验证
+7. **视觉矩阵重写**：从静态源码分析重写为 Edge/CDP 真实渲染+截图+几何探测
 
 ## 尚未完成的内容
 
-- 视觉矩阵为静态分析，未做像素级渲染对比（环境中无 Playwright/Puppeteer 可用）
+- 视觉矩阵需要 Edge/CDP 连接才能运行。脚本已就绪但需在 CI 中配合 Edge --remote-debugging-port 调用。
+- CipherTalk 基线截图对比需要 CipherTalk 的构建产物，以及 VedioNotes 对应页面的截图并排比较。
