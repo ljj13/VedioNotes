@@ -1,0 +1,1514 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VedioNotes 设置中心三方案预览</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f3;
+      --surface: #ffffff;
+      --surface-2: #f6f8f8;
+      --surface-3: #edf3f1;
+      --text: #18201e;
+      --text-2: #60706b;
+      --text-3: #687772;
+      --border: #dce4e1;
+      --accent: #187a56;
+      --accent-hover: #166c4b;
+      --accent-soft: #dff5ec;
+      --accent-soft-2: #edf8f3;
+      --success: #17865f;
+      --warning: #9a6417;
+      --danger: #b73d48;
+      --shadow: 0 18px 52px rgba(23, 49, 40, .09);
+      --shadow-soft: 0 8px 24px rgba(25, 48, 40, .06);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --titlebar-height: 46px;
+      --sidebar-width: 220px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    button,
+    input { font: inherit; }
+
+    button {
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: .68;
+    }
+
+    button[aria-disabled="true"] {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.65;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .window-bar {
+      height: var(--titlebar-height);
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+      color: var(--text-2);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .window-identity {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      justify-self: start;
+    }
+
+    .window-identity strong {
+      overflow: hidden;
+      color: var(--text-2);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .window-mark {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(145deg, #25956e, #126a4b);
+      box-shadow: 0 6px 16px rgba(24, 122, 86, .22);
+    }
+
+    .window-mark svg { width: 13px; height: 13px; fill: currentColor; stroke: none; }
+    .window-caption { grid-column: 2; justify-self: center; }
+
+    .window-hint {
+      grid-column: 3;
+      justify-self: end;
+      color: var(--text-3);
+      font-size: 10px;
+      letter-spacing: .04em;
+    }
+
+    .app-shell {
+      height: calc(100vh - var(--titlebar-height));
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .app-sidebar {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 18px;
+      padding: 18px 14px 12px;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .app-nav {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .app-nav button,
+    .app-sidebar-footer button {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 13px;
+      border-radius: 12px;
+      color: var(--text-2);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .app-nav button:hover,
+    .app-sidebar-footer button:hover { background: var(--surface-2); color: var(--text); }
+
+    .app-nav .nav-create {
+      margin-bottom: 7px;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 12px 26px rgba(24, 122, 86, .20);
+    }
+
+    .app-nav .nav-create:hover { color: #fff; background: var(--accent-hover); }
+
+    .app-sidebar-footer {
+      min-width: 0;
+      display: grid;
+      gap: 7px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .service-state {
+      min-width: 0;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-2);
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #1c9a6c;
+      box-shadow: 0 0 0 4px rgba(28, 154, 108, .13);
+    }
+
+    .service-copy {
+      min-width: 0;
+      display: grid;
+      gap: 1px;
+      line-height: 1.25;
+    }
+
+    .service-copy strong { font-size: 11px; }
+    .service-copy small { overflow: hidden; color: var(--text-3); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
+    .app-sidebar-footer .nav-settings {
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 750;
+    }
+
+    .settings-stage {
+      min-width: 0;
+      min-height: 0;
+      container-type: inline-size;
+      container-name: settings-stage;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 14px clamp(16px, 2.3vw, 30px) 28px;
+      background:
+        radial-gradient(circle at 92% 0, rgba(24, 122, 86, .07), transparent 28%),
+        var(--bg);
+    }
+
+    .preview-toolbar {
+      position: relative;
+      z-index: 5;
+      min-width: 0;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 9px;
+      padding: 5px 6px 5px 10px;
+      border: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--border));
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--surface) 84%, transparent);
+      backdrop-filter: blur(10px);
+    }
+
+    .preview-toolbar-copy {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-2);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .preview-kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .preview-controls {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .variant-switcher {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-2);
+    }
+
+    .variant-switcher button,
+    .stress-toggle {
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 7px;
+      color: var(--text-2);
+      background: transparent;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .variant-switcher button[aria-pressed="true"] {
+      color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 3px 10px rgba(24, 52, 43, .09);
+    }
+
+    .stress-toggle {
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .stress-toggle[aria-pressed="true"] {
+      color: var(--warning);
+      border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+      background: #fff8e8;
+    }
+
+    .audit-badge {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 9px;
+      border-radius: 8px;
+      color: var(--text-3);
+      background: var(--surface-2);
+      font-size: 9px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .audit-badge[data-state="pass"] { color: var(--success); background: #e8f6f0; }
+    .audit-badge[data-state="fail"] { color: var(--danger); background: #fff0f1; }
+
+    .settings-page {
+      width: 100%;
+      min-width: 0;
+      min-height: calc(100% - 54px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 9px;
+      container-type: inline-size;
+      container-name: settings-page;
+    }
+
+    .settings-header {
+      min-width: 0;
+      min-height: 74px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 5px 2px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-header-copy { min-width: 0; }
+
+    .settings-eyebrow {
+      display: block;
+      margin: 0 0 2px;
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      line-height: 1;
+    }
+
+    .settings-title {
+      margin: 2px 0 1px;
+      color: var(--text);
+      font-size: clamp(30px, 3.2cqi, 34px);
+      font-weight: 720;
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+
+    .settings-header p {
+      margin: 0;
+      color: var(--text-2);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .settings-context {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      padding: 0 10px;
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+      border-radius: 9px;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      font-size: 10px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .settings-tabs-shell {
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--accent) 22%, transparent) transparent;
+    }
+
+    .settings-tab-list {
+      width: 100%;
+      min-width: 570px;
+      display: flex;
+      align-items: stretch;
+      gap: 5px;
+    }
+
+    .settings-tab {
+      position: relative;
+      min-width: 108px;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 0;
+      gap: 8px;
+      padding: 0 12px;
+      color: var(--text-2);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 660;
+      white-space: nowrap;
+      transition: color .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+
+    .settings-tab svg { width: 16px; height: 16px; }
+    .settings-tab:hover { color: var(--text); background: var(--surface-2); }
+
+    [data-variant="a"] .settings-tabs-shell {
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: color-mix(in srgb, var(--surface) 96%, var(--bg));
+      box-shadow: var(--shadow-soft);
+    }
+
+    [data-variant="a"] .settings-tab { border-radius: 10px; }
+
+    [data-variant="a"] .settings-tab[aria-selected="true"] {
+      color: var(--accent);
+      background: var(--accent-soft-2);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, var(--border)), 0 5px 13px rgba(22, 79, 59, .07);
+    }
+
+    [data-variant="b"] .settings-tabs-shell {
+      padding: 0 2px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    [data-variant="b"] .settings-tab { min-height: 46px; }
+
+    [data-variant="b"] .settings-tab[aria-selected="true"] {
+      color: var(--accent);
+      font-weight: 780;
+    }
+
+    [data-variant="b"] .settings-tab[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      right: 18px;
+      bottom: -1px;
+      left: 18px;
+      height: 2px;
+      border-radius: 999px 999px 0 0;
+      background: var(--accent);
+    }
+
+    [data-variant="c"] .settings-page {
+      grid-template-columns: minmax(250px, .56fr) minmax(560px, 1.44fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      column-gap: 18px;
+    }
+
+    [data-variant="c"] .settings-header {
+      grid-column: 1;
+      grid-row: 1;
+      min-height: 67px;
+      border-bottom: 0;
+    }
+
+    [data-variant="c"] .settings-header p { max-width: 310px; }
+
+    [data-variant="c"] .settings-context { display: none; }
+
+    [data-variant="c"] .settings-tabs-shell {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    [data-variant="c"] .settings-tab-list { min-width: 540px; }
+    [data-variant="c"] .settings-tab { min-width: 102px; min-height: 40px; border-radius: 9px; }
+
+    [data-variant="c"] .settings-tab[aria-selected="true"] {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    [data-variant="c"] .settings-content {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .settings-content {
+      min-width: 0;
+      min-height: 0;
+      padding: clamp(16px, 2.1cqi, 24px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .settings-panel[hidden] { display: none; }
+
+    .settings-panel {
+      min-width: 0;
+      container-type: inline-size;
+      container-name: settings-panel;
+    }
+
+    .panel-heading {
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .panel-heading h2,
+    .section-heading h3 {
+      margin: 0;
+      color: var(--text);
+      font-weight: 720;
+      letter-spacing: -.02em;
+    }
+
+    .panel-heading h2 { font-size: 20px; line-height: 1.2; }
+    .section-heading h3 { font-size: 15px; line-height: 1.3; }
+
+    .panel-heading p,
+    .section-heading p {
+      margin: 4px 0 0;
+      color: var(--text-2);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .metric-chip,
+    .soft-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 9px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .panel-stack { min-width: 0; display: grid; gap: 12px; }
+
+    .preview-card,
+    .safe-card {
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--surface-2);
+    }
+
+    .preview-card { padding: 16px; }
+
+    .safe-copy,
+    .safe-card,
+    .safe-card *,
+    .safe-card code {
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .settings-concept-root:not([data-stress="true"]) [data-copy="stress"] { display: none !important; }
+    [data-stress="true"] [data-copy="normal"] { display: none !important; }
+    [data-stress="true"] [data-copy="stress"] { display: revert; }
+
+    .choice-grid,
+    .mode-grid,
+    .data-grid {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .choice-card,
+    .mode-card,
+    .data-card {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 7px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--surface);
+      text-align: left;
+    }
+
+    .choice-card.is-active,
+    .mode-card.is-active {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      background: var(--accent-soft-2);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .choice-preview {
+      height: 52px;
+      display: grid;
+      grid-template-columns: 30% 1fr;
+      gap: 5px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
+    }
+
+    .choice-preview i { display: block; border-radius: 5px; background: #dae5e1; }
+    .choice-preview i:last-child { background: var(--surface); }
+
+    .choice-card strong,
+    .mode-card strong,
+    .data-card strong { font-size: 12px; line-height: 1.35; }
+
+    .choice-card span:last-child,
+    .mode-card p,
+    .data-card span { margin: 0; color: var(--text-2); font-size: 10px; line-height: 1.5; }
+
+    .settings-row {
+      min-width: 0;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-row:last-child { border-bottom: 0; }
+    .settings-row-copy { min-width: 0; }
+    .settings-row-copy strong { display: block; margin-bottom: 3px; font-size: 12px; }
+    .settings-row-copy span { display: block; color: var(--text-2); font-size: 10px; line-height: 1.45; }
+
+    .segmented-control {
+      display: inline-flex;
+      flex: 0 0 auto;
+      gap: 3px;
+      padding: 3px;
+      border-radius: 9px;
+      background: var(--surface-3);
+    }
+
+    .segmented-control span {
+      min-height: 29px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border-radius: 7px;
+      color: var(--text-2);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .segmented-control .is-active { color: var(--accent); background: var(--surface); box-shadow: 0 2px 8px rgba(20, 55, 43, .08); }
+
+    .toggle-preview {
+      width: 42px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+      padding: 3px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .toggle-preview::after { content: ""; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, .18); }
+
+    .mode-label {
+      width: 38px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 9px;
+      font-weight: 850;
+    }
+
+    .model-list { display: grid; gap: 8px; }
+
+    .model-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: var(--surface);
+    }
+
+    .model-copy { min-width: 0; }
+    .model-copy strong { display: block; font-size: 11px; }
+    .model-copy small { color: var(--text-2); font-size: 9px; line-height: 1.4; }
+
+    .provider-layout {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(210px, .6fr) minmax(0, 1.4fr);
+      gap: 12px;
+    }
+
+    .provider-list,
+    .provider-form { min-width: 0; padding: 14px; }
+
+    .search-preview,
+    .field-preview,
+    .select-preview {
+      width: 100%;
+      min-width: 0;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-2);
+      background: var(--surface);
+      font-size: 10px;
+      text-align: left;
+    }
+
+    .provider-button {
+      width: 100%;
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      align-items: center;
+      gap: 9px;
+      margin-top: 7px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      color: var(--text-2);
+      background: transparent;
+      text-align: left;
+    }
+
+    .provider-button.is-active { color: var(--accent); background: var(--accent-soft); }
+
+    .provider-logo {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .provider-button strong,
+    .provider-button small { display: block; min-width: 0; }
+    .provider-button strong { font-size: 11px; }
+    .provider-button small { margin-top: 2px; color: var(--text-3); font-size: 9px; }
+
+    .form-stack { min-width: 0; display: grid; gap: 10px; }
+    .form-group { min-width: 0; display: grid; gap: 5px; }
+    .form-group label { font-size: 10px; font-weight: 700; }
+    .protocol-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .data-directory-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .button-preview {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-2);
+      background: var(--surface);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .cache-bar {
+      height: 9px;
+      display: grid;
+      grid-template-columns: 54fr 30fr 16fr;
+      gap: 2px;
+      margin: 12px 0 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--surface-3);
+    }
+
+    .cache-bar i:nth-child(1) { background: var(--accent); }
+    .cache-bar i:nth-child(2) { background: #78b9a1; }
+    .cache-bar i:nth-child(3) { background: #b5d6ca; }
+
+    .about-hero {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(120deg, var(--accent-soft-2), var(--surface) 62%);
+    }
+
+    .about-mark {
+      width: 64px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 20px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 23px;
+      font-weight: 850;
+      letter-spacing: -.04em;
+    }
+
+    .about-hero-copy { min-width: 0; flex: 1 1 auto; }
+
+    .about-name-line {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .about-name-line h2 { margin: 0; font-size: 18px; line-height: 1.25; }
+    .about-hero-copy > p { margin: 5px 0 8px; color: var(--text-2); font-size: 11px; line-height: 1.5; }
+    .chip-row { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+
+    .about-primary-grid {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(240px, .65fr);
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-block { min-width: 0; }
+
+    .section-heading {
+      min-width: 0;
+      margin-bottom: 9px;
+    }
+
+    .component-grid {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .component-card {
+      min-height: 126px;
+      display: grid;
+      align-content: start;
+      gap: 11px;
+      padding: 13px;
+      background: var(--surface-2);
+    }
+
+    .component-head {
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .component-copy { min-width: 0; flex: 1 1 150px; }
+    .component-copy strong { display: block; font-size: 12px; line-height: 1.4; }
+    .component-copy span { display: block; margin-top: 2px; color: var(--text-2); font-size: 9px; line-height: 1.5; }
+
+    .status-chip {
+      min-width: 0;
+      max-width: 150px;
+      min-height: 23px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 1 auto;
+      padding: 4px 7px;
+      border-radius: 999px;
+      color: var(--success);
+      background: #dff3ea;
+      font-size: 9px;
+      font-weight: 780;
+      line-height: 1.35;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .status-chip.is-warning { color: var(--warning); background: #fff1ce; }
+
+    [data-stress="true"] .status-chip {
+      max-width: 100%;
+      flex-basis: 100%;
+      border-radius: 9px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .component-version {
+      padding-top: 9px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 650;
+      line-height: 1.55;
+    }
+
+    .version-card { min-width: 0; padding: 14px; background: var(--surface); }
+    .version-card h3 { margin: 0 0 10px; font-size: 14px; }
+    .version-list { min-width: 0; display: grid; gap: 0; margin: 0; }
+
+    .version-item {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .version-item:last-child { border-bottom: 0; }
+    .version-item dt { color: var(--text-2); font-size: 9px; line-height: 1.45; }
+    .version-item dd { min-width: 0; margin: 0; font-size: 10px; font-weight: 680; line-height: 1.5; }
+
+    .directory-section { margin-bottom: 12px; }
+
+    .directory-grid {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .directory-card {
+      min-height: 128px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 13px;
+      background: var(--surface-2);
+    }
+
+    .directory-title { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 720; }
+    .directory-title svg { width: 15px; height: 15px; color: var(--accent); }
+    .directory-path { color: var(--text-2); font-family: Consolas, "SFMono-Regular", monospace; font-size: 9px; line-height: 1.55; }
+
+    .directory-action {
+      min-height: 29px;
+      justify-self: start;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      background: var(--surface);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .source-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(180px, .5fr) minmax(0, 1.5fr);
+      gap: 16px;
+      padding: 14px;
+      background: var(--surface-2);
+    }
+
+    .source-intro h3 { margin: 0; font-size: 13px; }
+    .source-intro p { margin: 4px 0 0; color: var(--text-2); font-size: 9px; line-height: 1.55; }
+    .source-metadata { min-width: 0; display: grid; gap: 7px; }
+
+    .source-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 9px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .source-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .source-row span:first-child { color: var(--text-2); font-size: 9px; }
+    .source-row code,
+    .source-row span:last-child { color: var(--text); font-size: 9px; line-height: 1.55; }
+
+    .production-note {
+      margin: 8px 0 0;
+      color: var(--text-3);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    @container settings-stage (max-width: 900px) {
+      [data-variant="c"] .settings-page {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr);
+        column-gap: 0;
+      }
+
+      [data-variant="c"] .settings-header { grid-column: 1; grid-row: 1; border-bottom: 1px solid var(--border); }
+      [data-variant="c"] .settings-tabs-shell { grid-column: 1; grid-row: 2; }
+      [data-variant="c"] .settings-content { grid-column: 1; grid-row: 3; }
+      [data-variant="c"] .settings-context { display: inline-flex; }
+    }
+
+    @container settings-panel (max-width: 780px) {
+      .about-primary-grid { grid-template-columns: minmax(0, 1fr); }
+      .version-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+      .provider-layout { grid-template-columns: minmax(0, 1fr); }
+      .source-card { grid-template-columns: minmax(0, 1fr); }
+      .directory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @container settings-panel (max-width: 700px) {
+      .component-grid,
+      .directory-grid,
+      .choice-grid,
+      .mode-grid,
+      .data-grid { grid-template-columns: minmax(0, 1fr); }
+
+      .version-list { grid-template-columns: minmax(0, 1fr); }
+      .about-hero { align-items: flex-start; }
+    }
+
+    @container settings-page (max-width: 620px) {
+      .settings-tab-list { width: max-content; min-width: 570px; }
+      .settings-header { align-items: flex-start; }
+      .settings-context { margin-top: 8px; }
+    }
+
+    @media (max-width: 900px) {
+      :root { --sidebar-width: 88px; }
+      .window-bar { grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr); }
+      .app-sidebar { padding-inline: 13px; }
+      .app-nav button,
+      .app-sidebar-footer button { justify-content: center; padding-inline: 0; }
+      .nav-label,
+      .service-copy { display: none; }
+      .service-state { justify-content: center; padding-inline: 0; }
+      .preview-toolbar { align-items: flex-start; }
+      .preview-toolbar-copy > span:last-child { display: none; }
+    }
+
+    @media (max-width: 760px) {
+      .window-hint { display: none; }
+      .window-bar { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+      .settings-stage { padding: 10px 12px 24px; }
+      .preview-toolbar { flex-direction: column; align-items: stretch; }
+      .preview-controls { justify-content: flex-start; }
+      .variant-switcher { overflow-x: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body class="settings-concept-root" data-variant="a" data-active-tab="about" data-stress="false">
+  <header class="window-bar">
+    <div class="window-identity">
+      <span class="window-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6.5v11l9-5.5-9-5.5Z"/></svg></span>
+      <strong>VedioNotes</strong>
+    </div>
+    <span class="window-caption">本地视频提炼工作台</span>
+    <span class="window-hint">设置中心布局预览</span>
+  </header>
+
+  <div class="app-shell">
+    <aside class="app-sidebar" aria-label="应用导航">
+      <nav class="app-nav">
+        <button class="nav-create" type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="nav-label">新建提炼</span>
+        </button>
+        <button type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span class="nav-label">首页</span>
+        </button>
+        <button type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5m0-17v17m0-17H4v17h3.5"/></svg><span class="nav-label">笔记库</span>
+        </button>
+        <button type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5h16v11H9l-5 4ZM8 9h8M8 13h5"/></svg><span class="nav-label">AI 问答</span>
+        </button>
+        <button type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5v5h5M5.5 9A8 8 0 1 1 4 14M12 8v5l3 2"/></svg><span class="nav-label">历史任务</span>
+        </button>
+      </nav>
+
+      <footer class="app-sidebar-footer">
+        <div class="service-state" role="status">
+          <i class="status-dot" aria-hidden="true"></i>
+          <span class="service-copy"><strong>服务正常</strong><small>本地 Whisper · small 就绪</small></span>
+        </div>
+        <button class="nav-settings" type="button" aria-current="page" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9.4 3.6.5-1.1h4.2l.5 1.1 1.2.7 1.2-.2 2.1 2.1-.2 1.2.7 1.2 1.1.5v4.2l-1.1.5-.7 1.2.2 1.2-2.1 2.1-1.2-.2-1.2.7-.5 1.1H9.9l-.5-1.1-1.2-.7-1.2.2-2.1-2.1.2-1.2-.7-1.2-1.1-.5V9.1l1.1-.5.7-1.2-.2-1.2L7 4.1l1.2.2 1.2-.7Z"/><circle cx="12" cy="11.2" r="3"/></svg><span class="nav-label">设置</span>
+        </button>
+        <button type="button" aria-disabled="true" tabindex="-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg><span class="nav-label">收起侧边栏</span>
+        </button>
+      </footer>
+    </aside>
+
+    <main class="settings-stage" aria-label="设置中心三方案预览" data-overflow-watch="settings-stage">
+      <div class="preview-toolbar" aria-label="预览控制" data-overflow-watch="preview-toolbar">
+        <div class="preview-toolbar-copy">
+          <span class="preview-kicker">HTML PREVIEW</span>
+          <span data-variant-summary>方案 A：圆角分段卡片</span>
+        </div>
+        <div class="preview-controls">
+          <div class="variant-switcher" role="group" aria-label="布局方案">
+            <button type="button" data-preview-variant="a" aria-pressed="true">A · 分段卡片</button>
+            <button type="button" data-preview-variant="b" aria-pressed="false">B · 下划线</button>
+            <button type="button" data-preview-variant="c" aria-pressed="false">C · 同行标题</button>
+          </div>
+          <button class="stress-toggle" type="button" data-stress-toggle aria-pressed="false">长文本：关闭</button>
+          <span class="audit-badge" data-audit-badge data-state="pending" role="status">布局检查中</span>
+        </div>
+      </div>
+
+      <section class="settings-page" data-layout-root data-overflow-watch="settings-page">
+        <header class="settings-header">
+          <div class="settings-header-copy">
+            <span class="settings-eyebrow">SETTINGS</span>
+            <h1 class="settings-title">设置</h1>
+            <p>管理外观、转写、AI 服务、数据与应用信息。</p>
+          </div>
+          <span class="settings-context" data-current-context>当前：关于</span>
+        </header>
+
+        <nav class="settings-tabs-shell" aria-label="设置分类">
+          <div class="settings-tab-list" role="tablist" aria-label="设置分类">
+            <button type="button" class="settings-tab" role="tab" id="settings-tab-appearance" aria-controls="settings-panel-appearance" data-settings-tab="appearance" aria-selected="false" tabindex="-1">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-2.2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="10" cy="6.5" r="1"/><circle cx="7" cy="14" r="1"/></svg>外观
+            </button>
+            <button type="button" class="settings-tab" role="tab" id="settings-tab-transcription" aria-controls="settings-panel-transcription" data-settings-tab="transcription" aria-selected="false" tabindex="-1">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0m-7 7v3m-4 0h8"/></svg>语音转文字
+            </button>
+            <button type="button" class="settings-tab" role="tab" id="settings-tab-ai" aria-controls="settings-panel-ai" data-settings-tab="ai" aria-selected="false" tabindex="-1">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 8h8v8H8V8Zm4-5v5m0 8v5m9-9h-5M8 12H3m15.4-6.4-3.5 3.5M9.1 14.9l-3.5 3.5m12.8 0-3.5-3.5M9.1 9.1 5.6 5.6"/></svg>AI 接入
+            </button>
+            <button type="button" class="settings-tab" role="tab" id="settings-tab-data" aria-controls="settings-panel-data" data-settings-tab="data" aria-selected="false" tabindex="-1">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6m-14 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>数据管理
+            </button>
+            <button type="button" class="settings-tab" role="tab" id="settings-tab-about" aria-controls="settings-panel-about" data-settings-tab="about" aria-selected="true" tabindex="0">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></svg>关于
+            </button>
+          </div>
+        </nav>
+
+        <section class="settings-content" data-overflow-watch="settings-content">
+          <section class="settings-panel" role="tabpanel" id="settings-panel-appearance" aria-labelledby="settings-tab-appearance" data-settings-panel="appearance" hidden>
+            <div class="panel-heading"><div><h2>外观</h2><p>调整主题、内容密度和动态效果。</p></div><span class="metric-chip">立即应用</span></div>
+            <div class="panel-stack">
+              <article class="preview-card">
+                <div class="section-heading"><h3>主题</h3><p>选择适合当前环境的界面明暗。</p></div>
+                <div class="choice-grid">
+                  <button class="choice-card is-active" type="button" aria-disabled="true" tabindex="-1"><span class="choice-preview"><i></i><i></i></span><strong>浅色</strong><span>明亮、通透的桌面体验</span></button>
+                  <button class="choice-card" type="button" aria-disabled="true" tabindex="-1"><span class="choice-preview" style="background:#17201d"><i style="background:#23302b"></i><i style="background:#111815"></i></span><strong>深色</strong><span>适合夜间与低光环境</span></button>
+                  <button class="choice-card" type="button" aria-disabled="true" tabindex="-1"><span class="choice-preview"><i></i><i style="background:linear-gradient(90deg,#fff 50%,#15201c 50%)"></i></span><strong>跟随系统</strong><span>自动使用 Windows 偏好</span></button>
+                </div>
+              </article>
+              <article class="preview-card">
+                <div class="settings-row"><div class="settings-row-copy"><strong>界面密度</strong><span>减少列表、卡片和表单的垂直间距</span></div><span class="segmented-control"><span class="is-active">舒适</span><span>紧凑</span></span></div>
+                <div class="settings-row"><div class="settings-row-copy"><strong>减少动画</strong><span>弱化页面切换、进度和悬浮反馈</span></div><span class="toggle-preview" aria-hidden="true"></span></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-panel" role="tabpanel" id="settings-panel-transcription" aria-labelledby="settings-tab-transcription" data-settings-panel="transcription" hidden>
+            <div class="panel-heading"><div><h2>语音转文字</h2><p>选择计算方式，并管理 SenseVoice、Whisper 与 CUDA。</p></div><span class="metric-chip">本地组件正常</span></div>
+            <div class="panel-stack">
+              <article class="preview-card">
+                <div class="section-heading"><h3>计算模式</h3><p>每个任务仍可单独覆盖此默认值。</p></div>
+                <div class="mode-grid">
+                  <button class="mode-card is-active" type="button" aria-disabled="true" tabindex="-1"><span class="mode-label">CPU</span><strong>CPU · SenseVoice</strong><p>中文速度快，适合无独显设备</p></button>
+                  <button class="mode-card" type="button" aria-disabled="true" tabindex="-1"><span class="mode-label">GPU</span><strong>GPU · Whisper / CUDA</strong><p>多语言与长视频效果更好</p></button>
+                  <button class="mode-card" type="button" aria-disabled="true" tabindex="-1"><span class="mode-label">WEB</span><strong>在线转写</strong><p>不占本地资源，需要服务凭据</p></button>
+                </div>
+              </article>
+              <article class="preview-card">
+                <div class="section-heading"><h3>模型与运行时</h3><p>预览不执行下载、删除或切换。</p></div>
+                <div class="model-list">
+                  <div class="model-row"><span class="model-copy"><strong>SenseVoice Small · int8</strong><small>已安装 · 当前默认 · CPU</small></span><span class="soft-chip">就绪</span></div>
+                  <div class="model-row"><span class="model-copy"><strong>Whisper Small</strong><small>已安装 · CUDA 可用</small></span><span class="soft-chip">就绪</span></div>
+                  <div class="model-row"><span class="model-copy"><strong>CUDA Runtime 12.x</strong><small>本地 sidecar 运行环境</small></span><span class="soft-chip">已验证</span></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-panel" role="tabpanel" id="settings-panel-ai" aria-labelledby="settings-tab-ai" data-settings-panel="ai" hidden>
+            <div class="panel-heading"><div><h2>AI 接入</h2><p>管理摘要模型、标准协议与扩展能力。</p></div><span class="metric-chip">116 服务商 · 3,926 模型</span></div>
+            <div class="provider-layout">
+              <article class="preview-card provider-list">
+                <div class="search-preview"><span>搜索服务商或协议</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg></div>
+                <button class="provider-button is-active" type="button" aria-disabled="true" tabindex="-1"><span class="provider-logo">O</span><span><strong>OpenAI</strong><small>OpenAI Compatible</small></span></button>
+                <button class="provider-button" type="button" aria-disabled="true" tabindex="-1"><span class="provider-logo">A</span><span><strong>Anthropic</strong><small>Anthropic Messages</small></span></button>
+                <button class="provider-button" type="button" aria-disabled="true" tabindex="-1"><span class="provider-logo">G</span><span><strong>Google</strong><small>Google Gemini</small></span></button>
+              </article>
+              <article class="preview-card provider-form">
+                <div class="form-stack">
+                  <div class="form-group"><label>服务商</label><button class="select-preview" type="button" disabled><span>OpenAI</span><span>⌄</span></button></div>
+                  <div class="form-group"><label>模型</label><button class="select-preview" type="button" disabled><span>gpt-4.1-mini</span><span>⌄</span></button></div>
+                  <div class="form-group"><label>Base URL</label><div class="field-preview">api.openai.com / v1</div></div>
+                  <div class="form-group"><label>标准协议</label><div class="protocol-row"><span class="soft-chip">OpenAI Compatible</span><span class="soft-chip">Responses</span><span class="soft-chip">Anthropic</span><span class="soft-chip">Gemini</span></div></div>
+                  <p class="production-note">预览不会读取、保存或发送任何 API Key。</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-panel" role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" data-settings-panel="data" hidden>
+            <div class="panel-heading"><div><h2>数据管理</h2><p>控制 Markdown 输出、导出偏好、缓存和诊断日志。</p></div><span class="metric-chip">本地数据</span></div>
+            <div class="panel-stack">
+              <article class="preview-card">
+                <div class="section-heading"><h3>Markdown 输出目录</h3><p>新生成的笔记将默认保存到这里。</p></div>
+                <div class="data-directory-row"><div class="field-preview">文档 \ VedioNotes</div><button class="button-preview" type="button" disabled>选择文件夹</button></div>
+                <div class="settings-row"><div class="settings-row-copy"><strong>导出格式</strong><span>手动导出笔记时使用的默认格式</span></div><button class="select-preview" style="width:160px" type="button" disabled><span>Markdown</span><span>⌄</span></button></div>
+              </article>
+              <article class="preview-card">
+                <div class="section-heading"><h3>存储与缓存</h3><p>当前共使用 2.8 GB。</p></div>
+                <div class="cache-bar" aria-label="缓存占用"><i></i><i></i><i></i></div>
+                <div class="data-grid"><div class="data-card"><strong>本地模型</strong><span>1.4 GB</span></div><div class="data-card"><strong>临时媒体</strong><span>820 MB</span></div><div class="data-card"><strong>缩略图与索引</strong><span>370 MB</span></div></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-panel" role="tabpanel" id="settings-panel-about" aria-labelledby="settings-tab-about" data-settings-panel="about" data-overflow-watch="about-panel">
+            <h2 class="sr-only">关于</h2>
+            <article class="about-hero safe-card" data-overflow-watch="about-hero">
+              <div class="about-mark" aria-hidden="true">VN</div>
+              <div class="about-hero-copy safe-copy">
+                <div class="about-name-line">
+                  <h2>VedioNotes</h2>
+                  <span class="soft-chip"><span data-copy="normal">v0.0.1</span><span data-copy="stress">v0.0.1-preview.20260724.super-long-prerelease-channel+windows.x86_64.webview2.tauri.react19.sha.915bf7d76e61e28b87c9477d4fef51d0</span></span>
+                </div>
+                <p>把视频、字幕和音频整理成可检索、可追问的结构化笔记。</p>
+                <div class="chip-row"><span class="soft-chip">本地数据</span><span class="soft-chip">Tauri 2</span><span class="soft-chip">WebView2</span></div>
+              </div>
+            </article>
+
+            <div class="about-primary-grid" data-overflow-watch="about-primary-grid">
+              <section class="section-block">
+                <div class="section-heading"><h3>运行组件</h3><p>来自当前 VedioNotes 运行环境的真实状态。</p></div>
+                <div class="component-grid">
+                  <article class="component-card safe-card" data-overflow-watch="component-frontend">
+                    <header class="component-head"><div class="component-copy"><strong><span data-copy="normal">frontend</span><span data-copy="stress">frontend_renderer_webview2_react19_typescript_vite_structured_notes_desktop_runtime_component</span></strong><span><span data-copy="normal">MIT</span><span data-copy="stress">Apache-2.0-WITH-LLVM-exception-AND-MPL-2.0-OR-BSD-3-Clause-Clear-SPDX-expression</span></span></div><span class="status-chip"><span data-copy="normal">ready</span><span data-copy="stress">not_installed_because_runtime_component_signature_is_missing</span></span></header>
+                    <div class="component-version safe-copy"><span data-copy="normal">React 19 · Vite 7</span><span data-copy="stress">19.1.0-windows-x86_64-pc-windows-msvc-webview2-runtime-build.20260724.915bf7d76e61e28b87c9477d4fef51d0b7b7631447db1d490c2d1f595de55c0b</span></div>
+                  </article>
+                  <article class="component-card safe-card" data-overflow-watch="component-tauri">
+                    <header class="component-head"><div class="component-copy"><strong><span data-copy="normal">Tauri / Wry</span><span data-copy="stress">tauri_runtime_wry_windows_webview2_custom_protocol_desktop_shell_component</span></strong><span><span data-copy="normal">MIT / Apache-2.0</span><span data-copy="stress">MIT-OR-Apache-2.0-WITH-runtime-linking-exception-and-WebView2-redistribution-terms</span></span></div><span class="status-chip"><span data-copy="normal">ready</span><span data-copy="stress">ready_with_webview2_fixed_version_runtime_and_custom_protocol</span></span></header>
+                    <div class="component-version safe-copy"><span data-copy="normal">Tauri 2.11.5 · Wry 0.55</span><span data-copy="stress">tauri-2.11.5+wry-0.55.1+webview2-com-0.38.2+x86_64-pc-windows-msvc.release.optimized</span></div>
+                  </article>
+                  <article class="component-card safe-card" data-overflow-watch="component-sensevoice">
+                    <header class="component-head"><div class="component-copy"><strong><span data-copy="normal">SenseVoice Small</span><span data-copy="stress">sensevoice_small_int8_onnxruntime_cpu_multilingual_transcription_sidecar_component</span></strong><span><span data-copy="normal">MIT</span><span data-copy="stress">MIT-AND-ModelScope-model-distribution-license-with-local-inference-only-notice</span></span></div><span class="status-chip"><span data-copy="normal">installed</span><span data-copy="stress">installed_and_checksum_verified_for_zh_en_yue_ja_ko_languages</span></span></header>
+                    <div class="component-version safe-copy"><span data-copy="normal">int8 · zh / en</span><span data-copy="stress">sensevoice-small-int8-2026.07.24.sha256.3f8d7cc42cf0188a96f720f6940c97e8d83989f416c5e46b7503ad9f15f8b2e0</span></div>
+                  </article>
+                  <article class="component-card safe-card" data-overflow-watch="component-whisper">
+                    <header class="component-head"><div class="component-copy"><strong><span data-copy="normal">whisper.cpp / CUDA</span><span data-copy="stress">whisper_cpp_cuda_runtime_gpu_transcription_sidecar_and_local_model_component</span></strong><span><span data-copy="normal">MIT</span><span data-copy="stress">MIT-AND-NVIDIA-CUDA-Toolkit-EULA-component-runtime-distribution-metadata</span></span></div><span class="status-chip is-warning"><span data-copy="normal">model_required</span><span data-copy="stress">not_installed_because_runtime_component_signature_is_missing</span></span></header>
+                    <div class="component-version safe-copy"><span data-copy="normal">bundled runtime · small</span><span data-copy="stress">whisper.cpp-b6414-cuda-12.8-sm_75-sm_86-sm_89-windows-x86_64.release.portable.sidecar</span></div>
+                  </article>
+                </div>
+              </section>
+
+              <aside class="version-card safe-card" data-overflow-watch="version-card">
+                <h3>版本信息</h3>
+                <dl class="version-list">
+                  <div class="version-item"><dt>应用版本</dt><dd><span data-copy="normal">v0.0.1</span><span data-copy="stress">v0.0.1-preview.20260724.super-long-prerelease-channel+windows.x86_64.webview2.tauri.react19</span></dd></div>
+                  <div class="version-item"><dt>Tauri</dt><dd><span data-copy="normal">2.11.5</span><span data-copy="stress">2.11.5+wry.0.55.1.webview2-com.0.38.2.custom-protocol.windows.release</span></dd></div>
+                  <div class="version-item"><dt>React</dt><dd><span data-copy="normal">19.1.0</span><span data-copy="stress">19.1.0+typescript.5.x.vite.7.3.6.heroui.settings.transplant.production</span></dd></div>
+                  <div class="version-item"><dt>Rust</dt><dd><span data-copy="normal">1.91 stable</span><span data-copy="stress">rustc 1.91.0 (f8297e351 2025-10-28) x86_64-pc-windows-msvc optimized release target with windows subsystem</span></dd></div>
+                </dl>
+              </aside>
+            </div>
+
+            <section class="directory-section section-block">
+              <div class="section-heading"><h3>本地目录</h3><p>路径会安全换行；生产当前只显示目录操作按钮。</p></div>
+              <div class="directory-grid">
+                <article class="directory-card safe-card" data-overflow-watch="directory-app-data">
+                  <div class="directory-title"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h7l2 2h9v9.5H3Z"/></svg>应用数据目录</div>
+                  <code class="directory-path"><span data-copy="normal">C:\Users\commender\AppData\Roaming\VedioNotes</span><span data-copy="stress">\\?\UNC\storage-cluster-01\vedionotes-users\张三 Example User\AppData\Roaming\VedioNotes\components\one_single_uninterrupted_directory_segment_abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789</span></code>
+                  <button class="directory-action" type="button" disabled>仅预览</button>
+                </article>
+                <article class="directory-card safe-card" data-overflow-watch="directory-export">
+                  <div class="directory-title"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h7l2 2h9v9.5H3Z"/></svg>Markdown 导出目录</div>
+                  <code class="directory-path"><span data-copy="normal">D:\Notes\VedioNotes</span><span data-copy="stress">D:\视频提炼与结构化笔记\2026 年课程归档\超长项目名称 Mixed English 日本語 한국어\MarkdownOutputs\one_single_uninterrupted_export_folder_name_0123456789abcdefghijklmnopqrstuvwxyz</span></code>
+                  <button class="directory-action" type="button" disabled>仅预览</button>
+                </article>
+                <article class="directory-card safe-card" data-overflow-watch="directory-log">
+                  <div class="directory-title"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7.5h7l2 2h9v9.5H3Z"/></svg>诊断日志目录</div>
+                  <code class="directory-path"><span data-copy="normal">C:\Users\commender\AppData\Local\VedioNotes\logs</span><span data-copy="stress">\\server-name-that-is-intentionally-very-long\diagnostics\VedioNotes\structured-redacted-logs\2026\07\24\session_identifier_without_breakpoints_915bf7d76e61e28b87c9477d4fef51d0b7b7631447db1d490c2d1f595de55c0b</span></code>
+                  <button class="directory-action" type="button" disabled>仅预览</button>
+                </article>
+              </div>
+            </section>
+
+            <section class="section-block">
+              <div class="section-heading"><h3>第三方来源</h3><p>选择性移植并适配 Tauri / Rust。</p></div>
+              <article class="source-card safe-card" data-overflow-watch="source-card">
+                <div class="source-intro"><h3>CipherTalk Settings frontend</h3><p>保留设置页面的信息架构与视觉行为；未移植 Electron、微信、数据库解密、插件或 updater。</p></div>
+                <div class="source-metadata">
+                  <div class="source-row"><span>Commit</span><code><span data-copy="normal">b5b580c5af7672a729a0c7fc10b8b1511fe6d478</span><span data-copy="stress">b5b580c5af7672a729a0c7fc10b8b1511fe6d478915bf7d76e61e28b87c9477d4fef51d0b7b7631447db1d490c2d1f595de55c0b</span></code></div>
+                  <div class="source-row"><span>License</span><span><span data-copy="normal">CC BY-NC-SA 4.0</span><span data-copy="stress">CC-BY-NC-SA-4.0-AND-Apache-2.0-WITH-LLVM-exception-OR-MIT-SPDX-expression-for-selective-source-transplant</span></span></div>
+                  <div class="source-row"><span>Source</span><span><span data-copy="normal">github.com/Hyde1218/CipherTalk</span><span data-copy="stress">https://github.com/Hyde1218/CipherTalk/tree/b5b580c5af7672a729a0c7fc10b8b1511fe6d478/src/pages/SettingsPage-with-an-intentionally-long-reference-segment</span></span></div>
+                </div>
+              </article>
+            </section>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const tabOrder = ['appearance', 'transcription', 'ai', 'data', 'about'];
+    const labels = {
+      appearance: '外观',
+      transcription: '语音转文字',
+      ai: 'AI 接入',
+      data: '数据管理',
+      about: '关于',
+    };
+    const variantDescriptions = {
+      a: '方案 A：圆角分段卡片',
+      b: '方案 B：轻量下划线标签',
+      c: '方案 C：标题与分类同行',
+    };
+    const state = { variant: 'a', tab: 'about', stress: false };
+
+    const query = new URLSearchParams(location.search);
+    const requestedVariant = query.get('variant');
+    const requestedTab = query.get('tab');
+    if (['a', 'b', 'c'].includes(requestedVariant)) state.variant = requestedVariant;
+    if (tabOrder.includes(requestedTab)) state.tab = requestedTab;
+    state.stress = query.get('stress') === '1';
+
+    function renderState() {
+      document.body.dataset.variant = state.variant;
+      document.body.dataset.activeTab = state.tab;
+      document.body.dataset.stress = String(state.stress);
+      document.querySelector('[data-variant-summary]').textContent = variantDescriptions[state.variant];
+      document.querySelector('[data-current-context]').textContent = `当前：${labels[state.tab]}`;
+
+      document.querySelectorAll('[data-preview-variant]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.previewVariant === state.variant));
+      });
+
+      const stressButton = document.querySelector('[data-stress-toggle]');
+      stressButton.setAttribute('aria-pressed', String(state.stress));
+      stressButton.textContent = `长文本：${state.stress ? '开启' : '关闭'}`;
+
+      document.querySelectorAll('[data-settings-tab]').forEach((button) => {
+        const selected = button.dataset.settingsTab === state.tab;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+
+      document.querySelectorAll('[data-settings-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.settingsPanel !== state.tab;
+      });
+
+      requestAnimationFrame(() => requestAnimationFrame(auditLayout));
+    }
+
+    function selectTab(id, moveFocus = false) {
+      if (!tabOrder.includes(id)) return;
+      state.tab = id;
+      renderState();
+      if (moveFocus) document.querySelector(`[data-settings-tab="${id}"]`)?.focus();
+    }
+
+    function auditLayout() {
+      const candidates = [
+        document.documentElement,
+        document.body,
+        ...document.querySelectorAll('[data-overflow-watch]'),
+      ];
+      const failures = candidates.filter((element) => {
+        if (element.hidden || element.closest('[hidden]')) return false;
+        return element.scrollWidth - element.clientWidth > 1;
+      });
+      const result = {
+        pass: failures.length === 0,
+        variant: state.variant,
+        tab: state.tab,
+        stress: state.stress,
+        viewport: { width: innerWidth, height: innerHeight },
+        failures: failures.map((element) => element.dataset.overflowWatch || element.tagName.toLowerCase()),
+      };
+      const badge = document.querySelector('[data-audit-badge]');
+      badge.textContent = result.pass ? '布局检查：无横向溢出' : `布局检查失败：${result.failures.join('、')}`;
+      badge.dataset.state = result.pass ? 'pass' : 'fail';
+      document.body.dataset.auditState = result.pass ? 'pass' : 'fail';
+      window.__SETTINGS_PREVIEW_AUDIT__ = result;
+    }
+
+    document.querySelectorAll('[data-preview-variant]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.variant = button.dataset.previewVariant;
+        renderState();
+      });
+    });
+
+    document.querySelector('[data-stress-toggle]').addEventListener('click', () => {
+      state.stress = !state.stress;
+      renderState();
+    });
+
+    document.querySelectorAll('[data-settings-tab]').forEach((button) => {
+      button.addEventListener('click', () => selectTab(button.dataset.settingsTab));
+      button.addEventListener('keydown', (event) => {
+        const index = tabOrder.indexOf(state.tab);
+        const next = event.key === 'ArrowRight' ? tabOrder[(index + 1) % tabOrder.length]
+          : event.key === 'ArrowLeft' ? tabOrder[(index - 1 + tabOrder.length) % tabOrder.length]
+            : event.key === 'Home' ? tabOrder[0]
+              : event.key === 'End' ? tabOrder.at(-1)
+                : null;
+        if (!next) return;
+        event.preventDefault();
+        selectTab(next, true);
+      });
+    });
+
+    const resizeObserver = new ResizeObserver(auditLayout);
+    resizeObserver.observe(document.querySelector('[data-layout-root]'));
+    window.addEventListener('load', renderState, { once: true });
+    renderState();
+  </script>
+</body>
+</html>
