@@ -1,9 +1,15 @@
+/**
+ *测试文件——测试 NoteStylePicker 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import NoteStylePicker from './NoteStylePicker';
 
+// describe('NoteStylePicker', () => {
 describe('NoteStylePicker', () => {
+  // it('renders the nine BiliNote-inspired choices and exposes t
   it('renders the nine BiliNote-inspired choices and exposes the selected label', async () => {
     const onChange = vi.fn();
     render(<NoteStylePicker value="minimal" onChange={onChange} />);
@@ -18,6 +24,7 @@ describe('NoteStylePicker', () => {
     expect(onChange).toHaveBeenCalledWith('meeting_minutes');
   });
 
+  // it('disables its trigger with the surrounding task form', ()
   it('disables its trigger with the surrounding task form', () => {
     render(<NoteStylePicker value="minimal" onChange={vi.fn()} disabled />);
     expect((screen.getByRole('button', { name: '笔记风格' }) as HTMLButtonElement).disabled).toBe(true);

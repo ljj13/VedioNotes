@@ -1,3 +1,8 @@
+/**
+ * 数据管理适配层——封装缓存查询/清理、日志管理、导出目录设置.
+ * 被 DataManagementTab 引用.
+ */
+
 import {
   getExportPreferences,
   saveExportPreferences,

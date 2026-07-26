@@ -1,3 +1,7 @@
+/**
+ *服务切换通知——当主服务商不可用时，显示"已切换到备用服务"的通知。
+ */
+
 import type { ProviderFallbackEvent } from '../lib/types';
 
 interface FallbackNoticeProps {
@@ -6,6 +10,7 @@ interface FallbackNoticeProps {
   onOpenSettings: () => void;
 }
 
+/** FallbackNotice */
 export default function FallbackNotice({
   event,
   onDismiss,

@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 WindowControls 组件/模块的行为是否符合预期。
+ */
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,7 +28,9 @@ beforeEach(() => {
   windowApi.onResized.mockResolvedValue(() => {});
 });
 
+// describe('WindowControls', () => {
 describe('WindowControls', () => {
+  // it('calls the Tauri minimize, maximize, and close APIs', asy
   it('calls the Tauri minimize, maximize, and close APIs', async () => {
     render(<WindowControls />);
 
@@ -38,6 +44,7 @@ describe('WindowControls', () => {
     await waitFor(() => expect(windowApi.isMaximized).toHaveBeenCalled());
   });
 
+  // it('shows the restore action when the window is maximized',
   it('shows the restore action when the window is maximized', async () => {
     windowApi.isMaximized.mockResolvedValue(true);
     render(<WindowControls />);

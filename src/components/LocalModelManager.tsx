@@ -1,3 +1,7 @@
+/**
+ *本地 Whisper 模型管理器——下载、删除、查看本地的语音识别模型。
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LocalModelStatus, TranscriptionProfile } from '../lib/types';
 import { deleteLocalModel, downloadLocalModel, listLocalModels, onLocalModelDownloadProgress, saveTranscriptionProfile, setActiveProfile } from '../lib/bridge';
@@ -10,6 +14,7 @@ const MODELS = [
 
 interface Props { models?: LocalModelStatus[]; localProfile?: TranscriptionProfile; onModelsChanged: () => void; onProfilesChanged?: () => void; }
 
+/** LocalModelManager */
 export default function LocalModelManager({ models: suppliedModels, localProfile, onModelsChanged, onProfilesChanged }: Props) {
   const [loadedModels, setLoadedModels] = useState<LocalModelStatus[]>([]);
   const [progress, setProgress] = useState<Record<string, { downloadedBytes: number; totalBytes: number }>>({});
@@ -88,4 +93,5 @@ export default function LocalModelManager({ models: suppliedModels, localProfile
     </div>
   </section>;
 }
+/** statusText */
 function statusText(state: LocalModelStatus['state']) { return ({ not_downloaded: '未下载', downloading: '下载中', ready: '已就绪', corrupt: '文件损坏', failed: '下载失败' })[state]; }

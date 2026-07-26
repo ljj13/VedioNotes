@@ -1,16 +1,4 @@
-// == Provider Error Normalization ============================================
-//
-// Normalized error types for all provider adapters. These replace raw HTTP
-// status codes and provider-specific error responses with a uniform set of
-// categories and structured error values.
-//
-// Security invariants:
-// - ProviderError never contains credentials, Bearer tokens, request bodies,
-//   MiMo Base64 audio, or complete raw response bodies.
-// - The `message` and `recovery` fields are user-facing and must not leak
-//   secret/sensitive data.
-// - provider_code may contain non-sensitive provider error codes (e.g.
-//   Tencent's 4002, 4003) to aid diagnostics without leaking secrets.
+//! 错误类型——定义统一的 ProviderError，包含错误码、消息和恢复建议.
 
 use crate::domain::AppError;
 use serde::Serialize;
@@ -27,6 +15,7 @@ use std::fmt;
 /// fallback perspective) failures.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// ProviderErrorKind
 pub enum ProviderErrorKind {
     /// Free quota or resource-pack exhausted (Tencent 4004).
     QuotaExhausted,
@@ -88,6 +77,7 @@ impl fmt::Display for ProviderErrorKind {
 /// - `http_status` carries the HTTP status code if the error originated from
 ///   an HTTP response. It is optional.
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// ProviderError
 pub struct ProviderError {
     /// The normalized error kind.
     pub kind: ProviderErrorKind,

@@ -1,3 +1,6 @@
+//! 任务记录存储——SQLite 数据库的 task_records 表操作.
+//! 记录每次蒸馏任务的执行情况.
+
 use crate::domain::{AppError, InputSource, TaskOptions};
 use crate::history_store::HistoryStore;
 use crate::history_store::LibraryEntry;
@@ -8,6 +11,7 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// TaskState
 pub enum TaskState {
     Queued,
     Running,
@@ -44,6 +48,7 @@ impl TaskState {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// TaskRecordInput
 pub struct TaskRecordInput {
     pub task_id: String,
     pub title: String,
@@ -62,6 +67,7 @@ pub struct TaskRecordInput {
 }
 
 impl TaskRecordInput {
+    /// running
     pub fn running(task_id: impl Into<String>) -> Self {
         Self {
             task_id: task_id.into(),
@@ -86,6 +92,7 @@ impl TaskRecordInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// TaskRecord
 pub struct TaskRecord {
     pub id: i64,
     pub task_id: String,
@@ -109,6 +116,7 @@ pub struct TaskRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// TaskRetryRequest
 pub struct TaskRetryRequest {
     pub source: InputSource,
     pub options: TaskOptions,
@@ -118,6 +126,7 @@ pub struct TaskRetryRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// HomeSnapshot
 pub struct HomeSnapshot {
     pub note_count: u64,
     pub task_count: u64,
@@ -126,11 +135,13 @@ pub struct HomeSnapshot {
     pub recent_tasks: Vec<TaskRecord>,
 }
 
+/// 任务记录存储——管理任务执行记录（SQLite）。
 pub struct TaskStore {
     database_path: PathBuf,
 }
 
 impl TaskStore {
+    /// open
     pub fn open(database_path: PathBuf) -> Result<Self, AppError> {
         if let Some(parent) = database_path.parent() {
             std::fs::create_dir_all(parent).map_err(|_| storage_error())?;
@@ -172,6 +183,7 @@ impl TaskStore {
         Ok(store)
     }
 
+    /// insert task
     pub fn insert_task(&self, input: &TaskRecordInput) -> Result<i64, AppError> {
         if input.task_id.trim().is_empty() {
             return Err(AppError::new(
@@ -211,6 +223,7 @@ impl TaskStore {
         Ok(connection.last_insert_rowid())
     }
 
+    /// finish task
     pub fn finish_task(
         &self,
         id: i64,
@@ -254,6 +267,7 @@ impl TaskStore {
         Ok(())
     }
 
+    /// get task
     pub fn get_task(&self, id: i64) -> Result<Option<TaskRecord>, AppError> {
         let connection = self.connection()?;
         connection
@@ -270,6 +284,7 @@ impl TaskStore {
             .map_err(|_| storage_error())
     }
 
+    /// list tasks
     pub fn list_tasks(&self, query: &str) -> Result<Vec<TaskRecord>, AppError> {
         let connection = self.connection()?;
         let pattern = format!("%{}%", query.trim());
@@ -292,6 +307,7 @@ impl TaskStore {
         records
     }
 
+    /// retry request
     pub fn retry_request(&self, id: i64) -> Result<TaskRetryRequest, AppError> {
         let connection = self.connection()?;
         let row = connection
@@ -318,6 +334,7 @@ impl TaskStore {
         })
     }
 
+    /// update title
     pub fn update_title(&self, id: i64, title: &str) -> Result<(), AppError> {
         let title = title.trim();
         if title.is_empty() || title.chars().count() > 240 {

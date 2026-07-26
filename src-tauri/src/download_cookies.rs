@@ -1,8 +1,4 @@
-//! Manually entered platform Cookies for downloads.
-//!
-//! Cookies are stored only in the operating system credential store.  They
-//! never belong in `profiles.json`, application logs, progress messages, or
-//! yt-dlp command-line arguments.
+//! 下载 Cookie 管理——安全存储各视频平台的 Cookie（用于高级下载功能）.
 
 use crate::credential_store::{CredentialBackend, CredentialBackendError, KeyringBackend};
 use crate::domain::AppError;
@@ -11,9 +7,11 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::NamedTempFile;
 
+/// DOWNLOAD COOKIE SERVICE
 pub const DOWNLOAD_COOKIE_SERVICE: &str = "video-distiller-download-cookies-v1";
 const MAX_COOKIE_LENGTH: usize = 32 * 1024;
 
+/// DownloadCookieStore
 pub struct DownloadCookieStore {
     backend: Box<dyn CredentialBackend>,
 }
@@ -25,26 +23,31 @@ pub struct TempCookieFile {
 }
 
 impl TempCookieFile {
+    /// path
     pub fn path(&self) -> &Path {
         self.file.path()
     }
 }
 
 impl DownloadCookieStore {
+    /// new
     pub fn new(backend: impl CredentialBackend + 'static) -> Self {
         Self {
             backend: Box::new(backend),
         }
     }
 
+    /// new from box
     pub fn new_from_box(backend: Box<dyn CredentialBackend>) -> Self {
         Self { backend }
     }
 
+    /// production
     pub fn production() -> Self {
         Self::new(KeyringBackend)
     }
 
+    /// set
     pub fn set(&self, platform: VideoPlatform, cookie: &str) -> Result<(), AppError> {
         if cookie.trim().is_empty()
             || cookie.len() > MAX_COOKIE_LENGTH
@@ -61,6 +64,7 @@ impl DownloadCookieStore {
             .map_err(storage_error)
     }
 
+    /// get
     pub fn get(&self, platform: VideoPlatform) -> Result<String, AppError> {
         self.backend
             .get_password(DOWNLOAD_COOKIE_SERVICE, &cookie_account(platform))
@@ -87,6 +91,7 @@ impl DownloadCookieStore {
         }
     }
 
+    /// has
     pub fn has(&self, platform: VideoPlatform) -> Result<bool, AppError> {
         match self
             .backend
@@ -98,6 +103,7 @@ impl DownloadCookieStore {
         }
     }
 
+    /// delete
     pub fn delete(&self, platform: VideoPlatform) -> Result<(), AppError> {
         match self
             .backend

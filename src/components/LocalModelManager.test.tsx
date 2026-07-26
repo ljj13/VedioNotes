@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 LocalModelManager 组件/模块的行为是否符合预期。
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -19,10 +23,12 @@ const tiny: LocalModelStatus = {
   id: 'tiny', state: 'not_downloaded', downloadedBytes: 0, totalBytes: 75_000_000, isCurrent: false,
 };
 
+// describe('LocalModelManager', () => {
 describe('LocalModelManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+  // it('does not download anything until the user presses 下载', a
   it('does not download anything until the user presses 下载', async () => {
     render(<LocalModelManager models={[tiny]} onModelsChanged={vi.fn()} />);
     expect(mocks.invoke).not.toHaveBeenCalledWith('download_local_model', expect.anything());
@@ -30,6 +36,7 @@ describe('LocalModelManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('download_local_model', { modelId: 'tiny' });
   });
 
+  // it('waits for deferred progress-listener registration before
   it('waits for deferred progress-listener registration before downloading', async () => {
     let resolveListen!: (unlisten: () => void) => void;
     const { listen } = await import('@tauri-apps/api/event');
@@ -41,6 +48,7 @@ describe('LocalModelManager', () => {
     await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith('download_local_model', { modelId: 'tiny' }));
   });
 
+  // it('blocks download and shows a retryable error when progres
   it('blocks download and shows a retryable error when progress-listener registration fails', async () => {
     const { listen } = await import('@tauri-apps/api/event');
     vi.mocked(listen).mockRejectedValueOnce(new Error('listener unavailable'));
@@ -50,6 +58,7 @@ describe('LocalModelManager', () => {
     expect(mocks.invoke).not.toHaveBeenCalledWith('download_local_model', { modelId: 'tiny' });
   });
 
+  // it('shows event progress and cleans the subscription on unmo
   it('shows event progress and cleans the subscription on unmount', async () => {
     const unlisten = vi.fn();
     const { listen } = await import('@tauri-apps/api/event');
@@ -65,6 +74,7 @@ describe('LocalModelManager', () => {
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
+  // it('shows a recoverable source-fallback failure and retries'
   it('shows a recoverable source-fallback failure and retries', async () => {
     mocks.invoke.mockRejectedValueOnce(new Error('本地 Whisper 模型下载失败。请检查网络和磁盘空间后重试。'));
     render(<LocalModelManager models={[{ ...tiny, state: 'failed' }]} onModelsChanged={vi.fn()} />);
@@ -73,6 +83,7 @@ describe('LocalModelManager', () => {
     expect(mocks.invoke).toHaveBeenLastCalledWith('download_local_model', { modelId: 'tiny' });
   });
 
+  // it('deletes a non-current ready model immediately and confir
   it('deletes a non-current ready model immediately and confirms current deletion', async () => {
     const ready = { ...tiny, state: 'ready' as const };
     const current = { ...tiny, id: 'base', state: 'ready' as const, isCurrent: true };
@@ -86,6 +97,7 @@ describe('LocalModelManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('delete_local_model', { modelId: 'base', confirmedCurrentDelete: true });
   });
 
+  // it('does not expose endpoint, model, key, or test controls f
   it('does not expose endpoint, model, key, or test controls for local Whisper editing', () => {
     render(<ProfileEditor profileType="transcription" initialState="edit" existingProfile={{ id: 'local-whisper-cpp', name: '本地 Whisper', provider: 'local_whisper_cpp', baseUrl: '', model: 'tiny', enabled: true, builtIn: true }} onSaved={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.queryByLabelText('API 基础地址')).toBeNull();

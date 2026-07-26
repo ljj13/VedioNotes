@@ -1,3 +1,7 @@
+/**
+ *CipherTalk 风格设置settings模块——VedioNotes 的设置页面 UI 组件。
+ */
+
 export const CIPHERTALK_SETTINGS_SOURCE = {
   project: 'ILoveBingLu/CipherTalk',
   localRoot: 'D:\\Project\\CipherTalk',
@@ -15,6 +19,7 @@ export const CIPHERTALK_SETTINGS_SOURCE = {
   ],
 } as const;
 
+/** CIPHER_SETTINGS_PAGE_IDS */
 export const CIPHER_SETTINGS_PAGE_IDS = [
   'appearance',
   'transcription',
@@ -23,4 +28,5 @@ export const CIPHER_SETTINGS_PAGE_IDS = [
   'about',
 ] as const;
 
+/** CipherSettingsPageId */
 export type CipherSettingsPageId = typeof CIPHER_SETTINGS_PAGE_IDS[number];

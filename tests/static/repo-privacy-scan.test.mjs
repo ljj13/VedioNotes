@@ -19,8 +19,9 @@ function walk(path) {
   let results = [];
   for (const name of readdirSync(path)) {
     if (name === 'node_modules' || name === '.git' || name === 'dist' || name === 'target' || name.startsWith('.reasonix')) continue;
-    // Skip plan/review documents that contain code examples with placeholder secrets
-    if (path.includes('superpowers')) continue;
+    // Skip only plan documents that contain code examples with placeholder secrets
+    // Exact path segment: docs/superpowers/plans (not entire docs/superpowers)
+    if (path.includes(`${join('superpowers', 'plans')}`) || path.includes('superpowers/plans') || path.includes('superpowers\\plans')) continue;
     const child = join(path, name);
     const stat = statSync(child);
     if (stat.isDirectory()) {

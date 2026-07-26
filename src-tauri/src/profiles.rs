@@ -1,8 +1,4 @@
-// == Provider Profile Domain Types ==========================================
-//
-// Versioned, serializable profile definitions for transcription and summary
-// providers. No API keys, secrets, or credential values exist in these types.
-// All secret data lives in credential_store.rs and is accessed by profile ID.
+//! 服务商配置领域模型——定义转写和总结服务商的数据结构，以及验证逻辑.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -17,6 +13,7 @@ use crate::provider_catalog::{provider as catalog_provider, SummaryProtocolKind}
 /// Kinds of transcription providers supported.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// TranscriptionProviderKind
 pub enum TranscriptionProviderKind {
     TencentFlash,
     MimoAsr,
@@ -27,6 +24,7 @@ pub enum TranscriptionProviderKind {
 /// Kinds of summary providers supported.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// SummaryProviderKind
 pub enum SummaryProviderKind {
     DeepSeek,
     Mimo,
@@ -46,6 +44,7 @@ pub enum SummaryProviderKind {
 /// the Windows Credential Manager via `credential_store`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// TranscriptionProfile
 pub struct TranscriptionProfile {
     /// Stable unique identifier (UUID v4 string).
     pub id: String,
@@ -66,6 +65,7 @@ pub struct TranscriptionProfile {
 /// A summary provider profile.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// SummaryProfile
 pub struct SummaryProfile {
     /// Stable unique identifier (UUID v4 string).
     pub id: String,
@@ -91,6 +91,7 @@ pub struct SummaryProfile {
 /// Serialized with camelCase JSON field names to match frontend conventions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// AppProfiles
 pub struct AppProfiles {
     /// Schema version for forward-compatible migration.
     pub schema_version: u32,

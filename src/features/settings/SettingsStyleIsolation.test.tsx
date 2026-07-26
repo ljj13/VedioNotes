@@ -1,9 +1,15 @@
+/**
+ *测试文件——测试 SettingsStyleIsolation 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen } from '@testing-library/react';
 import { Button, Tabs } from '@heroui/react';
 import { Palette } from '@gravity-ui/icons';
 import { describe, expect, it } from 'vitest';
 
+// describe('Cipher Settings dependency isolation', () => {
 describe('Cipher Settings dependency isolation', () => {
+  // it('renders retained HeroUI and icon primitives only inside
   it('renders retained HeroUI and icon primitives only inside the settings root', () => {
     render(
       <div>

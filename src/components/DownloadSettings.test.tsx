@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 DownloadSettings 组件/模块的行为是否符合预期。
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,6 +14,7 @@ const bridge = vi.hoisted(() => ({
 }));
 vi.mock('../lib/bridge', () => bridge);
 
+// describe('DownloadSettings', () => {
 describe('DownloadSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -17,6 +22,7 @@ describe('DownloadSettings', () => {
     bridge.saveDownloadCookie.mockResolvedValue(undefined);
   });
 
+  // it('shows status only and clears a Cookie after saving a rep
   it('shows status only and clears a Cookie after saving a replacement', async () => {
     render(<DownloadSettings />);
     expect(await screen.findByText('已配置')).toBeTruthy();

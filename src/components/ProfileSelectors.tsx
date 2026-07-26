@@ -1,3 +1,7 @@
+/**
+ *应用组件——ProfileSelectors 页面/功能对应的 React UI 组件。
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import type { AppProfiles, LocalModelStatus } from '../lib/types';
 import { hasProfileCredential, setActiveProfile } from '../lib/bridge';
@@ -10,6 +14,7 @@ interface ProfileSelectorsProps {
   localModels?: LocalModelStatus[];
 }
 
+/** ProfileSelectors */
 export default function ProfileSelectors({
   profiles,
   disabled,

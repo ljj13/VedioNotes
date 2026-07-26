@@ -1,9 +1,4 @@
-// == Summary Provider Adapters ===============================================
-//
-// Executable adapters for the four standard summary protocols accepted by
-// the embedded models.dev catalog. All implementations share prompt
-// normalization, bounded response reading, cancellation, redacted HTTP error
-// mapping, and Distillation parsing.
+//! AI 总结适配器——实现四种协议（OpenAI/Anthropic/Google/兼容）的 API 调用.
 
 use async_trait::async_trait;
 use reqwest::{Response, StatusCode};
@@ -150,6 +145,7 @@ async fn finish_summary(
     Ok(distillation)
 }
 
+/// OpenAiCompatibleSummaryAdapter
 pub struct OpenAiCompatibleSummaryAdapter;
 
 #[async_trait]
@@ -182,6 +178,7 @@ impl SummaryAdapter for OpenAiCompatibleSummaryAdapter {
     }
 }
 
+/// OpenAiResponsesSummaryAdapter
 pub struct OpenAiResponsesSummaryAdapter;
 
 #[async_trait]
@@ -215,6 +212,7 @@ impl SummaryAdapter for OpenAiResponsesSummaryAdapter {
     }
 }
 
+/// AnthropicSummaryAdapter
 pub struct AnthropicSummaryAdapter;
 
 #[async_trait]
@@ -250,6 +248,7 @@ impl SummaryAdapter for AnthropicSummaryAdapter {
     }
 }
 
+/// GoogleSummaryAdapter
 pub struct GoogleSummaryAdapter;
 
 #[async_trait]

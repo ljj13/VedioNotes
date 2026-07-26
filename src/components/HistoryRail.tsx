@@ -1,9 +1,14 @@
+/**
+ *历史记录侧栏——在笔记库左侧显示历史笔记列表。
+ */
+
 import { useEffect, useState } from 'react';
 import type { HistoryEntry } from '../lib/types';
 import { deleteHistory, listHistory, searchHistory } from '../lib/bridge';
 
 interface Props { selectedId: number | null; onSelect: (entry: HistoryEntry) => void; }
 
+/** HistoryRail */
 export default function HistoryRail({ selectedId, onSelect }: Props) {
   const [open, setOpen] = useState(true); const [query, setQuery] = useState('');
   const [entries, setEntries] = useState<HistoryEntry[]>([]); const [confirmId, setConfirmId] = useState<number | null>(null);

@@ -1,3 +1,5 @@
+//! 诊断工具——提供诊断日志文件路径查询.
+
 use crate::domain::TaskStage;
 use serde::Serialize;
 use std::fs::{self, OpenOptions};
@@ -5,10 +7,12 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
+/// DEFAULT MAX LOG BYTES
 pub const DEFAULT_MAX_LOG_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// DiagnosticLevel
 pub enum DiagnosticLevel {
     Info,
     Warning,
@@ -17,6 +21,7 @@ pub enum DiagnosticLevel {
 
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// DiagnosticEventKind
 pub enum DiagnosticEventKind {
     AppStarted,
     TaskStarted,
@@ -30,6 +35,7 @@ pub enum DiagnosticEventKind {
 }
 
 #[derive(Debug, Clone, Serialize)]
+/// DiagnosticRecord
 pub struct DiagnosticRecord {
     pub level: DiagnosticLevel,
     pub event: DiagnosticEventKind,
@@ -50,6 +56,7 @@ pub struct DiagnosticRecord {
 }
 
 impl DiagnosticRecord {
+    /// task
     pub fn task(event: DiagnosticEventKind, task_id: impl Into<String>) -> Self {
         Self {
             level: DiagnosticLevel::Info,
@@ -66,6 +73,7 @@ impl DiagnosticRecord {
 }
 
 #[derive(Debug, Clone)]
+/// DiagnosticLogger
 pub struct DiagnosticLogger {
     path: PathBuf,
     rotated_path: PathBuf,
@@ -80,10 +88,12 @@ struct TimestampedRecord<'a> {
 }
 
 impl DiagnosticLogger {
+    /// new
     pub fn new(app_data_dir: &Path) -> io::Result<Self> {
         Self::with_max_bytes(app_data_dir, DEFAULT_MAX_LOG_BYTES)
     }
 
+    /// with max bytes
     pub fn with_max_bytes(app_data_dir: &Path, max_bytes: u64) -> io::Result<Self> {
         if max_bytes == 0 {
             return Err(io::Error::new(
@@ -100,14 +110,17 @@ impl DiagnosticLogger {
         })
     }
 
+    /// path
     pub fn path(&self) -> &Path {
         &self.path
     }
 
+    /// rotated path
     pub fn rotated_path(&self) -> &Path {
         &self.rotated_path
     }
 
+    /// record
     pub fn record(&self, record: DiagnosticRecord) -> io::Result<()> {
         validate_record(&record)?;
         let line = serde_json::to_vec(&TimestampedRecord {
@@ -155,6 +168,7 @@ fn validate_record(record: &DiagnosticRecord) -> io::Result<()> {
 
 static GLOBAL_LOGGER: OnceLock<DiagnosticLogger> = OnceLock::new();
 
+/// initialize
 pub fn initialize(app_data_dir: &Path) -> io::Result<PathBuf> {
     if let Some(logger) = GLOBAL_LOGGER.get() {
         return Ok(logger.path().to_path_buf());
@@ -165,12 +179,14 @@ pub fn initialize(app_data_dir: &Path) -> io::Result<PathBuf> {
     Ok(path)
 }
 
+/// record
 pub fn record(record: DiagnosticRecord) {
     if let Some(logger) = GLOBAL_LOGGER.get() {
         let _ = logger.record(record);
     }
 }
 
+/// log path
 pub fn log_path() -> Option<PathBuf> {
     GLOBAL_LOGGER.get().map(|logger| logger.path().to_path_buf())
 }

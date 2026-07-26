@@ -1,3 +1,5 @@
+//! 本地 Whisper 模型管理——管理本地下载的 GGML 格式语音识别模型文件.
+
 use crate::domain::AppError;
 use serde::Serialize;
 use sha1::{Digest, Sha1};
@@ -5,10 +7,12 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
+/// LOCAL WHISPER PROFILE ID
 pub const LOCAL_WHISPER_PROFILE_ID: &str = "local-whisper-cpp";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// LocalModelState
 pub enum LocalModelState {
     NotDownloaded,
     Downloading,
@@ -18,6 +22,7 @@ pub enum LocalModelState {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// LocalModelDescriptor
 pub struct LocalModelDescriptor {
     pub id: &'static str,
     pub file_name: &'static str,
@@ -29,6 +34,7 @@ pub struct LocalModelDescriptor {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// LocalModelStatus
 pub struct LocalModelStatus {
     pub id: String,
     pub state: LocalModelState,
@@ -39,6 +45,7 @@ pub struct LocalModelStatus {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// LocalModelDownloadProgress
 pub struct LocalModelDownloadProgress {
     pub model_id: String,
     pub downloaded_bytes: u64,
@@ -48,9 +55,11 @@ pub struct LocalModelDownloadProgress {
 /// A redacted download failure. The concrete HTTP implementation deliberately
 /// does not retain request URLs, headers, or filesystem paths in this error.
 #[derive(Debug, Clone)]
+/// LocalModelError
 pub struct LocalModelError;
 
 impl LocalModelError {
+    /// transport
     pub fn transport() -> Self {
         Self
     }
@@ -68,6 +77,7 @@ pub trait ModelHttpClient: Send + Sync {
     ) -> Result<(), LocalModelError>;
 }
 
+/// ReqwestModelHttpClient
 pub struct ReqwestModelHttpClient;
 
 impl ModelHttpClient for ReqwestModelHttpClient {
@@ -160,16 +170,19 @@ const MODEL_DESCRIPTORS: [LocalModelDescriptor; 5] = [
     },
 ];
 
+/// descriptor
 pub fn descriptor(id: &str) -> Option<&'static LocalModelDescriptor> {
     MODEL_DESCRIPTORS
         .iter()
         .find(|descriptor| descriptor.id == id)
 }
 
+/// local model root
 pub fn local_model_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("models").join("whisper.cpp")
 }
 
+/// inspect models
 pub fn inspect_models(root: &Path, current_id: Option<&str>) -> Vec<LocalModelStatus> {
     MODEL_DESCRIPTORS
         .iter()
@@ -206,6 +219,7 @@ pub fn inspect_models(root: &Path, current_id: Option<&str>) -> Vec<LocalModelSt
         .collect()
 }
 
+/// ready model path
 pub fn ready_model_path(root: &Path, model_id: &str) -> Result<PathBuf, AppError> {
     let descriptor = descriptor(model_id).ok_or_else(|| {
         AppError::new(

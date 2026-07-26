@@ -1,3 +1,4 @@
+/** settings-platform-boundary.test 测试 */
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'

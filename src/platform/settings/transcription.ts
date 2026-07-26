@@ -1,3 +1,9 @@
+/**
+ * 转写设置适配层——封装 SenseVoice/Whisper/CUDA 操作.
+ * 含模型下载/删除/激活、运行时管理、语言选择.
+ * 被 TranscriptionTab 引用.
+ */
+
 import {
   deleteLocalModel,
   downloadLocalModel,

@@ -1,3 +1,5 @@
+//! SenseVoice 适配器——封装 sherpa-onnx CLI 的调用，解析 JSON 格式的输出.
+
 use crate::domain::AppError;
 use crate::process_utils::hidden_command;
 use serde::{Deserialize, Serialize};
@@ -13,27 +15,33 @@ use std::time::{Duration, Instant};
 const MAX_PROCESS_OUTPUT_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Clone, Default)]
+/// CancellationToken
 pub struct CancellationToken(Arc<AtomicBool>);
 
 impl CancellationToken {
+    /// new
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// cancel
     pub fn cancel(&self) {
         self.0.store(true, Ordering::SeqCst);
     }
 
+    /// is cancelled
     pub fn is_cancelled(&self) -> bool {
         self.0.load(Ordering::SeqCst)
     }
 
+    /// flag
     pub fn flag(&self) -> &AtomicBool {
         &self.0
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// SenseVoiceProcessInvocation
 pub struct SenseVoiceProcessInvocation {
     pub program: PathBuf,
     pub args: Vec<OsString>,
@@ -41,6 +49,7 @@ pub struct SenseVoiceProcessInvocation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// SenseVoiceProcessOutput
 pub struct SenseVoiceProcessOutput {
     pub status_code: i32,
     pub stdout: Vec<u8>,
@@ -49,14 +58,17 @@ pub struct SenseVoiceProcessOutput {
 
 /// Detail-free: OS errors and child output can contain user paths or secrets.
 #[derive(Debug, Clone, Copy)]
+/// SenseVoiceProcessError
 pub struct SenseVoiceProcessError;
 
+/// SenseVoiceChild
 pub trait SenseVoiceChild: Send {
     fn try_wait(&mut self) -> Result<Option<i32>, SenseVoiceProcessError>;
     fn kill(&mut self) -> Result<(), SenseVoiceProcessError>;
     fn wait(&mut self) -> Result<SenseVoiceProcessOutput, SenseVoiceProcessError>;
 }
 
+/// SenseVoiceProcessSpawner
 pub trait SenseVoiceProcessSpawner: Send + Sync {
     fn spawn(
         &self,
@@ -64,6 +76,7 @@ pub trait SenseVoiceProcessSpawner: Send + Sync {
     ) -> Result<Box<dyn SenseVoiceChild>, SenseVoiceProcessError>;
 }
 
+/// SenseVoiceProcessRunner
 pub trait SenseVoiceProcessRunner: Send + Sync {
     fn run(
         &self,
@@ -107,6 +120,7 @@ impl SenseVoiceChild for StdSenseVoiceChild {
     }
 }
 
+/// StdSenseVoiceProcessSpawner
 pub struct StdSenseVoiceProcessSpawner;
 
 impl SenseVoiceProcessSpawner for StdSenseVoiceProcessSpawner {
@@ -157,11 +171,13 @@ fn spawn_bounded_reader<R: Read + Send + 'static>(
     })
 }
 
+/// CommandSenseVoiceProcessRunner
 pub struct CommandSenseVoiceProcessRunner {
     spawner: Arc<dyn SenseVoiceProcessSpawner>,
 }
 
 impl CommandSenseVoiceProcessRunner {
+    /// with spawner
     pub fn with_spawner(spawner: Arc<dyn SenseVoiceProcessSpawner>) -> Self {
         Self { spawner }
     }
@@ -226,6 +242,7 @@ impl SenseVoiceProcessRunner for CommandSenseVoiceProcessRunner {
 }
 
 #[derive(Debug, Clone)]
+/// SenseVoiceOptions
 pub struct SenseVoiceOptions {
     pub language: String,
     pub use_itn: bool,
@@ -246,6 +263,7 @@ impl Default for SenseVoiceOptions {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// SenseVoiceTranscript
 pub struct SenseVoiceTranscript {
     pub text: String,
     #[serde(default)]
@@ -262,6 +280,7 @@ pub struct SenseVoiceTranscript {
     pub event: Option<String>,
 }
 
+/// SenseVoiceAdapter
 pub struct SenseVoiceAdapter {
     runner: Arc<dyn SenseVoiceProcessRunner>,
     runtime_path: PathBuf,
@@ -270,6 +289,7 @@ pub struct SenseVoiceAdapter {
 }
 
 impl SenseVoiceAdapter {
+    /// new
     pub fn new(
         runner: Arc<dyn SenseVoiceProcessRunner>,
         runtime_path: PathBuf,
@@ -284,6 +304,7 @@ impl SenseVoiceAdapter {
         }
     }
 
+    /// transcribe
     pub fn transcribe(
         &self,
         audio_path: &Path,
@@ -293,6 +314,7 @@ impl SenseVoiceAdapter {
         self.transcribe_with_flag(audio_path, options, cancel.flag())
     }
 
+    /// transcribe with flag
     pub fn transcribe_with_flag(
         &self,
         audio_path: &Path,

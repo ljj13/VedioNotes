@@ -1,3 +1,4 @@
+/** App.test 测试 */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -199,25 +200,30 @@ async function startTask() {
   });
 }
 
+// describe('App UI', () => {
 describe('App UI', () => {
+  // it('removes the redundant workbench top bar', () => {
   it('removes the redundant workbench top bar', () => {
     render(<App />);
     expect(document.querySelector('.workbench-topbar')).toBeNull();
     expect(screen.queryByRole('heading', { name: '新建提炼' })).toBeNull();
   });
 
+  // it('shows the input panel', () => {
   it('shows the input panel', () => {
     render(<App />);
     expect(screen.getByLabelText('视频链接')).toBeDefined();
     expect(screen.getByText('开始提炼')).toBeDefined();
   });
 
+  // it('disables start button when no input', () => {
   it('disables start button when no input', () => {
     render(<App />);
     const btn = screen.getByText('开始提炼') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
   });
 
+  // it('opens the integrated settings workspace', async () => {
   it('opens the integrated settings workspace', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -228,10 +234,11 @@ describe('App UI', () => {
     }, { timeout: 5_000 });
     expect(screen.queryByRole('dialog', { name: '设置' })).not.toBeInTheDocument();
     for (const label of ['外观', '语音转文字', 'AI 接入', '数据管理', '关于']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
     }
   });
 
+  // it('persists the selected semantic theme without storing cre
   it('persists the selected semantic theme without storing credentials', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -242,15 +249,15 @@ describe('App UI', () => {
       expect(document.querySelector('.cipher-settings-root')).not.toBeNull();
     });
     await user.click(screen.getByText('外观'));
-    // Wait for the appearance select to appear
-    const themeSelect = await screen.findByRole('combobox', { name: '颜色主题' });
-    await user.selectOptions(themeSelect, 'light');
+    const lightThemeTab = await screen.findByRole('tab', { name: /浅色/ });
+    await user.click(lightThemeTab);
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe('light'));
     expect(screen.queryByRole('button', { name: '保存外观设置' })).not.toBeInTheDocument();
     expect(window.localStorage.getItem('video-distiller-theme')).toBe('light');
     expect(window.localStorage.getItem('api-key')).toBeNull();
   });
 
+  // it('returns to the remembered create view after closing Sett
   it('returns to the remembered create view after closing Settings', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -258,9 +265,10 @@ describe('App UI', () => {
     await waitFor(() => {
       expect(document.querySelector('.cipher-settings-root')).not.toBeNull();
     });
-    await user.click(screen.getByLabelText('返回工作台'));
+    await user.click(screen.getByRole('button', { name: '新建提炼' }));
     expect(screen.getByRole('button', { name: '新建提炼' })).toHaveAttribute('aria-current', 'page');
   });
+  // it('updates and restores the Markdown output directory from
   it('updates and restores the Markdown output directory from Settings', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     const dialogMod = await import('@tauri-apps/plugin-dialog');
@@ -275,12 +283,12 @@ describe('App UI', () => {
     // Navigate to data management tab in cipher settings
     const dataTab = await screen.findByRole('tab', { name: /数据管理/ });
     await user.click(dataTab);
-    // Wait for DataManagementTab lazy component to render — look for section headings
-    const cacheHeading = await screen.findByText('缓存管理', undefined, { timeout: 10000 });
-    expect(cacheHeading).toBeTruthy();
+    // DataManagementTab is statically loaded; verify its internal navigation.
+    const cacheTab = await screen.findByRole('tab', { name: /缓存管理/ });
+    expect(cacheTab).toBeTruthy();
 
     // Wait for "Markdown 输出目录" section to appear
-    const markdownDirSection = await screen.findByText('Markdown 输出目录', undefined, { timeout: 10000 });
+    const markdownDirSection = await screen.findByText('Markdown 输出目录');
     expect(markdownDirSection).toBeTruthy();
 
     // Click "选择目录" button
@@ -309,6 +317,7 @@ describe('App UI', () => {
     }, { timeout: 5000 });
   });
 
+  // it('allows typing a URL', async () => {
   it('allows typing a URL', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -317,6 +326,7 @@ describe('App UI', () => {
     expect((input as HTMLInputElement).value).toBe('https://v.douyin.com/abc/');
   });
 
+  // it('sends listener-generated taskId and profile IDs to backe
   it('sends listener-generated taskId and profile IDs to backend', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     render(<App />);
@@ -335,6 +345,7 @@ describe('App UI', () => {
     expect(capturedTaskId).toBe('uuid-from-mock-789');
   });
 
+  // it('preserves the complete Windows path for a selected local
   it('preserves the complete Windows path for a selected local file', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     const user = userEvent.setup();
@@ -357,6 +368,7 @@ describe('App UI', () => {
     });
   });
 
+  // it('selects a complete path from the native Tauri drop event
   it('selects a complete path from the native Tauri drop event', async () => {
     render(<App />);
 
@@ -369,6 +381,7 @@ describe('App UI', () => {
     expect(screen.getByText('音频')).toBeInTheDocument();
   });
 
+  // it('registers exactly four listeners before invoking backend
   it('registers exactly four listeners before invoking backend', async () => {
     render(<App />);
     await startTask();
@@ -381,6 +394,7 @@ describe('App UI', () => {
     expect(events.filter((e) => e.includes('provider-fallback:uuid-from-mock-789'))).toHaveLength(1);
   });
 
+  // it('does not invoke start_distillation until after all four
   it('does not invoke start_distillation until after all four listeners are registered', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     const { listen } = await import('@tauri-apps/api/event');
@@ -452,6 +466,7 @@ describe('App UI', () => {
     });
   });
 
+  // it('receives progress before completion', async () => {
   it('receives progress before completion', async () => {
     render(<App />);
     await startTask();
@@ -470,6 +485,7 @@ describe('App UI', () => {
     expect(screen.queryByText('核心结论')).toBeNull();
   });
 
+  // it('displays three result sections after completion event',
   it('displays three result sections after completion event', async () => {
     render(<App />);
     await startTask();
@@ -489,6 +505,7 @@ describe('App UI', () => {
     expect(screen.getByText('提炼新视频')).toBeDefined();
   });
 
+  // it('save as updates the displayed path only after a successf
   it('save as updates the displayed path only after a successful copy', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     nativeMediaMocks.save.mockResolvedValue('F:\\Notes\\copy.md');
@@ -507,6 +524,7 @@ describe('App UI', () => {
     });
   });
 
+  // it('cancelled save as never invokes the copy command', async
   it('cancelled save as never invokes the copy command', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     nativeMediaMocks.save.mockResolvedValue(null);
@@ -520,6 +538,7 @@ describe('App UI', () => {
     expect(screen.getByText(MOCK_RESULT.saved_path)).toBeInTheDocument();
   });
 
+  // it('failed save as keeps the original path and exposes an al
   it('failed save as keeps the original path and exposes an alert', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     nativeMediaMocks.save.mockResolvedValue('F:\\Notes\\copy.md');
@@ -539,6 +558,7 @@ describe('App UI', () => {
     expect(screen.getByText(MOCK_RESULT.saved_path)).toBeInTheDocument();
   });
 
+  // it('cancel button uses the live taskId', async () => {
   it('cancel button uses the live taskId', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     render(<App />);
@@ -562,6 +582,7 @@ describe('App UI', () => {
     });
   });
 
+  // it('keeps elapsed task time when navigating away and back',
   it('keeps elapsed task time when navigating away and back', async () => {
     render(<App />);
     await startTask();
@@ -579,6 +600,7 @@ describe('App UI', () => {
     expect(screen.getByText(/已用时 0:0[1-9]/)).toBeInTheDocument();
   });
 
+  // it('shows error panel on task-error event', async () => {
   it('shows error panel on task-error event', async () => {
     render(<App />);
     await startTask();
@@ -596,6 +618,7 @@ describe('App UI', () => {
     expect(screen.getByText('请重试。')).toBeDefined();
   });
 
+  // it('shows error when profiles are unavailable at start', asy
   it('shows error when profiles are unavailable at start', async () => {
     const { invoke } = await import('@tauri-apps/api/core');
 
@@ -625,6 +648,7 @@ describe('App UI', () => {
     vi.mocked(invoke).mockImplementation(originalImpl!);
   });
 
+  // it('shows fallback notice on provider-fallback event', async
   it('shows fallback notice on provider-fallback event', async () => {
     render(<App />);
     await startTask();
@@ -645,6 +669,7 @@ describe('App UI', () => {
     });
   });
 
+  // it('shows a history Markdown read error and retries through
   it('shows a history Markdown read error and retries through the safe ID command', async () => {
     historyMocks.entries = [MOCK_HISTORY];
     historyMocks.getMarkdown
@@ -667,6 +692,7 @@ describe('App UI', () => {
     expect(historyMocks.getMarkdown).toHaveBeenNthCalledWith(2, 7);
   });
 
+  // it('places the selected note Q&A inside the history workspac
   it('places the selected note Q&A inside the history workspace', async () => {
     historyMocks.entries = [MOCK_HISTORY];
     render(<App />);
@@ -680,6 +706,7 @@ describe('App UI', () => {
     expect(workspace.contains(await screen.findByRole('complementary', { name: '笔记问答' }))).toBe(true);
   });
 
+  // it('does not let an older Markdown response replace the newe
   it('does not let an older Markdown response replace the newest history selection', async () => {
     const second = { ...MOCK_HISTORY, id: 8, title: '第二篇历史笔记' };
     historyMocks.entries = [MOCK_HISTORY, second];

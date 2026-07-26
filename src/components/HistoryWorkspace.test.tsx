@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 HistoryWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -18,7 +22,9 @@ const entry: HistoryEntry = {
   screenshotPaths: [],
 };
 
+// describe('HistoryWorkspace', () => {
 describe('HistoryWorkspace', () => {
+  // it('keeps the library and empty detail region in one workspa
   it('keeps the library and empty detail region in one workspace', () => {
     render(<HistoryWorkspace library={<div>可搜索笔记库</div>} selectedEntry={null} markdownState={{ status: 'idle' }} onRetry={() => {}} />);
     expect(screen.getByRole('heading', { name: '历史笔记' })).toBeTruthy();
@@ -26,6 +32,7 @@ describe('HistoryWorkspace', () => {
     expect(screen.getByText('选择一篇笔记查看详情')).toBeTruthy();
   });
 
+  // it('renders the selected source and saved Markdown detail',
   it('renders the selected source and saved Markdown detail', () => {
     render(<HistoryWorkspace library={<div />} selectedEntry={entry} markdownState={{ status: 'ready', content: '# 已保存内容' }} onRetry={() => {}} />);
     expect(screen.getByRole('heading', { name: '线性代数课程' })).toBeTruthy();
@@ -35,6 +42,7 @@ describe('HistoryWorkspace', () => {
     expect(screen.getByRole('heading', { level: 1, name: '已保存内容' })).toBeTruthy();
   });
 
+  // it('distinguishes loading from an empty but successfully rea
   it('distinguishes loading from an empty but successfully read Markdown file', () => {
     const { rerender } = render(<HistoryWorkspace library={<div />} selectedEntry={entry} markdownState={{ status: 'loading' }} onRetry={() => {}} />);
     expect(screen.getByRole('status').textContent).toContain('正在读取 Markdown');
@@ -44,6 +52,7 @@ describe('HistoryWorkspace', () => {
     expect(screen.getByText('这篇笔记暂时没有 Markdown 内容。')).toBeTruthy();
   });
 
+  // it('shows a recoverable read error and retries on request',
   it('shows a recoverable read error and retries on request', async () => {
     const onRetry = vi.fn();
     render(<HistoryWorkspace library={<div />} selectedEntry={entry} markdownState={{ status: 'error', message: '历史笔记文件不可读取。', recovery: '请检查应用数据目录权限后重试。' }} onRetry={onRetry} />);
@@ -54,6 +63,7 @@ describe('HistoryWorkspace', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  // it('keeps note Q&A inside the responsive history layout inst
   it('keeps note Q&A inside the responsive history layout instead of overlaying the note', () => {
     render(
       <HistoryWorkspace

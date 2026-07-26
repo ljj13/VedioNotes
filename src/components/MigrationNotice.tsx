@@ -1,3 +1,7 @@
+/**
+ *应用组件——MigrationNotice 页面/功能对应的 React UI 组件。
+ */
+
 import { useState } from 'react';
 import type { AppError } from '../lib/types';
 import { completeMigration } from '../lib/bridge';
@@ -7,6 +11,7 @@ interface MigrationNoticeProps {
   onMigrationComplete: () => void;
 }
 
+/** MigrationNotice */
 export default function MigrationNotice({
   onOpenSettings,
   onMigrationComplete,

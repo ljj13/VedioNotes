@@ -1,3 +1,7 @@
+/**
+ *笔记库页面组件——管理笔记收藏、标签、搜索。
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CapabilityStatus, LibraryEntry, LibraryQuery, LibrarySnapshot, SearchHit } from '../lib/types';
 import {
@@ -23,6 +27,7 @@ type MarkdownState =
 
 const EMPTY_SNAPSHOT: LibrarySnapshot = { entries: [], tags: [], total: 0 };
 
+/** LibraryWorkspace */
 export default function LibraryWorkspace({ initialSelectedId = null }: { initialSelectedId?: number | null }) {
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>(EMPTY_SNAPSHOT);
   const [query, setQuery] = useState('');
@@ -168,7 +173,8 @@ export default function LibraryWorkspace({ initialSelectedId = null }: { initial
         <span className="workspace-count">{snapshot.total} 篇笔记</span>
       </header>
       <div className={`library-layout ${chatOpen ? 'with-chat' : ''}`}>
-        <aside className="library-browser" aria-label="笔记筛选">
+        <nav className="library-sources" aria-label="笔记分类">
+          <div className="library-column-heading"><span className="workspace-eyebrow">FILTERS</span><strong>笔记分类</strong></div>
           <label className="library-search"><span className="sr-only">搜索笔记</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索笔记" aria-label="搜索笔记" /></label>
           <div className="library-search-tools"><button type="button" className="secondary-action" disabled={!query.trim() || !vectorReady || semanticBusy} title={vectorReady ? '使用已配置的向量/重排能力检索' : '请先在 AI 接入中配置向量能力'} onClick={() => void runSemanticSearch()}>{semanticBusy ? '检索中…' : '语义检索'}</button><span>{vectorReady ? '向量检索已就绪' : '当前使用关键词检索'}</span></div>
           {semanticResults.length > 0 && <section className="library-semantic-results" aria-label="语义检索结果"><strong>语义命中</strong>{semanticResults.map((hit) => <article key={hit.id}><span>{Math.round(hit.score * 100)}%</span><p>{hit.text}</p></article>)}</section>}
@@ -180,6 +186,9 @@ export default function LibraryWorkspace({ initialSelectedId = null }: { initial
             <button type="button" className={tag === null ? 'active' : ''} onClick={() => setTag(null)}>全部标签</button>
             {snapshot.tags.map((item) => <button type="button" key={item.id} className={tag === item.name ? 'active' : ''} onClick={() => setTag(item.name)}>{item.name}<span>{item.noteCount}</span></button>)}
           </div>}
+        </nav>
+        <aside className="library-browser" aria-label="笔记列表">
+          <div className="library-column-heading"><span className="workspace-eyebrow">NOTES</span><strong>笔记列表</strong><small>{snapshot.entries.length} 项</small></div>
           <div className="library-entry-list" aria-live="polite">
             {loading && <p className="library-state">正在读取笔记…</p>}
             {!loading && error && <p className="library-state is-error" role="alert">{error}</p>}
@@ -217,6 +226,21 @@ export default function LibraryWorkspace({ initialSelectedId = null }: { initial
             {agentAnswer && <section className="library-agent-answer" aria-label="本地智能体结果"><strong>本地智能体结果</strong><p>{agentAnswer}</p></section>}
           </>}
         </main>
+        <aside className="library-inspector" aria-label="笔记信息">
+          <div className="library-column-heading"><span className="workspace-eyebrow">INFO</span><strong>笔记信息</strong></div>
+          {!selected ? <div className="library-inspector-empty">选择笔记后查看来源、风格与标签。</div> : <>
+            <div className="library-inspector-title"><span aria-hidden="true">N</span><div><strong>{selected.title}</strong><small>{noteStyleLabel(selected.noteStyle)}</small></div></div>
+            <dl className="library-meta-list">
+              <div><dt>创建时间</dt><dd>{selected.createdAt}</dd></div>
+              <div><dt>来源</dt><dd>{selected.source}</dd></div>
+              <div><dt>模板</dt><dd>{selected.noteTemplate}</dd></div>
+            </dl>
+            <section className="library-inspector-tags" aria-label="当前笔记标签">
+              <strong>标签</strong>
+              <div>{selected.tags.length > 0 ? selected.tags.map((item) => <span key={item}>{item}</span>) : <small>暂无标签</small>}</div>
+            </section>
+          </>}
+        </aside>
         {selected && chatOpen && <NoteChatDrawer entry={selected} onClose={() => setChatOpen(false)} />}
       </div>
     </section>

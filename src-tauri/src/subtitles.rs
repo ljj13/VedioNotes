@@ -1,3 +1,5 @@
+//! 字幕处理流水线——从视频平台获取字幕并进行预处理.
+
 use crate::domain::{AppError, InputSource};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -5,6 +7,7 @@ use std::process::Stdio;
 use crate::process_utils::hidden_command;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// SourcePlatform
 pub enum SourcePlatform {
     Local,
     Douyin,
@@ -12,6 +15,7 @@ pub enum SourcePlatform {
     Youtube,
 }
 
+/// source platform
 pub fn source_platform(source: &InputSource) -> SourcePlatform {
     match source {
         InputSource::File { .. } => SourcePlatform::Local,
@@ -22,20 +26,24 @@ pub fn source_platform(source: &InputSource) -> SourcePlatform {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// TimedCaption
 pub struct TimedCaption {
     pub start_seconds: f64,
     pub text: String,
 }
 
 #[derive(Debug, Clone)]
+/// CaptionProcessOutput
 pub struct CaptionProcessOutput {
     pub success: bool,
 }
 
+/// CaptionProcess
 pub trait CaptionProcess {
     fn execute(&self, executable: &Path, args: &[String], work_dir: &Path) -> CaptionProcessOutput;
 }
 
+/// ProcessCaptionProcess
 pub struct ProcessCaptionProcess;
 
 impl CaptionProcess for ProcessCaptionProcess {
@@ -57,11 +65,13 @@ impl CaptionProcess for ProcessCaptionProcess {
     }
 }
 
+/// TranscriptAcquisition
 pub struct TranscriptAcquisition {
     pub transcript: String,
     pub captions: Option<Vec<TimedCaption>>,
 }
 
+/// fetch timed captions
 pub fn fetch_timed_captions(
     url: &str,
     work_dir: &Path,
@@ -86,6 +96,7 @@ pub fn optional_timed_captions(url: &str, work_dir: &Path) -> Option<Vec<TimedCa
     )
 }
 
+/// optional timed captions with
 pub fn optional_timed_captions_with(
     process: &dyn CaptionProcess,
     executable: &Path,
@@ -97,6 +108,7 @@ pub fn optional_timed_captions_with(
         .flatten()
 }
 
+/// fetch timed captions with
 pub fn fetch_timed_captions_with(
     process: &dyn CaptionProcess,
     executable: &Path,
@@ -156,6 +168,7 @@ pub fn fetch_timed_captions_with(
     Ok(None)
 }
 
+/// acquire transcript with
 pub fn acquire_transcript_with(
     source: &InputSource,
     process: &dyn CaptionProcess,
@@ -190,6 +203,7 @@ pub fn acquire_transcript_with(
     })
 }
 
+/// parse webvtt
 pub fn parse_webvtt(body: &str) -> Vec<TimedCaption> {
     let mut captions = Vec::new();
     let mut current_start = None;

@@ -1,3 +1,4 @@
+/** result-evidence.test 测试 */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ResultPanel from '../src/components/ResultPanel';
@@ -13,7 +14,9 @@ function renderEvidence(source_url?: string) {
   }} />);
 }
 
+// describe('ResultPanel evidence', () => {
 describe('ResultPanel evidence', () => {
+  // it('uses Bilibili ?t=seconds timestamp links and converts fi
   it('uses Bilibili ?t=seconds timestamp links and converts filesystem thumbnails', () => {
     renderEvidence('https://www.bilibili.com/video/BV1?p=2');
     expect(screen.getByRole('link', { name: '01:05' })).toHaveAttribute('href', 'https://www.bilibili.com/video/BV1?p=2&t=65');
@@ -21,6 +24,7 @@ describe('ResultPanel evidence', () => {
     expect(screen.getByRole('img', { name: 'Evidence 截图' })).toHaveAttribute('src', 'asset://converted/C:\\frames\\65.jpg');
   });
 
+  // it('uses YouTube &t=seconds+s timestamp links', () => {
   it('uses YouTube &t=seconds+s timestamp links', () => {
     renderEvidence('https://www.youtube.com/watch?v=abc');
     expect(screen.getByRole('link', { name: '01:05' })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc&t=65s');

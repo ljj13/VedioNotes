@@ -1,3 +1,8 @@
+/**
+ * 本地媒体工具——判断用户提供的文件路径是视频还是音频（通过 MIME 类型和扩展名）.
+ * 被 InputPanel 导入，用于区分本地拖入的文件类型.
+ */
+
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { open } from '@tauri-apps/plugin-dialog';
 

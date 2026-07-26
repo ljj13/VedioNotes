@@ -1,8 +1,14 @@
+/**
+ *测试文件——测试 ProgressWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ProgressWorkspace from './ProgressWorkspace';
 
+// describe('ProgressWorkspace', () => {
 describe('ProgressWorkspace', () => {
+  // it('composes the persisted task timer, semantic percentage a
   it('composes the persisted task timer, semantic percentage and real task actions', () => {
     render(
       <ProgressWorkspace

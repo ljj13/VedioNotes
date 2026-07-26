@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 App.local-whisper 组件/模块的行为是否符合预期。
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -15,6 +19,7 @@ vi.mock('@tauri-apps/api/core', () => ({ convertFileSrc: (path: string) => path 
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 vi.mock('@tauri-apps/api/webview', () => ({ getCurrentWebview: () => ({ onDragDropEvent: vi.fn().mockResolvedValue(() => {}) }) }));
 
+// describe('stale active local profile', () => {
 describe('stale active local profile', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,6 +41,7 @@ describe('stale active local profile', () => {
     bridge.listLocalModels.mockResolvedValue([{ id: 'tiny', state: 'not_downloaded', downloadedBytes: 0, totalBytes: 1, isCurrent: true }]);
   });
 
+  // it('preserves a stale local active id, shows recovery, disab
   it('preserves a stale local active id, shows recovery, disables Start, and does not select online', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -48,6 +54,7 @@ describe('stale active local profile', () => {
     expect(bridge.getProfiles).toHaveBeenCalled();
   });
 
+  // it('enables Start for the active local profile when its sele
   it('enables Start for the active local profile when its selected model is ready without selecting online', async () => {
     bridge.listLocalModels.mockResolvedValue([{ id: 'tiny', state: 'ready', downloadedBytes: 1, totalBytes: 1, isCurrent: true }]);
     render(<App />);

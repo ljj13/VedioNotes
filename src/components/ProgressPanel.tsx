@@ -1,3 +1,7 @@
+/**
+ *进度面板——显示任务的处理进度和百分比。
+ */
+
 import { useEffect, useState } from 'react';
 import { type TaskProgress, type TaskStage } from '../lib/types';
 
@@ -19,6 +23,7 @@ const STAGE_LABELS: Record<TaskStage, string> = {
   complete: '完成',
 };
 
+/** ProgressPanel */
 export default function ProgressPanel({ progress, startedAtMs, onCancel, disabled }: Props) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -104,10 +109,12 @@ export default function ProgressPanel({ progress, startedAtMs, onCancel, disable
   );
 }
 
+/** CheckIcon */
 function CheckIcon() {
   return <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
+/** normalizePercent */
 function normalizePercent(value: number) {
   return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
 }

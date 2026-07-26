@@ -1,3 +1,7 @@
+/**
+ *应用组件——ProfileManager 页面/功能对应的 React UI 组件。
+ */
+
 import { useState, useCallback, useEffect } from 'react';
 import type {
   AppProfiles,
@@ -24,6 +28,7 @@ interface ProfileManagerProps {
 
 type ManagerTab = 'transcription' | 'summary';
 
+/** ProfileManager */
 export default function ProfileManager({
   profiles,
   onProfilesChanged,

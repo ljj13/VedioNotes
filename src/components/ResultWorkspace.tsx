@@ -1,3 +1,8 @@
+/**
+ *"提炼结果"页面组件——任务完成后展示 AI 生成的笔记。
+ * * 显示核心结论、关键依据、启示/行动，并支持导出和朗读。
+ */
+
 import { useEffect, useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import type { CapabilityStatus, Distillation } from '../lib/types';
@@ -15,6 +20,7 @@ type Props = {
   onCopy?: (content: string) => Promise<void> | void;
 };
 
+/** ResultWorkspace */
 export default function ResultWorkspace({
   distillation,
   savedPath,
@@ -146,6 +152,7 @@ export default function ResultWorkspace({
   );
 }
 
+/** serializeDistillation */
 export function serializeDistillation(distillation: Distillation) {
   const evidence = distillation.key_evidence.map((item) => `- ${item.text}`).join('\n');
   const actions = distillation.implications.map((item) => `- ${item}`).join('\n');
@@ -160,6 +167,7 @@ export function serializeDistillation(distillation: Distillation) {
   ].join('\n\n');
 }
 
+/** CloseIcon */
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
 }

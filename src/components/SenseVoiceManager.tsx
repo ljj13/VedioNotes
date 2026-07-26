@@ -1,3 +1,7 @@
+/**
+ *SenseVoice 模型管理器——管理 CPU 语音识别模型的下载和激活。
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   SenseVoiceDownloadProgress,
@@ -33,11 +37,13 @@ const MODEL_COPY: Record<SenseVoiceModelId, { title: string; detail: string }> =
   float32: { title: 'float32 完整版', detail: '约 920 MB · 更高精度、占用更大' },
 };
 
+/** errorMessage */
 function errorMessage(cause: unknown, fallback: string) {
   if (typeof cause === 'object' && cause && 'message' in cause && typeof cause.message === 'string') return cause.message;
   return fallback;
 }
 
+/** SenseVoiceManager */
 export default function SenseVoiceManager({ languages, onLanguagesChange, onStatusChange }: Props) {
   const [status, setStatus] = useState<SenseVoiceStatus | null>(null);
   const [progress, setProgress] = useState<SenseVoiceDownloadProgress | null>(null);

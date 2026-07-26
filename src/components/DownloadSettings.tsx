@@ -1,9 +1,14 @@
+/**
+ *下载设置组件——管理各视频平台的下载 Cookie。
+ */
+
 import { useEffect, useState } from 'react';
 import { deleteDownloadCookie, getDownloadCookieStatus, saveDownloadCookie } from '../lib/bridge';
 import type { DownloadCookieStatus, DownloadPlatform } from '../lib/types';
 
 const platforms: Array<[DownloadPlatform, string]> = [['bilibili', 'B站'], ['douyin', '抖音'], ['youtube', 'YouTube']];
 
+/** DownloadSettings */
 export default function DownloadSettings() {
   const [status, setStatus] = useState<DownloadCookieStatus | null>(null);
   const [values, setValues] = useState<Record<DownloadPlatform, string>>({ bilibili: '', douyin: '', youtube: '' });

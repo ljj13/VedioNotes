@@ -1,3 +1,5 @@
+//! AI 服务商目录——硬编码 116 个服务商和 3926 个模型的元数据，以及四个可执行协议适配器的路由.
+
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
@@ -10,6 +12,7 @@ const CATALOG_JSON: &str = include_str!("../assets/models-dev-standard.json");
 static CATALOG: OnceLock<Result<SummaryProviderCatalog, String>> = OnceLock::new();
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// SummaryProtocolKind
 pub enum SummaryProtocolKind {
     #[serde(rename = "openai-compatible")]
     OpenAiCompatible,
@@ -23,6 +26,7 @@ pub enum SummaryProtocolKind {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// SummaryModelCatalogEntry
 pub struct SummaryModelCatalogEntry {
     pub id: String,
     pub name: String,
@@ -52,6 +56,7 @@ pub struct SummaryModelCatalogEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// SummaryProviderCatalogEntry
 pub struct SummaryProviderCatalogEntry {
     pub id: String,
     pub display_name: String,
@@ -65,6 +70,7 @@ pub struct SummaryProviderCatalogEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// SummaryProviderCatalog
 pub struct SummaryProviderCatalog {
     pub schema_version: u32,
     pub source: String,
@@ -98,6 +104,7 @@ fn parse_catalog() -> Result<SummaryProviderCatalog, String> {
     Ok(catalog)
 }
 
+/// catalog
 pub fn catalog() -> Result<&'static SummaryProviderCatalog, AppError> {
     match CATALOG.get_or_init(parse_catalog) {
         Ok(catalog) => Ok(catalog),
@@ -109,6 +116,7 @@ pub fn catalog() -> Result<&'static SummaryProviderCatalog, AppError> {
     }
 }
 
+/// provider
 pub fn provider(id: &str) -> Result<&'static SummaryProviderCatalogEntry, AppError> {
     let normalized = id.trim();
     catalog()?

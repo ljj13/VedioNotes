@@ -1,3 +1,7 @@
+/**
+ *安全的 Markdown 渲染组件——渲染 Markdown 文本，防止 XSS 攻击。
+ */
+
 import { Fragment, createElement, type ReactNode } from 'react';
 
 export type MarkdownBlock =
@@ -9,6 +13,7 @@ export type MarkdownBlock =
   | { kind: 'code'; language: string | null; text: string }
   | { kind: 'rule' };
 
+/** contentLines */
 function contentLines(content: string): string[] {
   const lines = content.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n');
   if (lines[0]?.trim() !== '---') return lines;
@@ -16,11 +21,13 @@ function contentLines(content: string): string[] {
   return closing > 0 ? lines.slice(closing + 1) : lines;
 }
 
+/** isRule */
 function isRule(line: string): boolean {
   const compact = line.trim().replace(/\s/g, '');
   return compact.length >= 3 && (/^-+$/.test(compact) || /^\*+$/.test(compact) || /^_+$/.test(compact));
 }
 
+/** parseMarkdown */
 export function parseMarkdown(content: string): MarkdownBlock[] {
   const lines = contentLines(content);
   const blocks: MarkdownBlock[] = [];
@@ -115,6 +122,7 @@ export function parseMarkdown(content: string): MarkdownBlock[] {
   return blocks;
 }
 
+/** isSafeMarkdownUrl */
 export function isSafeMarkdownUrl(value: string): boolean {
   try {
     const protocol = new URL(value).protocol;
@@ -124,6 +132,7 @@ export function isSafeMarkdownUrl(value: string): boolean {
   }
 }
 
+/** renderInline */
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   const token = /(`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_|\[[^\]\n]+\]\([^\s)]+\))/g;
   const nodes: ReactNode[] = [];
@@ -157,6 +166,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
   return nodes;
 }
 
+/** renderBlock */
 function renderBlock(block: MarkdownBlock, index: number): ReactNode {
   const key = `markdown-block-${index}`;
   if (block.kind === 'heading') {
@@ -174,6 +184,7 @@ function renderBlock(block: MarkdownBlock, index: number): ReactNode {
   return <hr key={key} />;
 }
 
+/** SafeMarkdown */
 export default function SafeMarkdown({ content }: { content: string }) {
   return <article className="saved-markdown">{parseMarkdown(content).map(renderBlock)}</article>;
 }

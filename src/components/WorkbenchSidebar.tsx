@@ -1,3 +1,7 @@
+/**
+ *应用组件——WorkbenchSidebar 页面/功能对应的 React UI 组件。
+ */
+
 import type { PrimaryWorkbenchView, WorkbenchNavigationState } from '../lib/workbenchNavigation';
 import type { WorkbenchServiceStatus } from './WorkbenchShell';
 
@@ -11,6 +15,7 @@ type Props = {
 
 type IconName = 'home' | 'plus' | 'book' | 'chat' | 'history' | 'settings' | 'chevron';
 
+/** Icon */
 function Icon({ name }: { name: IconName }) {
   if (name === 'home') return <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" /></svg>;
   if (name === 'plus') return <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>;
@@ -23,12 +28,12 @@ function Icon({ name }: { name: IconName }) {
 
 const destinations: ReadonlyArray<{ view: PrimaryWorkbenchView; label: string; icon: IconName }> = [
   { view: 'home', label: '首页', icon: 'home' },
-  { view: 'create', label: '新建提炼', icon: 'plus' },
   { view: 'library', label: '笔记库', icon: 'book' },
   { view: 'qa', label: 'AI 问答', icon: 'chat' },
   { view: 'tasks', label: '历史任务', icon: 'history' },
 ];
 
+/** WorkbenchSidebar */
 export default function WorkbenchSidebar({ navigation, onNavigate, onOpenSettings, onToggleSidebar, serviceStatus }: Props) {
   const { sidebarCollapsed, view } = navigation;
   const label = (text: string, className = '') => (
@@ -38,6 +43,16 @@ export default function WorkbenchSidebar({ navigation, onNavigate, onOpenSetting
   return (
     <aside className={`workbench-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
       <nav aria-label="主导航" className="sidebar-nav">
+        <button
+          type="button"
+          className={`sidebar-create-action${view === 'create' ? ' active' : ''}`}
+          aria-current={view === 'create' ? 'page' : undefined}
+          aria-label="新建提炼"
+          title={sidebarCollapsed ? '新建提炼' : undefined}
+          onClick={() => onNavigate('create')}
+        >
+          <Icon name="plus" />{label('新建提炼')}
+        </button>
         {destinations.map((item) => (
           <button key={item.view} type="button" className={view === item.view ? 'active' : ''} aria-current={view === item.view ? 'page' : undefined} aria-label={item.label} title={sidebarCollapsed ? item.label : undefined} onClick={() => onNavigate(item.view)}>
             <Icon name={item.icon} />{label(item.label)}

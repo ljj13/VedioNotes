@@ -1,3 +1,9 @@
+/**
+ *"首页"组件——应用打开后的主页面。
+ * * 显示概览信息（笔记数、任务数、最近的笔记和任务），并提供快速操作入口。
+ */
+
+import type { CSSProperties } from 'react';
 import type { HistoryEntry } from '../lib/types';
 
 type Props = {
@@ -11,10 +17,12 @@ type Props = {
   onOpenTasks: () => void;
 };
 
+/** ArrowIcon */
 function ArrowIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 }
 
+/** HomeWorkspace */
 export default function HomeWorkspace({
   noteCount,
   readyLocalModelCount,
@@ -37,13 +45,24 @@ export default function HomeWorkspace({
             <button type="button" className="home-secondary-action" onClick={onOpenLibrary}>打开笔记库</button>
           </div>
         </div>
-        <aside className="home-status-card" aria-label="工作区概览">
-          <div className="home-status-head"><span>本地工作区</span><span className={serviceReady ? 'home-ready-chip is-ready' : 'home-ready-chip'}>{serviceReady ? '服务正常' : '需要配置'}</span></div>
-          <div className="home-metrics">
-            <div><strong>{noteCount}</strong><span>篇笔记</span><small>已累计提炼</small></div>
-            <div><strong>{readyLocalModelCount}</strong><span>个模型</span><small>本地已就绪</small></div>
+        <aside className="home-status-card home-hero-visual" aria-label="工作区概览">
+          <div className="home-visual-stage" aria-hidden="true">
+            <span className="home-video-glyph"><PlayIcon /></span>
+            <div className="home-waveform">
+              {[18, 31, 24, 46, 38, 58, 29, 51, 35, 42, 22, 34].map((height, index) => (
+                <span key={`${height}-${index}`} style={{ '--wave-height': `${height}px` } as CSSProperties} />
+              ))}
+            </div>
+            <span className="home-note-sheet"><i /><i /><i /></span>
           </div>
-          <p className="home-service-detail">{serviceDetail}</p>
+          <div className="home-service-summary">
+            <div className="home-status-head"><span>本地工作区</span><span className={serviceReady ? 'home-ready-chip is-ready' : 'home-ready-chip'}>{serviceReady ? '服务正常' : '需要配置'}</span></div>
+            <div className="home-metrics">
+              <div><strong>{noteCount}</strong><span>篇笔记</span><small>已累计提炼</small></div>
+              <div><strong>{readyLocalModelCount}</strong><span>个模型</span><small>本地已就绪</small></div>
+            </div>
+            <p className="home-service-detail">{serviceDetail}</p>
+          </div>
         </aside>
       </div>
 
@@ -78,14 +97,22 @@ export default function HomeWorkspace({
   );
 }
 
+/** CreateIcon */
 function CreateIcon() {
   return <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>;
 }
 
+/** LibraryIcon */
 function LibraryIcon() {
   return <svg viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a3 3 0 0 1-3-3V5a1 1 0 0 1 1-1Z" /><path d="M8 16h11" /></svg>;
 }
 
+/** HistoryIcon */
 function HistoryIcon() {
   return <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.7" /><path d="M4 4v4.7h4.7M12 8v5l3 2" /></svg>;
+}
+
+/** PlayIcon */
+function PlayIcon() {
+  return <svg viewBox="0 0 24 24"><path d="m9 7 8 5-8 5z" /></svg>;
 }

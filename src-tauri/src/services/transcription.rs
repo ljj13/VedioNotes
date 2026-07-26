@@ -1,7 +1,10 @@
+//! 转写服务——语音识别任务的分发和结果聚合.
+
 use crate::domain::AppError;
 
 /// Configuration for transcription API.
 #[derive(Debug, Clone)]
+/// TranscriptionConfig
 pub struct TranscriptionConfig {
     pub base_url: String,
     pub model: String,

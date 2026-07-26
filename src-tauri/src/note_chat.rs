@@ -1,8 +1,5 @@
-//! Same-note question answering.
-//!
-//! This module deliberately has no retrieval/search path: a request is bound
-//! to one history ID and its prompt is composed from that entry's owned note
-//! and transcript only.
+//! 笔记问答——基于笔记内容的 AI 问答.
+//! AI 只能回答笔记相关的问题.
 
 use crate::{
     credential_store::SecretPayload,
@@ -14,6 +11,7 @@ use std::sync::atomic::AtomicBool;
 
 pub use crate::history_store::NoteChatTurn;
 
+/// ask note with
 pub async fn ask_note_with(
     store: &HistoryStore,
     history_id: i64,

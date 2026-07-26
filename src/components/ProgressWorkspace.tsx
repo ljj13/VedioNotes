@@ -1,3 +1,8 @@
+/**
+ *"任务进度"页面组件——当一个任务正在运行时显示在这里。
+ * * 显示任务的实时进度百分比、已用时间和当前阶段。
+ */
+
 import { useEffect, useState, type ReactNode } from 'react';
 import type { TaskProgress } from '../lib/types';
 import ProgressPanel from './ProgressPanel';
@@ -13,6 +18,7 @@ type Props = {
   errorContent?: ReactNode;
 };
 
+/** ProgressWorkspace */
 export default function ProgressWorkspace({
   progress,
   startedAtMs,
@@ -74,6 +80,7 @@ type BackgroundTaskPillProps = {
   onOpen: () => void;
 };
 
+/** BackgroundTaskPill */
 export function BackgroundTaskPill({ progress, startedAtMs, completed = false, onOpen }: BackgroundTaskPillProps) {
   const elapsed = useElapsed(startedAtMs);
   const rawPercent = progress?.percent ?? 0;
@@ -87,6 +94,7 @@ export function BackgroundTaskPill({ progress, startedAtMs, completed = false, o
   );
 }
 
+/** useElapsed */
 function useElapsed(startedAtMs: number) {
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -98,6 +106,7 @@ function useElapsed(startedAtMs: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+/** LogIcon */
 function LogIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z" /><path d="M15 3v4h4M9 12h6M9 16h6" /></svg>;
 }

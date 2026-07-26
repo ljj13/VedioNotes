@@ -1,17 +1,4 @@
-/*
- * CipherTalk settings visual transplant — scoped to .cipher-settings-root
- *
- * Source: CipherTalk commit b5b580c5af7672a729a0c7fc10b8b1511fe6d478
- *         src/pages/SettingsPage.css (selective)
- * License: CC BY-NC-SA 4.0
- *
- * All rules below are prefixed with .cipher-settings-root to prevent
- * style leakage into home, create, library, QA, or history pages.
- */
-
-/* ---- CSS variable mapping: CipherTalk → VedioNotes ---- */
 .cipher-settings-root {
-  /* CipherTalk design tokens → project variables */
   --settings-radius: 14px;
   --settings-card-radius: 18px;
   --settings-control-radius: 9999px;
@@ -34,7 +21,7 @@
   /* Map CipherTalk color names used in SettingsPage.css */
   --text-primary: var(--text);
   --text-secondary: color-mix(in srgb, var(--text) 65%, transparent);
-  --text-tertiary: color-mix(in srgb, var(--text) 45%, transparent);
+  --text-tertiary: var(--text-2, color-mix(in srgb, var(--text) 76%, transparent));
   --border-color: var(--border);
   --bg-primary: var(--surface);
   --bg-secondary: var(--surface-hover);
@@ -45,46 +32,162 @@
 }
 
 /* ---- Root layout ---- */
-.cipher-settings-root {
+.cipher-settings-root.settings-page {
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
+  container-name: settings-stage;
+  width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
   position: relative;
   overflow: hidden;
+  gap: 0;
+  padding: clamp(16px, 2.3%, 28px);
+  background: var(--surface-0, var(--bg));
+}
+/* ---- Production settings shell ---- */
+.cipher-settings-root .settings-page-header {
+  grid-area: header;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 67px;
+  padding: 5px 2px 10px;
+  border-bottom: 0;
 }
 
-[data-theme='dark'] .cipher-settings-root {
-  --settings-native-select-option-bg: color-mix(in srgb, var(--surface) 92%, #000000 8%);
+.cipher-settings-root .settings-page-header-copy {
+  min-width: 0;
 }
 
-[data-theme='light'] .cipher-settings-root {
-  --settings-native-select-option-bg: color-mix(in srgb, var(--surface) 92%, #ffffff 8%);
+.cipher-settings-root .settings-page-header h1 {
+  margin: 2px 0 1px;
+  color: var(--text);
+  font-size: clamp(30px, 3.2cqi, 34px);
+  font-weight: 720;
+  line-height: 1.08;
+  letter-spacing: -.035em;
 }
 
-/* ---- Tabs navigation ---- */
-.cipher-settings-root .cipher-settings-tabs  {
-  position: relative;
-  z-index: 10;
-  flex-shrink: 0;
+.cipher-settings-root .settings-page-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
-/* ---- Scrollable body ---- */
-.cipher-settings-root .cipher-settings-body  {
+.cipher-settings-root .settings-page-context {
+  display: none;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cipher-settings-root .settings-shell-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, .56fr) minmax(560px, 1.44fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "header tabs" "body body";
   flex: 1;
-  overflow-y: auto;
-  padding: 16px 24px 24px;
+  gap: 9px 18px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cipher-settings-root .settings-navigation-tabs {
+  grid-area: tabs;
+  min-width: 0;
+  align-self: center;
+  padding: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(25, 48, 40, .06);
   scrollbar-width: thin;
 }
 
-.cipher-settings-root .cipher-settings-body::-webkit-scrollbar  {
-  width: 6px;
+/* ---- Tabs navigation ---- */
+.cipher-settings-root .settings-tabs {
+  position: static;
+  width: 100%;
+  min-width: 0;
 }
-.cipher-settings-root .cipher-settings-body::-webkit-scrollbar-track  {
+
+.cipher-settings-root .settings-navigation-tabs [role='tablist'] {
+  width: 100%;
+  min-width: 540px;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 5px;
+  padding: 0;
+  border: 0;
   background: transparent;
 }
-.cipher-settings-root .cipher-settings-body::-webkit-scrollbar-thumb  {
-  background: var(--border);
-  border-radius: 3px;
+
+.cipher-settings-root .settings-navigation-tabs [role='tab'] {
+  position: relative;
+  width: auto;
+  min-width: 102px;
+  min-height: 40px;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.cipher-settings-root .settings-navigation-tabs [role='tab']:hover { color: var(--text); background: var(--surface-hover); }
+.cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.cipher-settings-root .settings-navigation-tabs [role='tab'] svg { flex: 0 0 auto; }
+
+/* ---- Scrollable body ---- */
+.cipher-settings-root .settings-body {
+  grid-area: body;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(16px, 2.1cqi, 24px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 12px 34px rgba(25, 48, 40, .05);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+
+.cipher-settings-root .settings-body > * { width: 100%; min-width: 0; margin: 0; }
+
+.cipher-settings-root .settings-body > .tab-content {
+  container-type: inline-size;
+  container-name: settings-panel;
+}
+
+.cipher-settings-root .settings-body::-webkit-scrollbar {
+  display: none;
 }
 
 /* ---- Header ---- */
@@ -109,9 +212,6 @@
 .cipher-settings-root .cipher-catalog-card,
 .cipher-settings-root .cipher-cache-card,
 .cipher-settings-root .cipher-export-card,
-.cipher-settings-root .cipher-about-card,
-.cipher-settings-root .cipher-components-card,
-.cipher-settings-root .cipher-attribution-card,
 .cipher-settings-root .cipher-cuda-card {
   border-radius: var(--settings-card-radius);
   border: 1px solid var(--settings-card-border);
@@ -252,45 +352,6 @@
 }
 
 /* ---- Confirm dialog ---- */
-.cipher-settings-root .cipher-confirm-overlay  {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.cipher-settings-root .cipher-confirm-dialog  {
-  width: 420px;
-  max-width: calc(100% - 32px);
-  background: var(--surface);
-  border-radius: var(--settings-card-radius);
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-  padding: 24px;
-}
-.cipher-settings-root .cipher-confirm-dialog h3  {
-  margin: 0 0 8px;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text);
-}
-.cipher-settings-root .cipher-confirm-dialog p  {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-.cipher-settings-root .cipher-confirm-actions  {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
 /* ---- Form fields ---- */
 .cipher-settings-root .cipher-field-group  {
@@ -332,9 +393,145 @@
   box-shadow: 0 0 0 3px var(--settings-control-focus-ring);
 }
 
-.cipher-settings-root select option {
-  background: var(--settings-native-select-option-bg, var(--surface));
+/* ---- Explicit HeroUI select slots ---- */
+.cipher-settings-root .cipher-settings-select {
+  width: 100%;
+  gap: 6px;
+}
+
+.cipher-settings-root .cipher-settings-select-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.cipher-settings-root .cipher-settings-select-trigger {
+  width: 100%;
+  min-height: var(--settings-control-height);
+  padding: 0 38px 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
   color: var(--text);
+  background: var(--surface-hover);
+  box-shadow: none;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.cipher-settings-root .cipher-settings-select-trigger:hover,
+.cipher-settings-root .cipher-settings-select-trigger[data-hovered='true'] {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface-hover));
+}
+
+.cipher-settings-root .cipher-settings-select-trigger:focus-visible,
+.cipher-settings-root .cipher-settings-select-trigger[data-focus-visible='true'],
+.cipher-settings-root .cipher-settings-select-trigger[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.cipher-settings-root .cipher-settings-select-trigger:disabled,
+.cipher-settings-root .cipher-settings-select-trigger[data-disabled='true'],
+.cipher-settings-root .cipher-settings-select-trigger[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: .52;
+}
+
+.cipher-settings-root .cipher-settings-select-value {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-settings-select-indicator {
+  right: 12px;
+  color: var(--text-tertiary);
+}
+
+/*
+ * React Aria portals this element under body, outside .cipher-settings-root.
+ * The unique class is the complete portal scope; never replace it with a
+ * global [data-slot] selector.
+ */
+.cipher-settings-select-popover {
+  z-index: 160;
+  min-width: var(--trigger-width);
+  max-height: min(340px, calc(100dvh - 24px));
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-1, var(--text));
+  background: var(--surface-1, var(--surface));
+  box-shadow: var(--shadow);
+}
+
+.cipher-settings-select-popover .cipher-settings-select-listbox {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  outline: none;
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 7px 34px 7px 10px;
+  border-radius: 10px;
+  color: var(--text-1, var(--text));
+  background: transparent;
+  cursor: pointer;
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option:hover,
+.cipher-settings-select-popover .cipher-settings-select-option[data-hovered='true'] {
+  background: var(--surface-2, var(--surface-hover));
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option:focus-visible,
+.cipher-settings-select-popover .cipher-settings-select-option[data-focus-visible='true'] {
+  outline: none;
+  background: var(--surface-2, var(--surface-hover));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 46%, transparent);
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option[aria-selected='true'],
+.cipher-settings-select-popover .cipher-settings-select-option[data-selected='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option[data-disabled='true'],
+.cipher-settings-select-popover .cipher-settings-select-option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.cipher-settings-select-popover .cipher-settings-select-option-indicator {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  transform: translateY(-50%);
 }
 
 /* ---- Checkbox group ---- */
@@ -559,93 +756,262 @@
 }
 
 /* ---- About page ---- */
-.cipher-settings-root .cipher-about-row  {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-}
-.cipher-settings-root .cipher-about-row:last-child  {
-  border-bottom: none;
-}
-.cipher-settings-root .cipher-about-row strong  {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-.cipher-settings-root .cipher-about-row span  {
-  color: var(--text);
-  font-weight: 600;
+.cipher-settings-root .cipher-about-panel {
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  gap: 20px;
 }
 
-.cipher-settings-root .cipher-about-links  {
+.cipher-settings-root .cipher-about-safe-copy,
+.cipher-settings-root .cipher-about-safe-copy * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-about-hero {
+  min-width: 0;
   display: flex;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 12px;
 }
-.cipher-settings-root .cipher-about-link  {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+
+.cipher-settings-root .cipher-about-logo {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
   color: var(--accent);
-  text-decoration: none;
-  font-size: 14px;
-}
-.cipher-settings-root .cipher-about-link:hover  {
-  text-decoration: underline;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  font-size: 24px;
+  font-weight: 760;
 }
 
-.cipher-settings-root .cipher-attribution-row  {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 14px;
-  border-bottom: 1px solid var(--border);
-}
-.cipher-settings-root .cipher-attribution-row:last-of-type  {
-  border-bottom: none;
-}
-.cipher-settings-root .cipher-attribution-note  {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-top: 12px;
-}
-.cipher-settings-root .cipher-attribution-extra  {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  margin-top: 8px;
+.cipher-settings-root .cipher-about-hero-copy,
+.cipher-settings-root .cipher-about-section,
+.cipher-settings-root .cipher-about-section-heading {
+  min-width: 0;
 }
 
-/* ---- Component items ---- */
-.cipher-settings-root .cipher-component-item  {
+.cipher-settings-root .cipher-about-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.cipher-settings-root .cipher-about-title-row,
+.cipher-settings-root .cipher-about-badges {
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
 }
-.cipher-settings-root .cipher-component-item:last-child  {
-  border-bottom: none;
+
+.cipher-settings-root .cipher-about-version-chip {
+  max-width: min(100%, 420px);
+  height: auto;
+  min-height: 24px;
+  white-space: normal;
+  line-height: 1.35;
 }
-.cipher-settings-root .cipher-component-status  {
+
+.cipher-settings-root .cipher-about-section {
+  display: grid;
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-about-section-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.cipher-settings-root .cipher-about-primary-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 18px;
+  align-items: start;
+}
+
+.cipher-settings-root .cipher-about-component-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-about-component-card {
+  min-width: 0;
+  min-height: 138px;
+}
+
+.cipher-settings-root .cipher-about-component-head {
+  min-width: 0;
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
-.cipher-settings-root .cipher-component-version  {
-  font-size: 13px;
-  color: var(--text-tertiary);
+
+.cipher-settings-root .cipher-about-component-copy {
+  flex: 1 1 150px;
+  min-width: 0;
+  line-height: 1.5;
 }
-.cipher-settings-root .cipher-component-license  {
+
+.cipher-settings-root .cipher-about-component-status {
+  flex: 0 1 auto;
+  max-width: min(100%, 160px);
+  height: auto;
+  min-height: 24px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.cipher-settings-root .cipher-about-component-version {
+  display: block;
   font-size: 12px;
-  color: var(--text-tertiary);
-  margin-left: auto;
+  font-weight: 560;
+  line-height: 1.5;
 }
-.cipher-settings-root .cipher-component-state  {
-  font-size: 12px;
+
+.cipher-settings-root .cipher-about-version-card {
+  min-width: 0;
+  display: grid;
+  padding: 16px 20px 8px 20px;
+  align-content: start;
+}
+
+.cipher-settings-root .cipher-about-version-list,
+.cipher-settings-root .cipher-about-source-list {
+  min-width: 0;
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.cipher-settings-root .cipher-about-version-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(84px, .45fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cipher-settings-root .cipher-about-version-item:last-child {
+  border-bottom: 0;
+}
+
+.cipher-settings-root .cipher-about-version-item dt,
+.cipher-settings-root .cipher-about-source-row dt {
   color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cipher-settings-root .cipher-about-version-item dd,
+.cipher-settings-root .cipher-about-source-row dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.cipher-settings-root .cipher-about-links-section {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.cipher-settings-root .cipher-about-directory-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-about-directory-card {
+  min-width: 0;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cipher-settings-root .cipher-about-directory-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.cipher-settings-root .cipher-about-directory-content button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.cipher-settings-root .cipher-about-directory-path {
+  min-width: 0;
+  display: block;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.cipher-settings-root .cipher-about-source-card {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-about-source-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(92px, .25fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.cipher-settings-root .cipher-about-source-row:first-child {
+  border-top: 0;
+}
+
+@container settings-panel (max-width: 780px) {
+  .cipher-settings-root .cipher-about-primary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-about-version-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+  }
+
+  .cipher-settings-root .cipher-about-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container settings-panel (max-width: 700px) {
+  .cipher-settings-root .cipher-about-component-grid,
+  .cipher-settings-root .cipher-about-directory-grid,
+  .cipher-settings-root .cipher-about-version-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ---- CUDA card specifics ---- */
@@ -661,7 +1027,35 @@
   gap: 8px;
 }
 
-/* ---- Responsive ---- */
+/* ---- Settings shell container responsiveness ---- */
+@container settings-stage (max-width: 900px) {
+  .cipher-settings-root .settings-shell-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "header" "tabs" "body";
+  }
+
+  .cipher-settings-root .settings-page-header {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cipher-settings-root .settings-page-context {
+    display: inline-flex;
+  }
+}
+
+@container settings-stage (max-width: 620px) {
+  .cipher-settings-root .settings-navigation-tabs [role='tablist'] {
+    width: max-content;
+    min-width: 570px;
+  }
+
+  .cipher-settings-root .settings-body {
+    padding: 12px;
+  }
+}
+
+/* ---- Responsive business controls ---- */
 @media (max-width: 768px) {
   .cipher-settings-root .cipher-ai-subnav {
     flex-direction: column;
@@ -674,12 +1068,1210 @@
     max-height: 300px;
   }
 }
+/* ===== 修复补丁：设置中心 UI 布局问题 ===== */
 
-@media (max-width: 640px) {
-  .cipher-settings-root .cipher-settings-body {
-    padding: 12px;
+/* 1. 压缩页面标题区域高度 */
+.cipher-settings-root .settings-page-header {
+  min-height: 48px !important;
+  padding: 2px 2px 6px !important;
+  margin-bottom: 6px;
+}
+
+.cipher-settings-root .workspace-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 3px;
+}
+
+.cipher-settings-root .settings-page-header h1 {
+  margin: 0 0 3px !important;
+  font-size: clamp(24px, 2.8cqi, 28px) !important;
+  line-height: 1.1 !important;
+}
+
+.cipher-settings-root .settings-page-header p {
+  margin: 0 !important;
+  font-size: 11.5px !important;
+  line-height: 1.3 !important;
+}
+
+/* 2. 修复顶部导航选中态 - 只保留单层样式 */
+.cipher-settings-root .settings-navigation-tabs {
+  padding: 4px;
+  min-height: 52px;
+}
+
+.cipher-settings-root .settings-navigation-tabs [role='tab'] {
+  position: relative;
+  min-height: 44px;
+  padding: 0 14px;
+  transition: all 0.2s ease;
+}
+
+/* 移除选中项的双层背景 */
+.cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] {
+  color: var(--accent) !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] {
+  background: color-mix(in srgb, var(--surface) 95%, var(--accent) 5%) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.cipher-settings-root .settings-navigation-tabs [role='tab']:hover:not([aria-selected='true']) {
+  background: var(--surface-hover);
+}
+
+/* 移除可能存在的 ::before / ::after 背景 */
+.cipher-settings-root .settings-navigation-tabs [role='tab']::before,
+.cipher-settings-root .settings-navigation-tabs [role='tab']::after {
+  display: none !important;
+}
+
+/* 3. 统一文字和容器约束 */
+.cipher-settings-root *,
+.cipher-settings-root *::before,
+.cipher-settings-root *::after {
+  box-sizing: border-box;
+}
+
+/* Grid 和 Flex 子项必须设置 min-width: 0 */
+.cipher-settings-root .settings-shell-layout,
+.cipher-settings-root .settings-body,
+.cipher-settings-root .tab-content,
+.cipher-settings-root [class*='-grid'],
+.cipher-settings-root [class*='-card'],
+.cipher-settings-root [class*='-content'],
+.cipher-settings-root [class*='-panel'] {
+  min-width: 0;
+}
+
+/* 4. 关于页面 - 修复卡片布局和文字溢出 */
+.cipher-settings-root .cipher-about-component-card {
+  position: relative;
+  min-height: 156px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cipher-settings-root .cipher-about-component-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cipher-settings-root .cipher-about-component-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.cipher-settings-root .cipher-about-component-copy [data-slot='card-title'] {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-about-component-copy [data-slot='card-description'] {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-about-component-status {
+  flex: 0 0 auto;
+  max-width: 130px;
+  height: auto !important;
+  min-height: 24px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cipher-settings-root .cipher-about-component-version {
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* 版本信息卡片 */
+.cipher-settings-root .cipher-about-version-item {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.4fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.cipher-settings-root .cipher-about-version-item:last-child {
+  border-bottom: none;
+}
+
+.cipher-settings-root .cipher-about-version-item dt {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.cipher-settings-root .cipher-about-version-item dd {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  margin: 0;
+}
+
+/* 本地目录卡片 */
+.cipher-settings-root .cipher-about-directory-card {
+  min-height: 160px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cipher-settings-root .cipher-about-directory-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.cipher-settings-root .cipher-about-directory-path {
+  display: block;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--surface-hover) 60%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.cipher-settings-root .cipher-about-directory-content button {
+  margin-top: auto;
+}
+
+/* 第三方来源卡片 */
+.cipher-settings-root .cipher-about-source-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.28fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.cipher-settings-root .cipher-about-source-row:last-child {
+  border-bottom: none;
+}
+
+.cipher-settings-root .cipher-about-source-row dt {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.cipher-settings-root .cipher-about-source-row dd {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  margin: 0;
+}
+
+.cipher-settings-root .cipher-about-source-row code {
+  padding: 2px 6px;
+  background: color-mix(in srgb, var(--surface-hover) 50%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* 5. AI 接入页面 - 修复双栏布局 */
+.cipher-settings-root .cipher-ai-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 20px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-form-column,
+.cipher-settings-root .cipher-ai-summary-column {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-summary-section {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-field-group {
+  margin-bottom: 18px;
+}
+
+.cipher-settings-root .cipher-field-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+
+.cipher-settings-root .cipher-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 14px;
+  overflow-wrap: anywhere;
+}
+
+/* 服务商摘要卡片 */
+.cipher-settings-root .cipher-catalog-card {
+  padding: 16px 18px;
+}
+
+.cipher-settings-root .cipher-catalog-card strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-catalog-card p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  margin: 0;
+}
+
+/* 6. 数据管理页面 - 修复导出设置二级导航 */
+.cipher-settings-root .cipher-data-subnav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.cipher-settings-root .cipher-data-subnav button {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cipher-settings-root .cipher-data-subnav button:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.cipher-settings-root .cipher-data-subnav button[aria-selected='true'] {
+  color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .cipher-settings-root .cipher-data-subnav button[aria-selected='true'] {
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Markdown 输出目录 */
+.cipher-settings-root .cipher-export-card code,
+.cipher-settings-root .cipher-cache-card code {
+  display: block;
+  padding: 10px 12px;
+  margin: 8px 0;
+  background: color-mix(in srgb, var(--surface-hover) 60%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* 7. 语音转文字页面 - 修复二级导航 */
+.cipher-settings-root .cipher-transcription-subnav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.cipher-settings-root .cipher-transcription-subnav button {
+  flex: 1;
+  min-height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-transcription-subnav button:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.cipher-settings-root .cipher-transcription-subnav button[aria-selected='true'] {
+  color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .cipher-settings-root .cipher-transcription-subnav button[aria-selected='true'] {
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* 8. 外观页面 - 紧凑密度布局 */
+.cipher-settings-root .cipher-appearance-section {
+  margin-bottom: 24px;
+}
+
+.cipher-settings-root .cipher-appearance-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.cipher-settings-root .cipher-appearance-section p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+/* 9. 响应式断点 */
+@container settings-panel (max-width: 900px) {
+  .cipher-settings-root .cipher-ai-split-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .cipher-settings-root .cipher-confirm-dialog {
-    width: calc(100% - 24px);
+
+  .cipher-settings-root .cipher-ai-summary-section {
+    position: static;
+  }
+}
+
+@container settings-panel (max-width: 780px) {
+  .cipher-settings-root .cipher-about-primary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-about-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container settings-panel (max-width: 600px) {
+  .cipher-settings-root .cipher-about-component-grid,
+  .cipher-settings-root .cipher-about-directory-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-transcription-subnav,
+  .cipher-settings-root .cipher-data-subnav {
+    flex-direction: column;
+  }
+
+  .cipher-settings-root .cipher-transcription-subnav button,
+  .cipher-settings-root .cipher-data-subnav button {
+    width: 100%;
+  }
+}
+
+/* 10. 确保所有 HeroUI 下拉框使用原生样式 */
+.cipher-settings-root select,
+.cipher-settings-root .cipher-settings-select-trigger,
+.cipher-settings-select-popover {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* 自定义下拉箭头 */
+.cipher-settings-root .cipher-settings-select-trigger {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 38px;
+}
+
+[data-theme='dark'] .cipher-settings-root .cipher-settings-select-trigger {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23aaa' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+/* GPU / 在线模式沿用原结构，但样式仍限定在设置中心内。 */
+.cipher-settings-root .cipher-stt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-stt-section h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cipher-settings-root .cipher-stt-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+/* ========== 语音转文字页面双栏布局（图一风格）========== */
+
+/* 红框内部标题区 */
+.cipher-settings-root .cipher-transcription-header {
+  margin-bottom: 24px;
+}
+
+.cipher-settings-root .cipher-transcription-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.cipher-settings-root .cipher-transcription-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 双栏布局容器 */
+.cipher-settings-root .cipher-transcription-dual-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .cipher-settings-root .cipher-transcription-dual-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 左侧面板 */
+.cipher-settings-root .cipher-transcription-left-panel {
+  min-width: 0;
+}
+
+/* 右侧面板 */
+.cipher-settings-root .cipher-transcription-right-panel {
+  min-width: 0;
+}
+
+/* 模型配置卡片 */
+.cipher-settings-root .cipher-model-config-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-config-header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.cipher-settings-root .cipher-model-config-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-model-config-desc {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cipher-settings-root .cipher-status-badge.ready {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.cipher-settings-root .cipher-status-badge.not-ready {
+  background: #fff8e1;
+  color: #f57c00;
+}
+
+/* 模型版本选择区 */
+.cipher-settings-root .cipher-model-version-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cipher-settings-root .cipher-model-version-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-version-option:hover {
+  border-color: #4a9eff;
+  background: #f8fbff;
+}
+
+.cipher-settings-root .cipher-model-version-option.selected {
+  border-color: #4a9eff;
+  background: #f0f7ff;
+}
+
+.cipher-settings-root .cipher-model-version-option input[type="radio"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cipher-settings-root .cipher-model-version-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-version-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-version-size {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 6px 0;
+}
+
+.cipher-settings-root .cipher-model-version-desc {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 状态提示条 */
+.cipher-settings-root .cipher-model-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff8e1;
+  border: 1px solid #ffecb3;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #f57c00;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-status-banner svg {
+  flex-shrink: 0;
+}
+
+/* 操作按钮区 */
+.cipher-settings-root .cipher-model-actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 右侧语言卡片 */
+.cipher-settings-root .cipher-language-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-language-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-language-card-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-language-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-language-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-language-item:hover {
+  background: #f5f5f5;
+}
+
+.cipher-settings-root .cipher-language-item input[type="checkbox"] {
+  flex-shrink: 0;
+}
+
+.cipher-settings-root .cipher-language-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-language-item-primary {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-language-item-secondary {
+  font-size: 12px;
+  color: #888;
+  margin: 2px 0 0 0;
+}
+
+/* ---- Transcription CPU workspace: compact header, segmented modes, 2-column card ---- */
+.cipher-settings-root .cipher-transcription-root {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cipher-settings-root .cipher-transcription-header {
+  min-width: 0;
+  margin: 0;
+}
+
+.cipher-settings-root .cipher-transcription-title {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+}
+
+.cipher-settings-root .cipher-transcription-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-transcription-tabs {
+  width: 100%;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-transcription-mode-switcher {
+  width: min(100%, 560px);
+  min-width: 0;
+  padding: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-hover);
+  scrollbar-width: thin;
+}
+
+.cipher-settings-root .cipher-transcription-mode-list {
+  width: 100%;
+  min-width: 420px;
+  display: flex;
+  gap: 5px;
+  padding: 0;
+  background: transparent;
+}
+
+.cipher-settings-root .cipher-transcription-mode-list [role='tab'] {
+  min-width: 120px;
+  min-height: 42px;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.cipher-settings-root .cipher-transcription-mode-list [role='tab']:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.cipher-settings-root .cipher-transcription-mode-list [role='tab'][aria-selected='true'] {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(25, 48, 40, .08);
+}
+
+.cipher-settings-root .cipher-transcription-mode-list [role='tab']:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: -2px;
+}
+
+.cipher-settings-root .cipher-transcription-tabs [role='tabpanel'] {
+  min-width: 0;
+  padding-top: 20px;
+}
+
+.cipher-settings-root .cipher-transcription-dual-layout {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(250px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.cipher-settings-root .cipher-transcription-left-panel,
+.cipher-settings-root .cipher-transcription-right-panel,
+.cipher-settings-root .cipher-model-config-header > div,
+.cipher-settings-root .cipher-model-version-content,
+.cipher-settings-root .cipher-model-status-copy,
+.cipher-settings-root .cipher-language-item-content {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-config-card,
+.cipher-settings-root .cipher-language-card {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(25, 48, 40, .055);
+}
+
+.cipher-settings-root .cipher-model-config-card {
+  padding: 22px;
+}
+
+.cipher-settings-root .cipher-model-config-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cipher-settings-root .cipher-model-config-header > div {
+  flex: 1 1 auto;
+}
+
+.cipher-settings-root .cipher-model-config-header h3,
+.cipher-settings-root .cipher-language-card h3 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-config-desc,
+.cipher-settings-root .cipher-language-card-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-status-badge {
+  max-width: min(42%, 150px);
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-status-badge.ready {
+  color: var(--success, #217a50);
+  background: color-mix(in srgb, var(--success, #217a50) 12%, var(--surface));
+}
+
+.cipher-settings-root .cipher-status-badge.not-ready {
+  color: #9a6417;
+  background: color-mix(in srgb, #d99b32 15%, var(--surface));
+}
+
+.cipher-settings-root .cipher-model-version-selector {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cipher-settings-root .cipher-model-version-option {
+  min-width: 0;
+  min-height: 112px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.cipher-settings-root .cipher-model-version-option:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.cipher-settings-root .cipher-model-version-option.selected {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.cipher-settings-root .cipher-model-version-option:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.cipher-settings-root .cipher-model-version-option input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.cipher-settings-root .cipher-model-version-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cipher-settings-root .cipher-model-version-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-version-size {
+  align-self: flex-start;
+  margin: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-model-version-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-status-banner {
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, #d99b32 34%, var(--border));
+  border-radius: 11px;
+  color: #936018;
+  background: color-mix(in srgb, #d99b32 11%, var(--surface));
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cipher-settings-root .cipher-model-status-banner.ready {
+  border-color: color-mix(in srgb, var(--success, #217a50) 28%, var(--border));
+  color: var(--success, #217a50);
+  background: color-mix(in srgb, var(--success, #217a50) 9%, var(--surface));
+}
+
+.cipher-settings-root .cipher-model-status-banner > svg {
+  flex: 0 0 auto;
+}
+
+.cipher-settings-root .cipher-model-status-copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-status-copy [role='progressbar'] {
+  width: 100%;
+}
+
+.cipher-settings-root .cipher-model-progress-value {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-model-actions-row {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cipher-settings-root .cipher-model-actions-row button {
+  min-height: 40px;
+}
+
+.cipher-settings-root .cipher-language-card {
+  position: sticky;
+  top: 0;
+  padding: 20px;
+}
+
+.cipher-settings-root .cipher-language-card-desc {
+  margin-bottom: 14px;
+}
+
+.cipher-settings-root .cipher-language-list {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cipher-settings-root .cipher-language-item {
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease;
+}
+
+.cipher-settings-root .cipher-language-item:hover {
+  background: var(--surface-hover);
+}
+
+.cipher-settings-root .cipher-language-item[data-selected='true'],
+.cipher-settings-root .cipher-language-item:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.cipher-settings-root .cipher-language-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-language-item-primary {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-language-item-secondary {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@container settings-panel (max-width: 780px) {
+  .cipher-settings-root .cipher-transcription-dual-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-language-card {
+    position: static;
+  }
+}
+
+@container settings-panel (max-width: 520px) {
+  .cipher-settings-root .cipher-model-config-card,
+  .cipher-settings-root .cipher-language-card {
+    padding: 16px;
+  }
+
+  .cipher-settings-root .cipher-model-config-header {
+    flex-direction: column;
+  }
+
+  .cipher-settings-root .cipher-status-badge {
+    max-width: 100%;
+  }
+
+  .cipher-settings-root .cipher-model-version-selector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-model-actions-row button {
+    flex: 1 1 160px;
   }
 }

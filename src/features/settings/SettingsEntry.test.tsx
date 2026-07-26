@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 SettingsEntry 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SettingsEntry from './SettingsEntry';
@@ -32,11 +36,13 @@ const baseProps: SettingsEntryProps = {
   onToggleSidebar: vi.fn(),
 };
 
+// describe('SettingsEntry', () => {
 describe('SettingsEntry', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
+  // it('defaults to CipherSettingsShell when no implementation p
   it('defaults to CipherSettingsShell when no implementation prop is passed', async () => {
     vi.stubEnv('VITE_SETTINGS_IMPLEMENTATION', '');
     await act(async () => {
@@ -46,12 +52,14 @@ describe('SettingsEntry', () => {
     expect(screen.queryByTestId('legacy-settings')).toBeNull();
   });
 
+  // it('renders legacy SettingsWorkspace when implementation is
   it('renders legacy SettingsWorkspace when implementation is explicitly legacy', () => {
     render(<SettingsEntry {...baseProps} implementation="legacy" />);
     expect(screen.getByTestId('legacy-settings')).toBeTruthy();
     expect(screen.queryByTestId('cipher-settings')).toBeNull();
   });
 
+  // it('renders CipherSettingsShell when implementation is expli
   it('renders CipherSettingsShell when implementation is explicitly cipher', async () => {
     await act(async () => {
       render(<SettingsEntry {...baseProps} implementation="cipher" section="ai" />);
@@ -60,6 +68,7 @@ describe('SettingsEntry', () => {
     expect(screen.getByTestId('cipher-settings').getAttribute('data-section')).toBe('ai');
   });
 
+  // it('falls back to legacy when VITE_SETTINGS_IMPLEMENTATION=l
   it('falls back to legacy when VITE_SETTINGS_IMPLEMENTATION=legacy and no override', async () => {
     vi.stubEnv('VITE_SETTINGS_IMPLEMENTATION', 'legacy');
     render(<SettingsEntry {...baseProps} />);

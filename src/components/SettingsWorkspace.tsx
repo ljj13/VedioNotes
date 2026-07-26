@@ -1,3 +1,7 @@
+/**
+ *设置页面的包装器——管理设置页面的整体布局和子页面切换。
+ */
+
 import { useEffect, useState, type ReactNode } from 'react';
 import type { SenseVoiceLanguage, TranscriptionMode, TranscriptionProfile } from '../lib/types';
 import type { SettingsSection } from '../lib/workbenchNavigation';
@@ -32,6 +36,7 @@ const transcriptionModes: Array<{ id: TranscriptionTab; label: string }> = [
   { id: 'online', label: '在线模式' },
 ];
 
+/** SegmentTabs */
 function SegmentTabs<T extends string>({
   label,
   value,
@@ -63,10 +68,12 @@ function SegmentTabs<T extends string>({
   );
 }
 
+/** StatusNotice */
 function StatusNotice({ children, tone = 'info' }: { children: ReactNode; tone?: 'info' | 'warning' | 'success' }) {
   return <div className={`settings-status ${tone}`} role="status">{children}</div>;
 }
 
+/** SpeechToTextPanel */
 function SpeechToTextPanel({
   profiles,
   localModels,
@@ -151,6 +158,7 @@ function SpeechToTextPanel({
   );
 }
 
+/** SettingsWorkspace */
 export default function SettingsWorkspace(props: Props) {
   const selected = sections.find((item) => item.id === props.section) ?? sections[1];
   return (

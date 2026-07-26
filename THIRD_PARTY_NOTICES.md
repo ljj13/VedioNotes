@@ -8,6 +8,17 @@ BiliNote is licensed under the MIT License, Copyright © 2024 Jeffery Huang. Its
 
 The applicable license text and source are available in the [BiliNote repository](https://github.com/JefferyHcool/BiliNote).
 
+## Douyin X-Bogus signing
+
+The Rust fallback signer in `src-tauri/src/services/douyin_native.rs` is a modified
+port of the X-Bogus implementation from
+[Evil0ctal/Douyin_TikTok_Download_API](https://github.com/Evil0ctal/Douyin_TikTok_Download_API).
+It is used only after the public Douyin share-page route cannot provide media data.
+
+Copyright © 2021 Evil0ctal. Licensed under the Apache License, Version 2.0.
+The upstream copyright header, license terms, and source are available in the
+[upstream repository](https://github.com/Evil0ctal/Douyin_TikTok_Download_API/blob/main/LICENSE).
+
 # whisper.cpp
 
 This application bundles the Windows x64 CPU `whisper-cli` executable and

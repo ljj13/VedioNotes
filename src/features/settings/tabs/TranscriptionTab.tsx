@@ -14,12 +14,12 @@ import type {
 } from '../../../lib/types';
 import type { SettingsEntryProps } from '../settingsTypes';
 
-const sttLanguageOptions: Array<{ value: SenseVoiceLanguage; label: string }> = [
-  { value: 'zh', label: '中文' },
-  { value: 'en', label: '英语' },
-  { value: 'ja', label: '日语' },
-  { value: 'ko', label: '韩语' },
-  { value: 'yue', label: '粤语' },
+const sttLanguageOptions: Array<{ value: SenseVoiceLanguage; label: string; englishLabel: string }> = [
+  { value: 'zh', label: '中文', englishLabel: 'Chinese' },
+  { value: 'en', label: '英语', englishLabel: 'English' },
+  { value: 'ja', label: '日语', englishLabel: 'Japanese' },
+  { value: 'ko', label: '韩语', englishLabel: 'Korean' },
+  { value: 'yue', label: '粤语', englishLabel: 'Cantonese' },
 ];
 
 const sttModelOptions: Array<{ value: SenseVoiceModelId; label: string; size: string; desc: string }> = [
@@ -79,6 +79,7 @@ export default function TranscriptionTab({
   const [computeMode, setComputeMode] = useState<LocalComputeMode>(preferences.localComputeMode ?? 'auto');
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
   const [active, setActive] = useState(true);
+  const [selectedCpuModel, setSelectedCpuModel] = useState<SenseVoiceModelId>(preferences.sensevoiceModel ?? 'int8');
 
   useEffect(() => {
     let cancelled = false;
@@ -258,86 +259,145 @@ export default function TranscriptionTab({
 
   const selectedModel = senseVoiceStatus?.selectedModel;
   const selectedLanguages = preferences.sensevoiceLanguages ?? ['zh'];
+  const selectedCpuOption = sttModelOptions.find((model) => model.value === selectedCpuModel) ?? sttModelOptions[0];
+  const selectedCpuStatus = senseVoiceStatus?.models?.find((model) => model.id === selectedCpuModel);
+  const selectedCpuIsReady = selectedCpuStatus?.state === 'ready';
+  const selectedCpuIsDownloading = selectedCpuStatus?.state === 'partial';
+  const selectedCpuIsActive = selectedModel === selectedCpuModel;
+  const selectedCpuProgress = downloadProgress[selectedCpuModel]
+    ?? (selectedCpuStatus && selectedCpuStatus.totalBytes > 0
+      ? Math.round((selectedCpuStatus.downloadedBytes / selectedCpuStatus.totalBytes) * 100)
+      : 0);
 
   return (
-    <div className="cipher-stt-tab">
+    <div className="cipher-stt-tab cipher-transcription-root">
       {error && (
         <div role="alert" className="cipher-error-banner">
           <CircleExclamation width={16} /> {error}
         </div>
       )}
 
-      <Tabs selectedKey={activeTab} onSelectionChange={handleTabChange}>
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="语音转文字模式">
-            <Tabs.Tab id="cpu"><Cpu width={16} height={16} />CPU 转写</Tabs.Tab>
-            <Tabs.Tab id="gpu"><Gpu width={16} height={16} />GPU 转写</Tabs.Tab>
-            <Tabs.Tab id="online"><Cloud width={16} height={16} />在线转写</Tabs.Tab>
+      <header className="cipher-transcription-header">
+        <h2 className="cipher-transcription-title">语音转文字</h2>
+        <p className="cipher-transcription-subtitle">根据使用场景选择本地 CPU、本地 GPU 或在线转写模式。</p>
+      </header>
+
+      <Tabs className="cipher-transcription-tabs" selectedKey={activeTab} onSelectionChange={handleTabChange}>
+        <Tabs.ListContainer className="cipher-transcription-mode-switcher">
+          <Tabs.List aria-label="语音转文字模式" className="cipher-transcription-mode-list">
+            <Tabs.Tab id="cpu"><Cpu width={16} height={16} aria-hidden />CPU 模式</Tabs.Tab>
+            <Tabs.Tab id="gpu"><Gpu width={16} height={16} aria-hidden />GPU 模式</Tabs.Tab>
+            <Tabs.Tab id="online"><Cloud width={16} height={16} aria-hidden />在线模式</Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cpu">
-          <div className="cipher-stt-section">
-            <h3>SenseVoice CPU 模型</h3>
-            <p className="cipher-stt-desc">基于 SenseVoice 的本地 CPU 语音识别，无需 GPU。</p>
-
-            {loading && <div role="status">正在加载状态...</div>}
-
-            {!loading && sttModelOptions.map((model) => {
-              const modelStatus = senseVoiceStatus?.models?.find((m) => m.id === model.value);
-              const isReady = modelStatus?.state === 'ready';
-              const isDownloading = modelStatus?.state === 'partial';
-              const isActive = selectedModel === model.value;
-              const progress = downloadProgress[model.value]
-                ?? (modelStatus && modelStatus.totalBytes > 0 ? Math.round((modelStatus.downloadedBytes / modelStatus.totalBytes) * 100) : 0);
-
-              return (
-                <Card key={model.value} className="cipher-model-card">
-                  <div className="cipher-model-header">
-                    <div>
-                      <strong>{model.label}</strong>
-                      <span className="cipher-model-size">{model.size}</span>
-                      <span className="cipher-model-desc">{model.desc}</span>
-                    </div>
-                    {isActive && <span className="cipher-active-chip"><CircleCheck width={14} />已启用</span>}
+          <div className="cipher-transcription-dual-layout">
+            <section className="cipher-transcription-left-panel" aria-labelledby="sensevoice-model-title">
+              <Card className="cipher-model-config-card">
+                <div className="cipher-model-config-header">
+                  <div>
+                    <h3 id="sensevoice-model-title">SenseVoice 本地模型</h3>
+                    <p className="cipher-model-config-desc">适合离线使用，支持中文、英语、日语、韩语和粤语。</p>
                   </div>
-                  {modelStatus && (
-                    <div className="cipher-model-status">
-                      <span>状态：{modelStateLabel(modelStatus.state)}</span>
-                      {isDownloading && <ProgressBar value={progress} />}
-                      {isDownloading && <span>{progress}%</span>}
-                    </div>
+                  <span className={`cipher-status-badge ${selectedCpuIsReady ? 'ready' : 'not-ready'}`}>
+                    {loading ? '加载中' : modelStateLabel(selectedCpuStatus?.state ?? 'missing')}
+                  </span>
+                </div>
+
+                <div className="cipher-model-version-selector" role="radiogroup" aria-label="SenseVoice 模型版本">
+                  {sttModelOptions.map((model) => (
+                    <label
+                      key={model.value}
+                      className={`cipher-model-version-option ${selectedCpuModel === model.value ? 'selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="sensevoice-model"
+                        value={model.value}
+                        checked={selectedCpuModel === model.value}
+                        onChange={() => setSelectedCpuModel(model.value)}
+                      />
+                      <span className="cipher-model-version-content">
+                        <span className="cipher-model-version-title">{model.label}</span>
+                        <span className="cipher-model-version-size">{model.size}</span>
+                        <span className="cipher-model-version-desc">{model.desc}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                <div
+                  className={`cipher-model-status-banner ${selectedCpuIsReady ? 'ready' : ''}`}
+                  role="status"
+                >
+                  {selectedCpuIsReady ? <CircleCheck width={16} /> : <CircleExclamation width={16} />}
+                  <div className="cipher-model-status-copy">
+                    <span>
+                      {loading
+                        ? '正在加载模型状态...'
+                        : selectedCpuIsDownloading
+                          ? `${selectedCpuOption.label} 正在下载`
+                          : selectedCpuIsReady
+                            ? `${selectedCpuOption.label}${selectedCpuIsActive ? '已就绪并启用' : '已下载，可立即启用'}`
+                            : `${selectedCpuOption.label}未下载`}
+                    </span>
+                    {selectedCpuIsDownloading && (
+                      <ProgressBar aria-label="SenseVoice 模型下载进度" value={selectedCpuProgress} />
+                    )}
+                  </div>
+                  {selectedCpuIsDownloading && <span className="cipher-model-progress-value">{selectedCpuProgress}%</span>}
+                </div>
+
+                <div className="cipher-model-actions-row">
+                  {!loading && !selectedCpuIsReady && !selectedCpuIsDownloading && (
+                    <Button variant="primary" onClick={() => handleDownload(selectedCpuModel)}>
+                      <ArrowDownToLine width={16} />下载模型
+                    </Button>
                   )}
-                  <div className="cipher-model-actions">
-                    {!isReady && !isDownloading && (
-                      <Button size="sm" variant="primary" onClick={() => handleDownload(model.value)}><ArrowDownToLine width={14} />下载</Button>
-                    )}
-                    {isDownloading && (
-                      <Button size="sm" variant="secondary" onClick={handleCancel}><Pause width={14} />取消下载</Button>
-                    )}
-                    {isReady && !isActive && (
-                      <Button size="sm" variant="primary" onClick={() => handleActivate(model.value)}><CircleCheck width={14} />启用</Button>
-                    )}
-                    {isReady && (
-                      <Button size="sm" variant="danger" onClick={() => setConfirmDelete(model.value)}><TrashBin width={14} />删除</Button>
-                    )}
-                    <Button size="sm" variant="ghost" onClick={refreshStatus}><ArrowsRotateLeft width={14} />刷新</Button>
-                  </div>
-                </Card>
-              );
-            })}
+                  {selectedCpuIsDownloading && (
+                    <Button variant="secondary" onClick={handleCancel}>
+                      <Pause width={16} />取消下载
+                    </Button>
+                  )}
+                  {selectedCpuIsReady && !selectedCpuIsActive && (
+                    <Button variant="primary" onClick={() => handleActivate(selectedCpuModel)}>
+                      <CircleCheck width={16} />启用模型
+                    </Button>
+                  )}
+                  {selectedCpuIsReady && (
+                    <Button variant="danger" onClick={() => setConfirmDelete(selectedCpuModel)}>
+                      <TrashBin width={16} />删除模型
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={refreshStatus}>
+                    <ArrowsRotateLeft width={16} />刷新状态
+                  </Button>
+                </div>
+              </Card>
+            </section>
 
-            <div className="cipher-language-section">
-              <h4>识别语言</h4>
-              <CheckboxGroup
-                value={selectedLanguages}
-                onChange={(vals) => handleLanguagesChange(vals as unknown as SenseVoiceLanguage[])}
-              >
-                {sttLanguageOptions.map((lang) => (
-                  <Checkbox key={lang.value} value={lang.value}>{lang.label}</Checkbox>
-                ))}
-              </CheckboxGroup>
-            </div>
+            <aside className="cipher-transcription-right-panel" aria-labelledby="sensevoice-language-title">
+              <Card className="cipher-language-card">
+                <h3 id="sensevoice-language-title">识别语言</h3>
+                <p className="cipher-language-card-desc">选择需要识别的语言，支持多选。</p>
+                <CheckboxGroup
+                  aria-label="识别语言"
+                  className="cipher-language-list"
+                  value={selectedLanguages}
+                  onChange={(vals) => handleLanguagesChange(vals as unknown as SenseVoiceLanguage[])}
+                >
+                  {sttLanguageOptions.map((lang) => (
+                    <Checkbox key={lang.value} className="cipher-language-item" value={lang.value}>
+                      <span className="cipher-language-item-content">
+                        <span className="cipher-language-item-primary">{lang.label}</span>
+                        <span className="cipher-language-item-secondary">{lang.englishLabel}</span>
+                      </span>
+                    </Checkbox>
+                  ))}
+                </CheckboxGroup>
+              </Card>
+            </aside>
           </div>
         </Tabs.Panel>
 

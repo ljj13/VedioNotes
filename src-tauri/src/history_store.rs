@@ -1,3 +1,6 @@
+//! 历史记录存储——SQLite 数据库的 history 表操作.
+//! 每次 AI 生成笔记后在这里记录.
+
 use crate::domain::{AppError, Distillation, NoteStyle, TaskOptions};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -6,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// HistoryEntry
 pub struct HistoryEntry {
     pub id: i64,
     pub title: String,
@@ -20,6 +24,7 @@ pub struct HistoryEntry {
 }
 
 #[derive(Debug, Clone)]
+/// HistoryEntryInput
 pub struct HistoryEntryInput {
     pub title: String,
     pub source: String,
@@ -34,6 +39,7 @@ pub struct HistoryEntryInput {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
+/// LibrarySort
 pub enum LibrarySort {
     #[default]
     Newest,
@@ -43,6 +49,7 @@ pub enum LibrarySort {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// LibraryQuery
 pub struct LibraryQuery {
     #[serde(default)]
     pub text: String,
@@ -72,6 +79,7 @@ impl Default for LibraryQuery {
 }
 
 impl LibraryQuery {
+    /// tag
     pub fn tag(tag: impl Into<String>) -> Self {
         Self {
             tag: Some(tag.into()),
@@ -82,6 +90,7 @@ impl LibraryQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// LibraryEntry
 pub struct LibraryEntry {
     pub id: i64,
     pub title: String,
@@ -100,6 +109,7 @@ pub struct LibraryEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Tag
 pub struct Tag {
     pub id: i64,
     pub name: String,
@@ -108,6 +118,7 @@ pub struct Tag {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// LibrarySnapshot
 pub struct LibrarySnapshot {
     pub entries: Vec<LibraryEntry>,
     pub tags: Vec<Tag>,
@@ -116,18 +127,21 @@ pub struct LibrarySnapshot {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// NoteChatTurn
 pub struct NoteChatTurn {
     pub role: String,
     pub content: String,
 }
 
 impl NoteChatTurn {
+    /// user
     pub fn user(content: impl Into<String>) -> Self {
         Self {
             role: "user".into(),
             content: content.into(),
         }
     }
+    /// assistant
     pub fn assistant(content: impl Into<String>) -> Self {
         Self {
             role: "assistant".into(),
@@ -136,12 +150,14 @@ impl NoteChatTurn {
     }
 }
 
+/// 历史记录存储——管理已生成的笔记记录（SQLite）。
 pub struct HistoryStore {
     database_path: PathBuf,
     assets_root: PathBuf,
 }
 
 impl HistoryStore {
+    /// open
     pub fn open(database_path: PathBuf) -> Result<Self, AppError> {
         if let Some(parent) = database_path.parent() {
             std::fs::create_dir_all(parent).map_err(storage_error)?;
@@ -185,6 +201,7 @@ impl HistoryStore {
         Ok(store)
     }
 
+    /// create
     pub fn create(&self, input: &HistoryEntryInput) -> Result<i64, AppError> {
         validate_asset(&input.markdown_path, &["md"])?;
         validate_asset(&input.transcript_path, &["txt"])?;
@@ -242,10 +259,12 @@ impl HistoryStore {
         Ok(id)
     }
 
+    /// list
     pub fn list(&self) -> Result<Vec<HistoryEntry>, AppError> {
         self.query_entries("SELECT id FROM history_entries ORDER BY id DESC", params![])
     }
 
+    /// search
     pub fn search(&self, query: &str) -> Result<Vec<HistoryEntry>, AppError> {
         if query.trim().is_empty() {
             return self.list();
@@ -256,17 +275,20 @@ impl HistoryStore {
         )
     }
 
+    /// get
     pub fn get(&self, id: i64) -> Result<Option<HistoryEntry>, AppError> {
         let mut entries =
             self.query_entries("SELECT id FROM history_entries WHERE id = ?1", params![id])?;
         Ok(entries.pop())
     }
 
+    /// library entry
     pub fn library_entry(&self, id: i64) -> Result<Option<LibraryEntry>, AppError> {
         let connection = self.connection()?;
         load_library_entry(&connection, id)
     }
 
+    /// set favorite
     pub fn set_favorite(&self, id: i64, favorite: bool) -> Result<LibraryEntry, AppError> {
         let connection = self.connection()?;
         let changed = connection
@@ -281,6 +303,7 @@ impl HistoryStore {
         load_library_entry(&connection, id)?.ok_or_else(history_missing)
     }
 
+    /// set tags
     pub fn set_tags(&self, id: i64, tags: &[String]) -> Result<LibraryEntry, AppError> {
         if self.get(id)?.is_none() {
             return Err(history_missing());
@@ -316,6 +339,7 @@ impl HistoryStore {
         self.library_entry(id)?.ok_or_else(history_missing)
     }
 
+    /// mark opened
     pub fn mark_opened(&self, id: i64) -> Result<LibraryEntry, AppError> {
         let connection = self.connection()?;
         let changed = connection
@@ -330,6 +354,7 @@ impl HistoryStore {
         load_library_entry(&connection, id)?.ok_or_else(history_missing)
     }
 
+    /// search library
     pub fn search_library(&self, query: &LibraryQuery) -> Result<LibrarySnapshot, AppError> {
         let connection = self.connection()?;
         let mut ids = if query.text.trim().is_empty() {
@@ -445,6 +470,7 @@ impl HistoryStore {
         })
     }
 
+    /// append conversation
     pub fn append_conversation(
         &self,
         history_id: i64,
@@ -472,6 +498,7 @@ impl HistoryStore {
         tx.commit().map_err(storage_error)
     }
 
+    /// list conversation
     pub fn list_conversation(&self, history_id: i64) -> Result<Vec<NoteChatTurn>, AppError> {
         let connection = self.connection()?;
         let mut statement = connection.prepare("SELECT role, content FROM history_conversation_turns WHERE history_id = ?1 ORDER BY id ASC").map_err(storage_error)?;
@@ -488,6 +515,7 @@ impl HistoryStore {
         turns
     }
 
+    /// delete
     pub fn delete(&self, id: i64) -> Result<(), AppError> {
         let Some(entry) = self.get(id)? else {
             return Ok(());
@@ -822,16 +850,19 @@ fn storage_error(_error: impl std::fmt::Display) -> AppError {
     )
 }
 
+/// ScreenshotCapturer
 pub trait ScreenshotCapturer: Send + Sync {
     fn capture(&self, source: &Path, seconds: f64, output: &Path) -> Result<(), String>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// ScreenshotCaptureResult
 pub struct ScreenshotCaptureResult {
     pub paths: Vec<Option<PathBuf>>,
     pub warnings: Vec<String>,
 }
 
+/// capture selected screenshots
 pub fn capture_selected_screenshots(
     capturer: &dyn ScreenshotCapturer,
     include_screenshots: bool,

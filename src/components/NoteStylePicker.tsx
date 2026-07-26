@@ -1,3 +1,7 @@
+/**
+ *笔记风格选择器——用户选择想要的笔记风格（如极简、小红书风格等）。
+ */
+
 import type { NoteStyle } from '../lib/types';
 import { isNoteStyle, NOTE_STYLE_OPTIONS } from '../lib/noteStyles';
 import ServicePicker, { type ServicePickerOption } from './ServicePicker';
@@ -15,6 +19,7 @@ type Props = {
   disabled?: boolean;
 };
 
+/** NoteStylePicker */
 export default function NoteStylePicker({ value, onChange, disabled = false }: Props) {
   return (
     <div className="note-style-picker">

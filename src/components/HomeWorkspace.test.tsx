@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 HomeWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -18,7 +22,9 @@ const recentNotes = [
   },
 ];
 
+// describe('HomeWorkspace', () => {
 describe('HomeWorkspace', () => {
+  // it('renders real counts and recent-note data supplied by App
   it('renders real counts and recent-note data supplied by App', () => {
     render(
       <HomeWorkspace
@@ -37,8 +43,11 @@ describe('HomeWorkspace', () => {
     expect(screen.getByText('2')).toBeTruthy();
     expect(screen.getByText('真实历史笔记')).toBeTruthy();
     expect(screen.getByText('Whisper Small · CPU 就绪')).toBeTruthy();
+    expect(document.querySelector('.home-hero-visual')).toBeTruthy();
+    expect(document.querySelector('.home-service-summary')).toBeTruthy();
   });
 
+  // it('connects all Home actions to real route handlers', () =>
   it('connects all Home actions to real route handlers', () => {
     const onCreate = vi.fn();
     const onOpenLibrary = vi.fn();
@@ -64,6 +73,7 @@ describe('HomeWorkspace', () => {
     expect(onOpenTasks).toHaveBeenCalledTimes(1);
   });
 
+  // it('shows an honest empty state instead of sample notes', ()
   it('shows an honest empty state instead of sample notes', () => {
     render(
       <HomeWorkspace

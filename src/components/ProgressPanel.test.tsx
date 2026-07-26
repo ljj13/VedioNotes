@@ -1,8 +1,14 @@
+/**
+ *测试文件——测试 ProgressPanel 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ProgressPanel from './ProgressPanel';
 
+// describe('ProgressPanel percentage feedback', () => {
 describe('ProgressPanel percentage feedback', () => {
+  // it('shows a semantic overall progress bar, exact percentage
   it('shows a semantic overall progress bar, exact percentage and elapsed status', () => {
     render(
       <ProgressPanel
@@ -20,6 +26,7 @@ describe('ProgressPanel percentage feedback', () => {
     expect(screen.getByText('正在转写音频...')).toBeTruthy();
   });
 
+  // it('clamps an invalid event percentage before rendering it',
   it('clamps an invalid event percentage before rendering it', () => {
     render(
       <ProgressPanel
@@ -34,6 +41,7 @@ describe('ProgressPanel percentage feedback', () => {
     expect(screen.getByText('100%')).toBeTruthy();
   });
 
+  // it('falls back to zero when the backend percentage is not fi
   it('falls back to zero when the backend percentage is not finite', () => {
     render(
       <ProgressPanel

@@ -1,3 +1,5 @@
+//! 媒体服务——音频文件的格式处理.
+
 use crate::{
     domain::AppError, history_store::ScreenshotCapturer, process_utils::hidden_command,
 };
@@ -7,11 +9,13 @@ const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov", "mkv", "webm"];
 const AUDIO_EXTENSIONS: &[&str] = &["mp3", "m4a", "wav", "aac", "flac", "ogg", "opus"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// MediaKind
 pub enum MediaKind {
     Video,
     Audio,
 }
 
+/// classify media file
 pub fn classify_media_file(path: &Path) -> Result<MediaKind, AppError> {
     let ext = path
         .extension()
@@ -37,6 +41,7 @@ pub fn validate_media_file(path: &Path) -> Result<(), AppError> {
     classify_media_file(path).map(|_| ())
 }
 
+/// build ffmpeg audio args
 pub fn build_ffmpeg_audio_args(input: &Path, output: &Path) -> Vec<String> {
     let mut args = vec![
         "-y".to_string(),
@@ -139,10 +144,12 @@ pub fn find_ffmpeg() -> PathBuf {
     PathBuf::from("ffmpeg.exe")
 }
 
+/// FfmpegCommandRunner
 pub trait FfmpegCommandRunner: Send + Sync {
     fn run(&self, executable: &Path, args: &[String]) -> Result<(), String>;
 }
 
+/// SystemFfmpegCommandRunner
 pub struct SystemFfmpegCommandRunner;
 
 impl FfmpegCommandRunner for SystemFfmpegCommandRunner {
@@ -160,22 +167,26 @@ impl FfmpegCommandRunner for SystemFfmpegCommandRunner {
     }
 }
 
+/// LocalFfmpegScreenshotCapturer
 pub struct LocalFfmpegScreenshotCapturer<R = SystemFfmpegCommandRunner> {
     executable: PathBuf,
     runner: R,
 }
 
 impl LocalFfmpegScreenshotCapturer<SystemFfmpegCommandRunner> {
+    /// production
     pub fn production() -> Self {
         Self::new(find_ffmpeg(), SystemFfmpegCommandRunner)
     }
 }
 
 impl<R> LocalFfmpegScreenshotCapturer<R> {
+    /// new
     pub fn new(executable: PathBuf, runner: R) -> Self {
         Self { executable, runner }
     }
 
+    /// runner
     pub fn runner(&self) -> &R {
         &self.runner
     }

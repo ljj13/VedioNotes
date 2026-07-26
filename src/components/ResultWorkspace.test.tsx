@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 ResultWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +18,7 @@ const distillation = {
   transcript: '完整转写正文',
 };
 
+// describe('ResultWorkspace', () => {
 describe('ResultWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,6 +33,7 @@ describe('ResultWorkspace', () => {
     bridge.synthesizeSpeech.mockResolvedValue('D:\\AppData\\speech.mp3');
     bridge.generateNoteImage.mockResolvedValue('D:\\AppData\\cover.png');
   });
+  // it('renders a reading workspace with semantic TOC and execut
   it('renders a reading workspace with semantic TOC and executable actions', async () => {
     const onCopy = vi.fn().mockResolvedValue(undefined);
     render(
@@ -52,6 +58,7 @@ describe('ResultWorkspace', () => {
     expect(screen.getByText('本地 Whisper · CUDA')).toBeTruthy();
   });
 
+  // it('exposes the metadata as a closable responsive drawer', a
   it('exposes the metadata as a closable responsive drawer', async () => {
     render(
       <ResultWorkspace
@@ -74,6 +81,7 @@ describe('ResultWorkspace', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
   });
 
+  // it('runs read-aloud and cover generation only from explicit
   it('runs read-aloud and cover generation only from explicit result actions', async () => {
     const user = userEvent.setup();
     render(

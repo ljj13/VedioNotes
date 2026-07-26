@@ -1,9 +1,13 @@
+//! 领域类型——定义前后端共享的核心数据结构（Rust 端）.
+//! 对应前端的 types.ts.
+
 use serde::{Deserialize, Serialize};
 use crate::sensevoice_models::SenseVoiceModelId;
 
 /// Source of the video to process
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+/// InputSource
 pub enum InputSource {
     File { path: String },
     DouyinUrl { url: String },
@@ -14,6 +18,7 @@ pub enum InputSource {
 /// Stages of the distillation pipeline
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
+/// TaskStage
 pub enum TaskStage {
     Downloading,
     SubtitleFetching,
@@ -26,6 +31,7 @@ pub enum TaskStage {
 }
 
 impl TaskStage {
+    /// label
     pub fn label(&self) -> &'static str {
         match self {
             Self::Downloading => "下载中",
@@ -43,6 +49,7 @@ impl TaskStage {
 /// Optional task settings supplied with a distillation request.
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// NoteStyle
 pub enum NoteStyle {
     #[default]
     Minimal,
@@ -57,6 +64,7 @@ pub enum NoteStyle {
 }
 
 impl NoteStyle {
+    /// fn
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Minimal => "minimal",
@@ -71,6 +79,7 @@ impl NoteStyle {
         }
     }
 
+    /// from stable id
     pub fn from_stable_id(value: &str) -> Option<Self> {
         match value {
             "minimal" => Some(Self::Minimal),
@@ -89,6 +98,7 @@ impl NoteStyle {
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// TranscriptionMode
 pub enum TranscriptionMode {
     SensevoiceCpu,
     WhisperLocal,
@@ -98,6 +108,7 @@ pub enum TranscriptionMode {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// SenseVoiceLanguage
 pub enum SenseVoiceLanguage {
     Zh,
     En,
@@ -107,6 +118,7 @@ pub enum SenseVoiceLanguage {
 }
 
 impl SenseVoiceLanguage {
+    /// fn
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Zh => "zh",
@@ -118,6 +130,7 @@ impl SenseVoiceLanguage {
     }
 }
 
+/// default sensevoice languages
 pub fn default_sensevoice_languages() -> Vec<SenseVoiceLanguage> {
     vec![SenseVoiceLanguage::Zh]
 }
@@ -132,6 +145,7 @@ fn is_default_sensevoice_languages(languages: &[SenseVoiceLanguage]) -> bool {
 
 /// Optional task settings supplied with a distillation request.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// TaskOptions
 pub struct TaskOptions {
     pub note_template: String,
     pub include_screenshots: bool,
@@ -163,6 +177,7 @@ impl Default for TaskOptions {
 
 /// A timestamped source item supporting a distillation conclusion.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// KeyEvidence
 pub struct KeyEvidence {
     pub text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -175,6 +190,7 @@ pub struct KeyEvidence {
 
 /// Progress event emitted during processing
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// TaskProgress
 pub struct TaskProgress {
     pub stage: TaskStage,
     pub message: String,
@@ -183,6 +199,7 @@ pub struct TaskProgress {
 
 /// The final distillation output
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Distillation
 pub struct Distillation {
     pub core_conclusion: String,
     pub key_evidence: Vec<KeyEvidence>,
@@ -193,6 +210,7 @@ pub struct Distillation {
 
 /// Application error with recovery hint
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// AppError
 pub struct AppError {
     pub code: String,
     pub message: String,
@@ -200,6 +218,7 @@ pub struct AppError {
 }
 
 impl AppError {
+    /// new
     pub fn new(
         code: impl Into<String>,
         message: impl Into<String>,
@@ -215,6 +234,7 @@ impl AppError {
 
 /// The structured result payload sent via the task-complete event.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// DistillationResult
 pub struct DistillationResult {
     pub task_id: String,
     pub distillation: Distillation,
@@ -224,6 +244,7 @@ pub struct DistillationResult {
 /// Event payload emitted when a provider fallback occurs during transcription.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// ProviderFallbackEvent
 pub struct ProviderFallbackEvent {
     pub from_profile_id: String,
     pub from_profile_name: String,
@@ -235,6 +256,7 @@ pub struct ProviderFallbackEvent {
 /// Result of testing a provider profile connection.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// ProfileTestResult
 pub struct ProfileTestResult {
     pub success: bool,
     pub message: String,
@@ -251,6 +273,7 @@ pub struct ProfileTestResult {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type")]
+/// SecretInput
 pub enum SecretInput {
     #[serde(rename = "bearer")]
     Bearer {

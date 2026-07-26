@@ -1,3 +1,7 @@
+/**
+ *错误面板——当任务失败时显示错误信息和重试按钮。
+ */
+
 import { useState } from 'react';
 import type { AppError } from '../lib/types';
 
@@ -7,6 +11,7 @@ type Props = {
   onOpenLog: () => Promise<void>;
 };
 
+/** ErrorPanel */
 export default function ErrorPanel({ error, onRetry, onOpenLog }: Props) {
   const [openingLog, setOpeningLog] = useState(false);
   const [logError, setLogError] = useState(false);

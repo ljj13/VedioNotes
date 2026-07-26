@@ -1,3 +1,7 @@
+/**
+ * AI 接入大模型设置面板——从 116 个服务商目录中选择模型、配置 API Key、保存并激活.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import type { AppProfiles, CapabilitySettings, CapabilityStatus, CapabilityStatusItem, SummaryProviderCatalogEntry } from '../../lib/types';
 import { getCapabilitySettings, getCapabilityStatus, getSummaryProviderCatalog, saveAndActivateCatalogSummaryProfile } from '../../lib/bridge';

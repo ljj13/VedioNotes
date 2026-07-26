@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 workbenchNavigation 组件/模块的行为是否符合预期。
+ */
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,7 +10,9 @@ import {
   type WorkbenchNavigationState,
 } from './workbenchNavigation';
 
+// describe('workbench navigation state', () => {
 describe('workbench navigation state', () => {
+  // it('keeps the established create startup while exposing Home
   it('keeps the established create startup while exposing Home as a typed route', () => {
     expect(initialWorkbenchNavigationState).toEqual({
       view: 'create',
@@ -28,6 +34,7 @@ describe('workbench navigation state', () => {
     },
   );
 
+  // it('keeps the task route independent from the Library route'
   it('keeps the task route independent from the Library route', () => {
     const library = workbenchNavigationReducer(initialWorkbenchNavigationState, {
       type: 'open-view',
@@ -42,6 +49,7 @@ describe('workbench navigation state', () => {
     expect(tasks.view).toBe('tasks');
   });
 
+  // it('remembers Library when opening Settings', () => {
   it('remembers Library when opening Settings', () => {
     const library = workbenchNavigationReducer(initialWorkbenchNavigationState, {
       type: 'open-view',
@@ -53,6 +61,7 @@ describe('workbench navigation state', () => {
     ).toMatchObject({ view: 'settings', settingsSection: 'transcription', returnView: 'library' });
   });
 
+  // it('opens Settings directly at data management without leavi
   it('opens Settings directly at data management without leaving Settings', () => {
     expect(
       workbenchNavigationReducer(initialWorkbenchNavigationState, {
@@ -62,6 +71,7 @@ describe('workbench navigation state', () => {
     ).toMatchObject({ view: 'settings', settingsSection: 'data', returnView: 'create' });
   });
 
+  // it('changes Settings sections without routing to a main view
   it('changes Settings sections without routing to a main view', () => {
     const settings = workbenchNavigationReducer(initialWorkbenchNavigationState, {
       type: 'open-settings',
@@ -75,6 +85,7 @@ describe('workbench navigation state', () => {
     ).toMatchObject({ view: 'settings', settingsSection: 'ai', returnView: 'create' });
   });
 
+  // it('returns from Settings to the remembered Q&A view', () =>
   it('returns from Settings to the remembered Q&A view', () => {
     const qa = workbenchNavigationReducer(initialWorkbenchNavigationState, {
       type: 'open-view',
@@ -87,6 +98,7 @@ describe('workbench navigation state', () => {
     ).toMatchObject({ view: 'qa', returnView: 'qa' });
   });
 
+  // it('falls back to Create when a malformed state remembers Se
   it('falls back to Create when a malformed state remembers Settings', () => {
     const malformedState = {
       ...initialWorkbenchNavigationState,
@@ -99,6 +111,7 @@ describe('workbench navigation state', () => {
     ).toMatchObject({ view: 'create', returnView: 'create' });
   });
 
+  // it('toggles only the sidebar collapsed flag', () => {
   it('toggles only the sidebar collapsed flag', () => {
     const state = {
       ...initialWorkbenchNavigationState,

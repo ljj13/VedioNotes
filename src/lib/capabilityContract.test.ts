@@ -1,8 +1,14 @@
+/**
+ *测试文件——测试 capabilityContract 组件/模块的行为是否符合预期。
+ */
+
 import { describe, expect, it } from 'vitest';
 
 import { capabilityContract } from './capabilityContract';
 
+// describe('production capability contract', () => {
 describe('production capability contract', () => {
+  // it('maps every currently enabled shell interaction to an exe
   it('maps every currently enabled shell interaction to an executable workflow', () => {
     const shellControls = [
       '打开首页',

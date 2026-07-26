@@ -1,3 +1,5 @@
+//! SenseVoice 模型管理——管理 sherpa-onnx 格式的 CPU 语音识别模型下载和激活.
+
 use crate::artifact_download::{
     delete_verified_artifact, download_verified_artifact, inspect_verified_artifact,
     ArtifactDescriptor, ArtifactDigest, ArtifactHttpClient, ArtifactState,
@@ -8,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::io::Write;
 
+/// SENSEVOICE RUNTIME VERSION
 pub const SENSEVOICE_RUNTIME_VERSION: &str = "v1.13.2";
 
 const RUNTIME_SOURCES: &[&str] = &[
@@ -28,6 +31,7 @@ const TOKENS_SOURCES: &[&str] = &[
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+/// SenseVoiceModelId
 pub enum SenseVoiceModelId {
     #[default]
     Int8,
@@ -35,6 +39,7 @@ pub enum SenseVoiceModelId {
 }
 
 impl SenseVoiceModelId {
+    /// as str
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Int8 => "int8",
@@ -44,6 +49,7 @@ impl SenseVoiceModelId {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// SenseVoiceManifest
 pub struct SenseVoiceManifest {
     pub runtime: ArtifactDescriptor,
     pub tokens: ArtifactDescriptor,
@@ -52,6 +58,7 @@ pub struct SenseVoiceManifest {
 }
 
 impl SenseVoiceManifest {
+    /// model
     pub fn model(self, id: SenseVoiceModelId) -> ArtifactDescriptor {
         match id {
             SenseVoiceModelId::Int8 => self.int8,
@@ -62,6 +69,7 @@ impl SenseVoiceManifest {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// SenseVoiceStatus
 pub struct SenseVoiceStatus {
     pub state: ArtifactState,
     pub selected_model: SenseVoiceModelId,
@@ -75,6 +83,7 @@ pub struct SenseVoiceStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// SenseVoiceModelStatus
 pub struct SenseVoiceModelStatus {
     pub id: SenseVoiceModelId,
     pub state: ArtifactState,
@@ -85,6 +94,7 @@ pub struct SenseVoiceModelStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// SenseVoiceDownloadProgress
 pub struct SenseVoiceDownloadProgress {
     pub model_id: SenseVoiceModelId,
     pub artifact_id: String,
@@ -94,6 +104,7 @@ pub struct SenseVoiceDownloadProgress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// SenseVoicePaths
 pub struct SenseVoicePaths {
     pub runtime: PathBuf,
     pub model: PathBuf,
@@ -107,6 +118,7 @@ struct SenseVoiceSelection {
     model: SenseVoiceModelId,
 }
 
+/// production manifest
 pub fn production_manifest() -> SenseVoiceManifest {
     SenseVoiceManifest {
         runtime: ArtifactDescriptor {
@@ -148,10 +160,12 @@ pub fn production_manifest() -> SenseVoiceManifest {
     }
 }
 
+/// sensevoice root
 pub fn sensevoice_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("models").join("sensevoice")
 }
 
+/// load selected sensevoice model
 pub fn load_selected_sensevoice_model(root: &Path) -> Result<SenseVoiceModelId, AppError> {
     let path = root.join("selection.json");
     if !path.exists() {
@@ -175,6 +189,7 @@ pub fn load_selected_sensevoice_model(root: &Path) -> Result<SenseVoiceModelId, 
     Ok(selection.model)
 }
 
+/// save selected sensevoice model
 pub fn save_selected_sensevoice_model(
     root: &Path,
     model: SenseVoiceModelId,
@@ -198,6 +213,7 @@ pub fn save_selected_sensevoice_model(
     Ok(())
 }
 
+/// inspect sensevoice
 pub fn inspect_sensevoice(
     root: &Path,
     selected_model: SenseVoiceModelId,
@@ -253,6 +269,7 @@ pub fn inspect_sensevoice(
     }
 }
 
+/// download sensevoice for manifest
 pub fn download_sensevoice_for_manifest(
     root: &Path,
     model_id: SenseVoiceModelId,
@@ -283,6 +300,7 @@ pub fn download_sensevoice_for_manifest(
     Ok(inspect_sensevoice(root, model_id, manifest))
 }
 
+/// ready sensevoice paths
 pub fn ready_sensevoice_paths(
     root: &Path,
     model_id: SenseVoiceModelId,
@@ -303,6 +321,7 @@ pub fn ready_sensevoice_paths(
     })
 }
 
+/// delete sensevoice model
 pub fn delete_sensevoice_model(
     root: &Path,
     model_id: SenseVoiceModelId,

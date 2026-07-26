@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 SettingsWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppProfiles, LocalModelStatus } from '../lib/types';
@@ -64,7 +68,9 @@ const baseProps = {
 
 beforeEach(() => vi.clearAllMocks());
 
+// describe('SettingsWorkspace', () => {
 describe('SettingsWorkspace', () => {
+  // it('is an integrated workspace with five stable settings des
   it('is an integrated workspace with five stable settings destinations', () => {
     render(<SettingsWorkspace {...baseProps} />);
 
@@ -75,6 +81,7 @@ describe('SettingsWorkspace', () => {
     }
   });
 
+  // it('offers CPU, GPU, and Online transcription modes without
   it('offers CPU, GPU, and Online transcription modes without mislabeling SenseVoice', () => {
     render(<SettingsWorkspace {...baseProps} />);
 
@@ -83,6 +90,7 @@ describe('SettingsWorkspace', () => {
     expect(screen.getByText('正在检查组件状态…')).toBeTruthy();
   });
 
+  // it('keeps all five Whisper models and CUDA inside GPU mode',
   it('keeps all five Whisper models and CUDA inside GPU mode', () => {
     render(<SettingsWorkspace {...baseProps} />);
     fireEvent.click(screen.getByRole('tab', { name: 'GPU 模式' }));
@@ -90,6 +98,7 @@ describe('SettingsWorkspace', () => {
     expect(screen.getByLabelText('CUDA 加速组件管理')).toBeTruthy();
   });
 
+  // it('keeps operational online profiles and large models conne
   it('keeps operational online profiles and large models connected to existing managers', () => {
     const { rerender } = render(<SettingsWorkspace {...baseProps} />);
     fireEvent.click(screen.getByRole('tab', { name: '在线模式' }));
@@ -101,6 +110,7 @@ describe('SettingsWorkspace', () => {
     expect(screen.getByLabelText('summary profile manager')).toBeTruthy();
   });
 
+  // it('connects appearance selection and sidebar controls to th
   it('connects appearance selection and sidebar controls to the live shell state', () => {
     const onToggleSidebar = vi.fn();
     const onPreferencesChanged = vi.fn();

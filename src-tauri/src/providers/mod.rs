@@ -1,11 +1,4 @@
-// == Provider Adapter Registries =============================================
-//
-// Central registry for transcription and summary adapters. Callers obtain
-// an adapter by provider kind and never branch on provider names.
-//
-// The registry is constructed once with all built-in adapters registered.
-// New provider kinds simply add a new adapter and register it — no changes
-// to the pipeline call site.
+//! AI 服务商适配器模块入口——声明 endpoint/error/local_whisper/sensevoice/summary 子模块.
 
 pub mod endpoint;
 pub mod error;

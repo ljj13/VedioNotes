@@ -1,3 +1,5 @@
+//! 偏好设置存储——读写 preferences.json（外观、导出、输出目录、日志级别等全局设置）.
+
 use crate::domain::{default_sensevoice_languages, AppError, SenseVoiceLanguage, TranscriptionMode};
 use crate::cuda_runtime::LocalComputeMode;
 use crate::data_management::{AppearancePreferences, ExportPreferences, LogLevel};
@@ -8,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// AppPreferences
 pub struct AppPreferences {
     pub schema_version: u32,
     pub markdown_output_dir: Option<String>,
@@ -43,15 +46,18 @@ impl Default for AppPreferences {
     }
 }
 
+/// PreferencesStore
 pub struct PreferencesStore {
     path: PathBuf,
 }
 
 impl PreferencesStore {
+    /// new
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self { path: path.into() }
     }
 
+    /// load
     pub fn load(&self) -> Result<AppPreferences, AppError> {
         if !self.path.exists() {
             return Ok(AppPreferences::default());
@@ -84,6 +90,7 @@ impl PreferencesStore {
         Ok(preferences)
     }
 
+    /// save
     pub fn save(&self, preferences: &AppPreferences) -> Result<(), AppError> {
         if preferences.schema_version != 1 {
             return Err(AppError::new(
@@ -131,6 +138,7 @@ fn validate_sensevoice_languages(languages: &[SenseVoiceLanguage]) -> Result<(),
     Ok(())
 }
 
+/// resolve markdown output dir
 pub fn resolve_markdown_output_dir(preferences: &AppPreferences) -> Result<PathBuf, AppError> {
     let directory = match preferences.markdown_output_dir.as_deref() {
         Some(path) => PathBuf::from(path.trim()),
@@ -142,6 +150,7 @@ pub fn resolve_markdown_output_dir(preferences: &AppPreferences) -> Result<PathB
     Ok(directory)
 }
 
+/// create task work dir
 pub fn create_task_work_dir(task_id: &str) -> Result<PathBuf, AppError> {
     if task_id.is_empty()
         || !task_id

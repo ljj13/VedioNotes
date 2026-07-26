@@ -1,9 +1,14 @@
+/**
+ *CipherTalk 风格设置settings模块——VedioNotes 的设置页面 UI 组件。
+ */
+
 import { lazy, Suspense } from 'react';
 import LegacySettingsWorkspace from '../../components/SettingsWorkspace';
 import type { SettingsEntryProps } from './settingsTypes';
 
 const CipherSettingsShell = lazy(() => import('./CipherSettingsShell'));
 
+/** SettingsEntry */
 export default function SettingsEntry({
   implementation: override,
   ...props

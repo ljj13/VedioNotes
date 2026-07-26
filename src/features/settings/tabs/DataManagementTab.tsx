@@ -1,5 +1,9 @@
+/**
+ *数据管理设置页——导出偏好、Markdown输出目录、缓存清理和日志查看。
+ */
+
 import { useEffect, useState } from 'react';
-import { Card, Button } from '@heroui/react';
+import { AlertDialog, Button, Card, Label, ListBox, Select, Tabs, type Key } from '@heroui/react';
 import { CircleExclamation, CircleCheck, TrashBin, FolderOpen, ArrowRotateLeft, Eye } from '@gravity-ui/icons';
 import { settingsPlatform } from '../../../platform/settings';
 import type {
@@ -35,6 +39,7 @@ function formatBytes(bytes: number): string {
   return `${(mb / 1024).toFixed(2)} GB`;
 }
 
+/** DataManagementTab */
 export default function DataManagementTab(_props: SettingsEntryProps) {
   const [cacheUsage, setCacheUsage] = useState<CacheUsage | null>(null);
   const [logs, setLogs] = useState<LogDescriptor[]>([]);
@@ -44,6 +49,7 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
   const [logLoading, setLogLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<'export' | 'cache' | 'logs'>('export');
 
   // Confirm dialog state
   const [confirmClear, setConfirmClear] = useState<CacheCategory | null>(null);
@@ -183,11 +189,20 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
   if (loading) return <div role="status">正在加载数据管理信息...</div>;
 
   return (
-    <div className="cipher-data-tab">
-      <header className="cipher-feature-header">
-        <h2>数据管理</h2>
-        <p>管理缓存、日志和导出设置。</p>
-      </header>
+    <div className="tab-content space-y-6">
+      <section className="space-y-2">
+        <h2 className="text-xl font-semibold text-foreground">数据管理</h2>
+        <p className="text-sm text-muted">管理 VedioNotes 的导出位置、应用缓存和诊断日志。</p>
+      </section>
+      <Tabs selectedKey={activePanel} onSelectionChange={(key: Key) => setActivePanel(String(key) as 'export' | 'cache' | 'logs')} className="w-full">
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="数据管理分类" className="w-full *:flex-1">
+            <Tabs.Tab id="export"><FolderOpen width={16} />导出设置<Tabs.Indicator /></Tabs.Tab>
+            <Tabs.Tab id="cache"><TrashBin width={16} />缓存管理<Tabs.Indicator /></Tabs.Tab>
+            <Tabs.Tab id="logs"><Eye width={16} />日志管理<Tabs.Indicator /></Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
+      </Tabs>
 
       {error && <div role="alert" className="cipher-error-banner"><CircleExclamation width={16} /> {error}</div>}
       {success && <div role="status" className="cipher-success-banner"><CircleCheck width={16} /> {success}</div>}
@@ -202,23 +217,15 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       )}
 
       {/* Export Preferences */}
-      <section className="cipher-data-section">
-        <h3>导出设置</h3>
+      <section className="space-y-5" hidden={activePanel !== 'export'}>
+        <h3 className="sr-only">导出设置</h3>
         {exportDraft && (
           <Card className="cipher-export-card">
-            <div className="cipher-field-group">
-              <label htmlFor="export-format-select">默认导出格式</label>
-              <select
-                id="export-format-select"
-                className="cipher-select"
-                value={exportDraft.format}
-                onChange={(e) => setExportDraft({ ...exportDraft, format: e.target.value as ExportFormat })}
-              >
-                {EXPORT_FORMATS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
+              <Select className="cipher-settings-select" selectedKey={exportDraft.format} onSelectionChange={(key) => { if (key != null) setExportDraft({ ...exportDraft, format: String(key) as ExportFormat }); }} variant="secondary" fullWidth>
+                <Label className="cipher-settings-select-label">默认导出格式</Label>
+                <Select.Trigger className="cipher-settings-select-trigger"><Select.Value className="cipher-settings-select-value">{EXPORT_FORMATS.find((item) => item.value === exportDraft.format)?.label}</Select.Value><Select.Indicator className="cipher-settings-select-indicator" /></Select.Trigger>
+                <Select.Popover className="cipher-settings-select-popover"><ListBox className="cipher-settings-select-listbox">{EXPORT_FORMATS.map((item) => <ListBox.Item className="cipher-settings-select-option" key={item.value} id={item.value} textValue={item.label}>{item.label}<ListBox.ItemIndicator className="cipher-settings-select-option-indicator" /></ListBox.Item>)}</ListBox></Select.Popover>
+            </Select>
             <div className="cipher-checkbox-group">
               <label>
                 <input
@@ -265,8 +272,8 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       </section>
 
       {/* Markdown Output Directory */}
-      <section className="cipher-data-section">
-        <h3>Markdown 输出目录</h3>
+      <section className="space-y-5" hidden={activePanel !== 'export'}>
+        <h3 className="text-lg font-semibold">Markdown 输出目录</h3>
         <Card className="cipher-export-card">
           <div className="cipher-field-group">
             <label htmlFor="markdown-dir-display">当前输出目录</label>
@@ -290,8 +297,8 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       </section>
 
       {/* Cache Management */}
-      <section className="cipher-data-section">
-        <h3>缓存管理</h3>
+      <section className="space-y-5" hidden={activePanel !== 'cache'}>
+        <h3 className="sr-only">缓存管理</h3>
         {cacheUsage && (
           <Card className="cipher-cache-card">
             <div className="cipher-cache-total">
@@ -326,8 +333,8 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       </section>
 
       {/* Log Management */}
-      <section className="cipher-data-section">
-        <h3>日志管理</h3>
+      <section className="space-y-5" hidden={activePanel !== 'logs'}>
+        <h3 className="sr-only">日志管理</h3>
         <div className="cipher-log-list">
           {logs.length === 0 && <p className="cipher-empty-state">暂无日志文件。</p>}
           {logs.map((log) => (
@@ -361,22 +368,22 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
       </section>
 
       {/* Confirm Clear Dialog */}
-      {confirmClear && (
-        <div className="cipher-confirm-overlay" role="alertdialog" aria-label="确认清理缓存">
-          <div className="cipher-confirm-dialog">
-            <h3>确认清理</h3>
-            <p>
-              确定要清理
-              {confirmClear === 'all' ? '全部缓存' : CACHE_CATEGORIES.find((c) => c.value === confirmClear)?.label ?? confirmClear}
-              吗？此操作不可撤销。
-            </p>
-            <div className="cipher-confirm-actions">
-              <Button variant="danger" onClick={() => handleClearCache(confirmClear)}>确认清理</Button>
-              <Button variant="ghost" onClick={() => setConfirmClear(null)}>取消</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog isOpen={confirmClear !== null} onOpenChange={(open) => { if (!open) setConfirmClear(null); }}>
+        <Button className="hidden" aria-hidden="true">打开确认框</Button>
+        <AlertDialog.Backdrop>
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-105">
+              <AlertDialog.CloseTrigger />
+              <AlertDialog.Header><AlertDialog.Icon status="danger" /><AlertDialog.Heading>确认清理</AlertDialog.Heading></AlertDialog.Header>
+              <AlertDialog.Body>确定要清理{confirmClear === 'all' ? '全部缓存' : CACHE_CATEGORIES.find((c) => c.value === confirmClear)?.label ?? confirmClear}吗？此操作不可撤销。</AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button slot="close" variant="tertiary" onPress={() => setConfirmClear(null)}>取消</Button>
+                <Button slot="close" variant="danger" onPress={() => { if (confirmClear) void handleClearCache(confirmClear); }}>确认清理</Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
     </div>
   );
 }

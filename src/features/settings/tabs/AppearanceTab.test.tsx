@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 AppearanceTab 组件/模块的行为是否符合预期。
+ */
+
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -68,15 +72,18 @@ function Harness() {
   return <AppearanceTab {...baseProps} preferences={preferences} onPreferencesChanged={setPreferences} />;
 }
 
+// describe('AppearanceTab', () => {
 describe('AppearanceTab', () => {
   beforeEach(() => platformMocks.saveAppearance.mockReset());
 
+  // it('renders appearance heading, theme, density and motion co
   it('renders appearance heading, theme, density and motion controls without WeChat options', () => {
     render(<Harness />);
     expect(screen.getByRole('heading', { name: '外观' })).toBeTruthy();
     expect(screen.queryByText(/微信|回复气泡|关闭到托盘/)).toBeNull();
   });
 
+  // it('applies a theme immediately without a save button', asyn
   it('applies a theme immediately without a save button', async () => {
     platformMocks.saveAppearance.mockResolvedValue(savedPreferences({
       theme: 'light', compactDensity: false, reducedMotion: false,
@@ -84,7 +91,7 @@ describe('AppearanceTab', () => {
     render(<Harness />);
 
     const user = userEvent.setup();
-    await user.selectOptions(screen.getByRole('combobox', { name: '颜色主题' }), 'light');
+    await user.click(screen.getByRole('tab', { name: '浅色' }));
 
     expect(screen.queryByRole('button', { name: '保存外观设置' })).toBeNull();
     await waitFor(() => expect(platformMocks.saveAppearance).toHaveBeenCalledWith({
@@ -92,6 +99,7 @@ describe('AppearanceTab', () => {
     }));
   });
 
+  // it('serializes rapid changes and rolls the latest failure ba
   it('serializes rapid changes and rolls the latest failure back to the last saved state', async () => {
     const first = deferred();
     const second = deferred();

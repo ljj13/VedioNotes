@@ -1,3 +1,5 @@
+//! `results` 模块——services 层的具体实现。
+
 use crate::domain::{AppError, Distillation, TaskOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -111,7 +113,7 @@ pub fn save_markdown(
 
     let md_content = render_markdown(source_video, timestamp, distillation, options);
 
-    // Atomic write: .tmp → rename
+    // Atomic write: .tmp -> rename
     let tmp_path = output_path.with_extension("md.tmp");
     std::fs::write(&tmp_path, &md_content).map_err(|e| {
         AppError::new(

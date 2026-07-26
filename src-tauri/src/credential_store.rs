@@ -1,11 +1,5 @@
-// == Per-Profile Credential Storage ==========================================
-//
-// Abstraction over secret storage for provider profiles. Production uses the
-// system credential manager (keyring::Entry with windows-native); tests use
-// an InMemoryBackend. Every logged or displayed value is redacted.
-//
-// Service name:  video-distiller-profiles-v1
-// Account name:  <profile_type>:<profile_id>  (e.g. "transcription:tencent-flash")
+//! 凭据存储——使用操作系统安全存储（Tauri Stronghold）保存 API Key.
+//! 前端只能查询"有无"，不能读取内容.
 
 use crate::domain::AppError;
 use serde::{Deserialize, Serialize};
@@ -18,6 +12,7 @@ pub const CREDENTIAL_SERVICE: &str = "video-distiller-profiles-v1";
 const MAX_ID_LENGTH: usize = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// CapabilityKind
 pub enum CapabilityKind {
     Vector,
     Rerank,
@@ -28,6 +23,7 @@ pub enum CapabilityKind {
 }
 
 impl CapabilityKind {
+    /// fn
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Vector => "vector",
@@ -51,6 +47,7 @@ impl CapabilityKind {
 ///
 /// The `Debug` implementation always redacts secret values.
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// SecretPayload
 pub enum SecretPayload {
     Bearer {
         /// The API key / bearer token.
@@ -125,6 +122,7 @@ impl std::fmt::Display for SecretPayload {
 /// - `NotFound`: The credential does not exist (idempotent on delete, absence on has/get).
 /// - `Other`: A system/backend failure that must be surfaced rather than hidden.
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// CredentialBackendError
 pub enum CredentialBackendError {
     NotFound,
     Other(String),
@@ -171,11 +169,13 @@ pub trait CredentialBackend: Send + Sync {
 /// An in-memory credential backend for testing. Never writes to the real
 /// credential manager.
 #[derive(Debug, Default, Clone)]
+/// InMemoryBackend
 pub struct InMemoryBackend {
     store: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, String>>>,
 }
 
 impl InMemoryBackend {
+    /// new
     pub fn new() -> Self {
         Self::default()
     }
@@ -317,6 +317,7 @@ impl CredentialStore {
         Self { backend }
     }
 
+    /// set capability
     pub fn set_capability(
         &self,
         kind: CapabilityKind,
@@ -326,6 +327,7 @@ impl CredentialStore {
         self.set(&format!("capability:{}", kind.as_str()), provider_id, payload)
     }
 
+    /// get capability
     pub fn get_capability(
         &self,
         kind: CapabilityKind,
@@ -334,6 +336,7 @@ impl CredentialStore {
         self.get(&format!("capability:{}", kind.as_str()), provider_id)
     }
 
+    /// has capability
     pub fn has_capability(
         &self,
         kind: CapabilityKind,
@@ -342,6 +345,7 @@ impl CredentialStore {
         self.has(&format!("capability:{}", kind.as_str()), provider_id)
     }
 
+    /// delete capability
     pub fn delete_capability(
         &self,
         kind: CapabilityKind,
@@ -463,6 +467,7 @@ pub fn credential_account(profile_type: &str, profile_id: &str) -> String {
     format!("{}:{}", profile_type, profile_id)
 }
 
+/// capability account
 pub fn capability_account(
     kind: CapabilityKind,
     provider_id: &str,

@@ -1,3 +1,7 @@
+/**
+ *应用组件——ResultPanel 页面/功能对应的 React UI 组件。
+ */
+
 import { useState } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { convertFileSrc } from '@tauri-apps/api/core';
@@ -10,6 +14,7 @@ interface Props {
   onSavedPathChanged: (path: string) => void;
 }
 
+/** ResultPanel */
 export default function ResultPanel({
   distillation,
   savedPath,
@@ -95,17 +100,21 @@ export default function ResultPanel({
   );
 }
 
+/** CheckIcon */
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
+/** formatTimestamp */
 function formatTimestamp(seconds: number): string { return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`; }
 
+/** Timestamp */
 function Timestamp({ sourceUrl, seconds }: { sourceUrl?: string; seconds: number }) {
   const href = timestampUrl(sourceUrl, seconds);
   return href ? <a href={href} className="evidence-time">{formatTimestamp(seconds)}</a> : <span className="evidence-time">{formatTimestamp(seconds)}</span>;
 }
 
+/** timestampUrl */
 function timestampUrl(sourceUrl: string | undefined, seconds: number): string | null {
   if (!sourceUrl) return null;
   try {

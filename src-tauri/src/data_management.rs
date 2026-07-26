@@ -1,13 +1,17 @@
+//! 数据管理后端——实现缓存统计/清理、日志列表/读取、导出偏好和目录管理.
+
 use crate::domain::AppError;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
+/// MAX LOG TAIL BYTES
 pub const MAX_LOG_TAIL_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+/// ExportFormat
 pub enum ExportFormat {
     #[default]
     Markdown,
@@ -17,6 +21,7 @@ pub enum ExportFormat {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// ExportPreferences
 pub struct ExportPreferences {
     #[serde(default)]
     pub format: ExportFormat,
@@ -44,6 +49,7 @@ impl Default for ExportPreferences {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+/// LogLevel
 pub enum LogLevel {
     Debug,
     #[default]
@@ -54,6 +60,7 @@ pub enum LogLevel {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+/// AppearanceTheme
 pub enum AppearanceTheme {
     #[default]
     System,
@@ -63,6 +70,7 @@ pub enum AppearanceTheme {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+/// AppearancePreferences
 pub struct AppearancePreferences {
     #[serde(default)]
     pub theme: AppearanceTheme,
@@ -74,6 +82,7 @@ pub struct AppearancePreferences {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// AboutComponent
 pub struct AboutComponent {
     pub name: String,
     pub version: String,
@@ -83,6 +92,7 @@ pub struct AboutComponent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// AboutSnapshot
 pub struct AboutSnapshot {
     pub app_version: String,
     pub tauri_version: String,
@@ -96,6 +106,7 @@ pub struct AboutSnapshot {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+/// CacheCategory
 pub enum CacheCategory {
     TemporaryMedia,
     Screenshots,
@@ -106,6 +117,7 @@ pub enum CacheCategory {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// CacheUsageItem
 pub struct CacheUsageItem {
     pub category: CacheCategory,
     pub bytes: u64,
@@ -114,6 +126,7 @@ pub struct CacheUsageItem {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// CacheUsage
 pub struct CacheUsage {
     pub total_bytes: u64,
     pub categories: Vec<CacheUsageItem>,
@@ -121,6 +134,7 @@ pub struct CacheUsage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// CacheClearResult
 pub struct CacheClearResult {
     pub category: CacheCategory,
     pub removed_bytes: u64,
@@ -130,6 +144,7 @@ pub struct CacheClearResult {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// LogDescriptor
 pub struct LogDescriptor {
     pub id: String,
     pub name: String,
@@ -139,6 +154,7 @@ pub struct LogDescriptor {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// LogTail
 pub struct LogTail {
     pub id: String,
     pub content: String,
@@ -146,12 +162,14 @@ pub struct LogTail {
 }
 
 #[derive(Debug, Clone)]
+/// DataManagementService
 pub struct DataManagementService {
     app_data_root: PathBuf,
     temporary_media_root: PathBuf,
 }
 
 impl DataManagementService {
+    /// new
     pub fn new(app_data_root: impl Into<PathBuf>, temporary_media_root: impl Into<PathBuf>) -> Self {
         Self {
             app_data_root: app_data_root.into(),
@@ -159,6 +177,7 @@ impl DataManagementService {
         }
     }
 
+    /// cache usage
     pub fn cache_usage(&self) -> Result<CacheUsage, AppError> {
         let mut categories = Vec::with_capacity(4);
         let mut total_bytes = 0_u64;
@@ -177,6 +196,7 @@ impl DataManagementService {
         })
     }
 
+    /// clear cache
     pub fn clear_cache(&self, category: CacheCategory) -> Result<CacheClearResult, AppError> {
         let categories: Vec<CacheCategory> = match category {
             CacheCategory::All => cache_categories().to_vec(),
@@ -204,6 +224,7 @@ impl DataManagementService {
         })
     }
 
+    /// list logs
     pub fn list_logs(&self) -> Result<Vec<LogDescriptor>, AppError> {
         let log_root = self.log_root();
         if !log_root.exists() {
@@ -237,6 +258,7 @@ impl DataManagementService {
         Ok(logs)
     }
 
+    /// read log
     pub fn read_log(&self, id: &str, requested_bytes: usize) -> Result<LogTail, AppError> {
         if !valid_log_id(id) {
             return Err(AppError::new(
@@ -269,6 +291,7 @@ impl DataManagementService {
         })
     }
 
+    /// clear logs
     pub fn clear_logs(&self) -> Result<u64, AppError> {
         let mut removed = 0_u64;
         for descriptor in self.list_logs()? {
@@ -279,10 +302,12 @@ impl DataManagementService {
         Ok(removed)
     }
 
+    /// app data root
     pub fn app_data_root(&self) -> &Path {
         &self.app_data_root
     }
 
+    /// log root
     pub fn log_root(&self) -> PathBuf {
         self.app_data_root.join("logs")
     }
@@ -300,6 +325,7 @@ impl DataManagementService {
     }
 }
 
+/// serialize note
 pub fn serialize_note(format: ExportFormat, title: &str, markdown: &str) -> String {
     match format {
         ExportFormat::Markdown => markdown.to_string(),

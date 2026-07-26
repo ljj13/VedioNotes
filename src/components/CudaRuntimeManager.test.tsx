@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 CudaRuntimeManager 组件/模块的行为是否符合预期。
+ */
+
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +21,7 @@ const readyStatus = {
   state: 'ready', gpuName: 'NVIDIA RTX Test', version: 'v1.8.3', computeMode: 'auto', message: null,
 };
 
+// describe('CudaRuntimeManager', () => {
 describe('CudaRuntimeManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,6 +32,7 @@ describe('CudaRuntimeManager', () => {
     });
   });
 
+  // it('detects without downloading and registers progress befor
   it('detects without downloading and registers progress before explicit download', async () => {
     const { listen } = await import('@tauri-apps/api/event');
     render(<CudaRuntimeManager />);
@@ -41,6 +47,7 @@ describe('CudaRuntimeManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('download_cuda_runtime');
   });
 
+  // it('shows semantic progress, changes compute mode, and clean
   it('shows semantic progress, changes compute mode, and cleans its listener', async () => {
     const view = render(<CudaRuntimeManager />);
     await screen.findByText('NVIDIA RTX Test');
@@ -54,6 +61,7 @@ describe('CudaRuntimeManager', () => {
     expect(mocks.unlisten).toHaveBeenCalledOnce();
   });
 
+  // it('shows ready/delete state and recoverable errors', async
   it('shows ready/delete state and recoverable errors', async () => {
     mocks.invoke.mockImplementation((command: string) => {
       if (command === 'get_cuda_runtime_status') return Promise.resolve(readyStatus);
@@ -68,6 +76,7 @@ describe('CudaRuntimeManager', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('删除失败');
   });
 
+  // it('renders an unavailable GPU state without disabling CPU',
   it('renders an unavailable GPU state without disabling CPU', async () => {
     mocks.invoke.mockResolvedValueOnce({ state: 'unavailable', gpuName: null, version: 'v1.8.3', computeMode: 'auto', message: '未检测到 NVIDIA GPU。' });
     render(<CudaRuntimeManager />);

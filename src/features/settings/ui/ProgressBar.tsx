@@ -1,8 +1,13 @@
+/**
+ *CipherTalk 风格设置ui模块——VedioNotes 的设置页面 UI 组件。
+ */
+
 interface ProgressBarProps {
   value: number;
   label?: string;
 }
 
+/** ProgressBar */
 export default function ProgressBar({ value, label }: ProgressBarProps) {
   const pct = Math.max(0, Math.min(100, value));
   return (

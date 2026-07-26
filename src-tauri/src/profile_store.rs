@@ -1,8 +1,4 @@
-// == Versioned Profile Store ================================================
-//
-// Atomic JSON persistence for AppProfiles. Produces version-1 defaults when
-// the file is absent; validates before every write; uses a temporary sibling
-// file flushed and synced before replacing the target.
+//! 服务商配置存储——读写 profiles.json，管理激活/备用/删除和原子保存.
 
 use crate::domain::AppError;
 use crate::profiles::AppProfiles;

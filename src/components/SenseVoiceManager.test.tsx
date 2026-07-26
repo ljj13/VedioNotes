@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 SenseVoiceManager 组件/模块的行为是否符合预期。
+ */
+
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -31,6 +35,7 @@ const missingStatus = {
   ],
 } as const;
 
+// describe('SenseVoiceManager', () => {
 describe('SenseVoiceManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,6 +46,7 @@ describe('SenseVoiceManager', () => {
     });
   });
 
+  // it('does not download automatically and registers progress b
   it('does not download automatically and registers progress before an explicit install', async () => {
     const { listen } = await import('@tauri-apps/api/event');
     render(<SenseVoiceManager languages={['zh']} onLanguagesChange={vi.fn()} onStatusChange={vi.fn()} />);
@@ -56,6 +62,7 @@ describe('SenseVoiceManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('download_sensevoice', { modelId: 'int8' });
   });
 
+  // it('shows download progress and can pause a resumable downlo
   it('shows download progress and can pause a resumable download', async () => {
     render(<SenseVoiceManager languages={['zh']} onLanguagesChange={vi.fn()} onStatusChange={vi.fn()} />);
     await screen.findByText('SenseVoice 本地模型');
@@ -66,6 +73,7 @@ describe('SenseVoiceManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('cancel_sensevoice_download');
   });
 
+  // it('keeps at least one recognition language selected', async
   it('keeps at least one recognition language selected', async () => {
     const onLanguagesChange = vi.fn();
     render(<SenseVoiceManager languages={['zh']} onLanguagesChange={onLanguagesChange} onStatusChange={vi.fn()} />);
@@ -76,6 +84,7 @@ describe('SenseVoiceManager', () => {
     expect(screen.getByText('至少保留一种识别语言。')).toBeTruthy();
   });
 
+  // it('activates a ready model and confirms deletion of the sel
   it('activates a ready model and confirms deletion of the selected model', async () => {
     const ready = {
       ...missingStatus,
@@ -101,12 +110,14 @@ describe('SenseVoiceManager', () => {
     expect(mocks.invoke).toHaveBeenCalledWith('set_sensevoice_model', { modelId: 'float32' });
   });
 
+  // it('reports the fresh readiness state to the task-start gate
   it('reports the fresh readiness state to the task-start gate', async () => {
     const onStatusChange = vi.fn();
     render(<SenseVoiceManager languages={['zh']} onLanguagesChange={vi.fn()} onStatusChange={onStatusChange} />);
     await waitFor(() => expect(onStatusChange).toHaveBeenCalledWith(expect.objectContaining({ state: 'missing' })));
   });
 
+  // it('releases a progress listener that finishes registering a
   it('releases a progress listener that finishes registering after unmount', async () => {
     const { listen } = await import('@tauri-apps/api/event');
     let resolveListener!: (unlisten: () => void) => void;

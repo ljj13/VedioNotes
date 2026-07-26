@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 InputPanel 组件/模块的行为是否符合预期。
+ */
+
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,7 +9,9 @@ import InputPanel from './InputPanel';
 
 vi.mock('../lib/localMedia', () => ({ openLocalMedia: vi.fn(), subscribeToMediaDrop: vi.fn().mockResolvedValue(() => {}) }));
 
+// describe('InputPanel workbench inputs', () => {
 describe('InputPanel workbench inputs', () => {
+  // it('blocks an unready SenseVoice task with a settings recove
   it('blocks an unready SenseVoice task with a settings recovery action', () => {
     const onOpenSettings = vi.fn();
     render(<InputPanel onStart={vi.fn()} onOpenSettings={onOpenSettings} disabled={false} readyToStart={false} transcriptionMode="sensevoice_cpu" senseVoiceUnready />);
@@ -13,6 +19,7 @@ describe('InputPanel workbench inputs', () => {
     fireEvent.click(screen.getByRole('button', { name: '打开设置' }));
     expect(onOpenSettings).toHaveBeenCalledOnce();
   });
+  // it('offers separate accessible link and local-file tabs', as
   it('offers separate accessible link and local-file tabs', async () => {
     render(<InputPanel onStart={vi.fn()} onOpenSettings={vi.fn()} disabled={false} readyToStart />);
     expect(screen.getByRole('tab', { name: '视频链接' })).toBeTruthy();
@@ -21,6 +28,7 @@ describe('InputPanel workbench inputs', () => {
     expect(screen.queryByLabelText('视频链接')).toBeNull();
   });
 
+  // it('recognizes supported platform links and lets the user cl
   it('recognizes supported platform links and lets the user clear the URL', async () => {
     render(<InputPanel onStart={vi.fn()} onOpenSettings={vi.fn()} disabled={false} readyToStart />);
     const user = userEvent.setup();
@@ -33,6 +41,7 @@ describe('InputPanel workbench inputs', () => {
     expect(screen.queryByText('已识别 Bilibili 链接')).toBeNull();
   });
 
+  // it('preserves the screenshot option in the create flow', asy
   it('preserves the screenshot option in the create flow', async () => {
     const onStart = vi.fn();
     render(<InputPanel onStart={onStart} onOpenSettings={vi.fn()} disabled={false} readyToStart />);
@@ -46,6 +55,7 @@ describe('InputPanel workbench inputs', () => {
     );
   });
 
+  // it('submits the selected closed note style with the task', a
   it('submits the selected closed note style with the task', async () => {
     const onStart = vi.fn();
     render(<InputPanel onStart={onStart} onOpenSettings={vi.fn()} disabled={false} readyToStart />);

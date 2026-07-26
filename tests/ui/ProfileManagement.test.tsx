@@ -1,3 +1,4 @@
+/** ProfileManagement.test 测试 */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -194,7 +195,9 @@ async function openIntegratedSettings() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+// describe('Profile Quick Selectors', () => {
 describe('Profile Quick Selectors', () => {
+  // it('shows separate transcription and summary quick selectors
   it('shows separate transcription and summary quick selectors on main screen', async () => {
     render(<App />);
     await waitFor(() => {
@@ -203,6 +206,7 @@ describe('Profile Quick Selectors', () => {
     expect(screen.getByLabelText('核心总结')).toBeInTheDocument();
   });
 
+  // it('selector values match active profile IDs from loaded pro
   it('selector values match active profile IDs from loaded profiles', async () => {
     render(<App />);
     await waitFor(() => {
@@ -211,6 +215,7 @@ describe('Profile Quick Selectors', () => {
     expectPickerSelection('核心总结', 'DeepSeek');
   });
 
+  // it('changing transcription selector calls set_active_profile
   it('changing transcription selector calls set_active_profile', async () => {
     render(<App />);
     await choosePickerOption('转写服务', /MiMo ASR/);
@@ -222,6 +227,7 @@ describe('Profile Quick Selectors', () => {
     });
   });
 
+  // it('changing summary selector calls set_active_profile with
   it('changing summary selector calls set_active_profile with summary type', async () => {
     render(<App />);
     await choosePickerOption('核心总结', /MiMo Summary/);
@@ -233,12 +239,14 @@ describe('Profile Quick Selectors', () => {
     });
   });
 
+  // it('summary selector options show profile name and model', a
   it('summary selector options show profile name and model', async () => {
     render(<App />);
     const listbox = await openPicker('核心总结');
     expect(within(listbox).getByRole('option', { name: /DeepSeek.*deepseek-chat/ })).toBeInTheDocument();
   });
 
+  // it('locks service selection during a running task and shows
   it('locks service selection during a running task and shows the captured services', async () => {
     render(<App />);
     await startTask();
@@ -249,6 +257,7 @@ describe('Profile Quick Selectors', () => {
     expect(taskContext).toHaveTextContent('DeepSeek');
   });
 
+  // it('shows only enabled credential-ready profiles in selector
   it('shows only enabled credential-ready profiles in selectors, never all enabled', async () => {
     render(<App />);
     const listbox = await openPicker('转写服务');
@@ -257,6 +266,7 @@ describe('Profile Quick Selectors', () => {
     expect(within(listbox).getByRole('option', { name: /MiMo ASR/ })).toBeInTheDocument();
   });
 
+  // it('shows 无可用配置 when no credential-ready transcription profi
   it('shows 无可用配置 when no credential-ready transcription profiles exist', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_profiles') return Promise.resolve(JSON.parse(JSON.stringify(MOCK_PROFILES)));
@@ -271,7 +281,9 @@ describe('Profile Quick Selectors', () => {
   });
 });
 
+// describe('Integrated Settings Workspace', () => {
 describe('Integrated Settings Workspace', () => {
+  // it('opens Settings as a workspace with the five approved cat
   it('opens Settings as a workspace with the five approved categories', async () => {
     render(<App />);
     await openIntegratedSettings();
@@ -281,6 +293,7 @@ describe('Integrated Settings Workspace', () => {
     expect(screen.getByRole('tab', { name: 'AI 接入' })).toBeInTheDocument();
   });
 
+  // it('keeps Whisper model management inside the GPU transcript
   it('keeps Whisper model management inside the GPU transcription mode', async () => {
     render(<App />);
     await openIntegratedSettings();
@@ -292,7 +305,9 @@ describe('Integrated Settings Workspace', () => {
   });
 });
 
+// describe('Fallback Notice', () => {
 describe('Fallback Notice', () => {
+  // it('shows fallback notice on provider-fallback event', async
   it('shows fallback notice on provider-fallback event', async () => {
     render(<App />);
     await startTask();
@@ -304,6 +319,7 @@ describe('Fallback Notice', () => {
     });
   });
 
+  // it('fallback notice contains 知道了 and 打开设置 buttons', async ()
   it('fallback notice contains 知道了 and 打开设置 buttons', async () => {
     render(<App />);
     await startTask();
@@ -316,6 +332,7 @@ describe('Fallback Notice', () => {
     });
   });
 
+  // it('dismisses fallback notice when 知道了 is clicked', async ()
   it('dismisses fallback notice when 知道了 is clicked', async () => {
     render(<App />);
     await startTask();
@@ -330,6 +347,7 @@ describe('Fallback Notice', () => {
     });
   });
 
+  // it('opens settings from fallback notice', async () => {
   it('opens settings from fallback notice', async () => {
     render(<App />);
     await startTask();
@@ -344,6 +362,7 @@ describe('Fallback Notice', () => {
     });
   });
 
+  // it('fallback notice does not interrupt task — progress still
   it('fallback notice does not interrupt task — progress still visible', async () => {
     render(<App />);
     await startTask();
@@ -361,6 +380,7 @@ describe('Fallback Notice', () => {
     });
   });
 
+  // it('task completion dismisses fallback and shows result', as
   it('task completion dismisses fallback and shows result', async () => {
     render(<App />);
     await startTask();
@@ -379,6 +399,7 @@ describe('Fallback Notice', () => {
     expect(screen.queryByText((c: string) => c.includes('本次任务已自动切换到'))).not.toBeInTheDocument();
   });
 
+  // it('reloads profiles on task completion for active selector
   it('reloads profiles on task completion for active selector refresh', async () => {
     render(<App />);
     await startTask();
@@ -391,12 +412,15 @@ describe('Fallback Notice', () => {
   });
 });
 
+// describe('Settings Workspace — Service Groups and Cards', ()
 describe('Settings Workspace — Service Groups and Cards', () => {
+  // it('opens settings workspace from settings button', async ()
   it('opens settings workspace from settings button', async () => {
     render(<App />);
     await openSettings();
   });
 
+  // it('shows transcription profiles in the workspace', async ()
   it('shows transcription profiles in the workspace', async () => {
     render(<App />);
     await openSettings();
@@ -406,6 +430,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('shows summary profiles in a separate service group', asy
   it('shows summary profiles in a separate service group', async () => {
     render(<App />);
     await openSettings('summary');
@@ -418,6 +443,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('editor opens when clicking edit on a profile', async ()
   it('editor opens when clicking edit on a profile', async () => {
     render(<App />);
     await openSettings();
@@ -431,6 +457,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('shows Tencent fields for Tencent profile editing', async
   it('shows Tencent fields for Tencent profile editing', async () => {
     render(<App />);
     await openSettings();
@@ -443,6 +470,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('editor shows API Key for Bearer profiles', async () => {
   it('editor shows API Key for Bearer profiles', async () => {
     render(<App />);
     await openSettings();
@@ -459,6 +487,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     }
   });
 
+  // it('secret fields start empty and never echo stored values',
   it('secret fields start empty and never echo stored values', async () => {
     render(<App />);
     await openSettings();
@@ -472,6 +501,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('supports creating custom API profiles', async () => {
   it('supports creating custom API profiles', async () => {
     render(<App />);
     await openSettings();
@@ -485,6 +515,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('creates a custom transcription service through the appro
   it('creates a custom transcription service through the approved provider dropdown', async () => {
     render(<App />);
     await openSettings();
@@ -504,12 +535,14 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     })));
   });
 
+  // it('exposes an independent custom AI service workflow', asyn
   it('exposes an independent custom AI service workflow', async () => {
     render(<App />);
     await openSettings('summary');
     expect(await screen.findByRole('button', { name: '新增 AI 服务' })).not.toBeDisabled();
   });
 
+  // it('profile cards show credential status', async () => {
   it('profile cards show credential status', async () => {
     render(<App />);
     await openSettings();
@@ -520,6 +553,7 @@ describe('Settings Workspace — Service Groups and Cards', () => {
     });
   });
 
+  // it('profile cards show 凭据未配置 for profiles without credential
   it('profile cards show 凭据未配置 for profiles without credentials', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_profiles') return Promise.resolve(JSON.parse(JSON.stringify(MOCK_PROFILES)));
@@ -543,13 +577,16 @@ describe('Settings Workspace — Service Groups and Cards', () => {
   });
 });
 
+// describe('Connection Test with Charge Warning', () => {
 describe('Connection Test with Charge Warning', () => {
+  // it('shows test button on profile cards', async () => {
   it('shows test button on profile cards', async () => {
     render(<App />);
     await openSettings();
     expect(screen.getAllByText('测试').length).toBeGreaterThanOrEqual(1);
   });
 
+  // it('shows charge warning on first click, then runs test on s
   it('shows charge warning on first click, then runs test on second click', async () => {
     render(<App />);
     await openSettings();
@@ -566,6 +603,7 @@ describe('Connection Test with Charge Warning', () => {
     });
   });
 
+  // it('shows test result after clicking test', async () => {
   it('shows test result after clicking test', async () => {
     render(<App />);
     await openSettings();
@@ -582,7 +620,9 @@ describe('Connection Test with Charge Warning', () => {
   });
 });
 
+// describe('Fallback Selector', () => {
 describe('Fallback Selector', () => {
+  // it('limits fallback options to credential-ready, enabled, no
   it('limits fallback options to credential-ready, enabled, non-Tencent, non-active profiles', async () => {
     render(<App />);
     await openSettings();
@@ -597,6 +637,7 @@ describe('Fallback Selector', () => {
     expect(within(listbox).getByRole('option', { name: /MiMo ASR/ })).toBeInTheDocument();
   });
 
+  // it('shows missing-fallback warning on active transcription c
   it('shows missing-fallback warning on active transcription card without fallback', async () => {
     render(<App />);
     await openSettings();
@@ -607,7 +648,9 @@ describe('Fallback Selector', () => {
   });
 });
 
+// describe('Model Discovery — Explicit Only', () => {
 describe('Model Discovery — Explicit Only', () => {
+  // it('does NOT auto-discover on opening an editor for a summar
   it('does NOT auto-discover on opening an editor for a summary profile', async () => {
     render(<App />);
     await openSettings('summary');
@@ -627,6 +670,7 @@ describe('Model Discovery — Explicit Only', () => {
     expect(getInvoke()).not.toHaveBeenCalledWith('discover_summary_models', expect.anything());
   });
 
+  // it('discovers models only on explicit 发现模型 click', async ()
   it('discovers models only on explicit 发现模型 click', async () => {
     render(<App />);
     await openSettings('summary');
@@ -650,6 +694,7 @@ describe('Model Discovery — Explicit Only', () => {
     });
   });
 
+  // it('preserves manual model input after discovery failure', a
   it('preserves manual model input after discovery failure', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_profiles') return Promise.resolve(JSON.parse(JSON.stringify(MOCK_PROFILES)));
@@ -691,7 +736,9 @@ describe('Model Discovery — Explicit Only', () => {
   });
 });
 
+// describe('Delete Confirmation and Active-Delete Protection',
 describe('Delete Confirmation and Active-Delete Protection', () => {
+  // it('requires two-step confirmation for delete', async () =>
   it('requires two-step confirmation for delete', async () => {
     render(<App />);
     await openSettings();
@@ -705,6 +752,7 @@ describe('Delete Confirmation and Active-Delete Protection', () => {
     expect(mimoDeleteBtn.textContent).toBe('确认删除');
   });
 
+  // it('prevents delete of active transcription profile with war
   it('prevents delete of active transcription profile with warning', async () => {
     render(<App />);
     await openSettings();
@@ -722,7 +770,9 @@ describe('Delete Confirmation and Active-Delete Protection', () => {
   });
 });
 
+// describe('Blank-Secret Edit Preserves Stored Credential', ()
 describe('Blank-Secret Edit Preserves Stored Credential', () => {
+  // it('saving a Tencent profile with blank secrets sends no cre
   it('saving a Tencent profile with blank secrets sends no credential payload', async () => {
     render(<App />);
     await openSettings();
@@ -742,6 +792,7 @@ describe('Blank-Secret Edit Preserves Stored Credential', () => {
     });
   });
 
+  // it('partial Tencent credentials block save', async () => {
   it('partial Tencent credentials block save', async () => {
     render(<App />);
     await openSettings();
@@ -765,13 +816,16 @@ describe('Blank-Secret Edit Preserves Stored Credential', () => {
   });
 });
 
+// describe('Legacy API Key Gate Removed', () => {
 describe('Legacy API Key Gate Removed', () => {
+  // it('start button readiness uses profile credential status, n
   it('start button readiness uses profile credential status, not legacy checkApiKey', async () => {
     render(<App />);
 
     expect(getInvoke()).not.toHaveBeenCalledWith('check_api_key');
   });
 
+  // it('shows specific credential warning for missing transcript
   it('shows specific credential warning for missing transcription credential', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_profiles') return Promise.resolve(JSON.parse(JSON.stringify(MOCK_PROFILES)));
@@ -792,7 +846,9 @@ describe('Legacy API Key Gate Removed', () => {
 
 // ── Minimal Fix 02 ────────────────────────────────────────────────────────────
 
+// describe('Persisted Switch Updates Controlled Values', () =>
 describe('Persisted Switch Updates Controlled Values', () => {
+  // it('returns changed profiles after set_active_profile and as
   it('returns changed profiles after set_active_profile and asserts selector update', async () => {
     // Track mutable profiles state: start with default, update on set_active_profile
     let currentProfiles = JSON.parse(JSON.stringify(MOCK_PROFILES));
@@ -840,7 +896,9 @@ describe('Persisted Switch Updates Controlled Values', () => {
   });
 });
 
+// describe('Active Unready Selector Coherence', () => {
 describe('Active Unready Selector Coherence', () => {
+  // it('shows placeholder when active profile is not credential-
   it('shows placeholder when active profile is not credential-ready but other ready options exist', async () => {
     // tencent-flash is active but not credential-ready; mimo-asr IS ready
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
@@ -865,6 +923,7 @@ describe('Active Unready Selector Coherence', () => {
     });
   });
 
+  // it('shows a matching empty placeholder when no active ID exi
   it('shows a matching empty placeholder when no active ID exists but ready options do', async () => {
     const profiles: AppProfiles = {
       ...JSON.parse(JSON.stringify(MOCK_PROFILES)),
@@ -895,6 +954,7 @@ describe('Active Unready Selector Coherence', () => {
     });
   });
 
+  // it('ignores a delayed readiness rejection from the previous
   it('ignores a delayed readiness rejection from the previous profile document', async () => {
     let rejectOld!: (reason?: unknown) => void;
     const oldReadiness = new Promise<boolean>((_resolve, reject) => {
@@ -961,7 +1021,9 @@ describe('Active Unready Selector Coherence', () => {
   });
 });
 
+// describe('Selector Failure Messages', () => {
 describe('Selector Failure Messages', () => {
+  // it('surfaces set_active_profile failure in mutation error',
   it('surfaces set_active_profile failure in mutation error', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_profiles') return Promise.resolve(JSON.parse(JSON.stringify(MOCK_PROFILES)));
@@ -977,6 +1039,7 @@ describe('Selector Failure Messages', () => {
     });
   });
 
+  // it('surfaces readiness query failure as accessible error', a
   it('surfaces readiness query failure as accessible error', async () => {
     // has_profile_credential rejects for all profiles
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
@@ -993,7 +1056,9 @@ describe('Selector Failure Messages', () => {
   });
 });
 
+// describe('Fallback Completion Persists Active Selector', ()
 describe('Fallback Completion Persists Active Selector', () => {
+  // it('after task completion, returns to idle with MiMo as acti
   it('after task completion, returns to idle with MiMo as active transcription', async () => {
     // Track mutable state: initial = tencent-flash active; after set_active_profile + completion = mimo-asr active
     let currentProfiles = JSON.parse(JSON.stringify(MOCK_PROFILES));
@@ -1042,7 +1107,9 @@ describe('Fallback Completion Persists Active Selector', () => {
   });
 });
 
+// describe('Delete Confirmation Calls delete_profile', () => {
 describe('Delete Confirmation Calls delete_profile', () => {
+  // it('first click does not invoke delete_profile, second click
   it('first click does not invoke delete_profile, second click invokes with exact type and id', async () => {
     render(<App />);
     await openSettings();
@@ -1066,6 +1133,7 @@ describe('Delete Confirmation Calls delete_profile', () => {
     });
   });
 
+  // it('preserves active-delete protection', async () => {
   it('preserves active-delete protection', async () => {
     render(<App />);
     await openSettings();
@@ -1084,7 +1152,9 @@ describe('Delete Confirmation Calls delete_profile', () => {
   });
 });
 
+// describe('Valid Tencent Credential Replacement', () => {
 describe('Valid Tencent Credential Replacement', () => {
+  // it('fills AppID, SecretID, SecretKey and asserts exact camel
   it('fills AppID, SecretID, SecretKey and asserts exact camelCase credential payload', async () => {
     render(<App />);
     await openSettings();
@@ -1116,12 +1186,14 @@ describe('Valid Tencent Credential Replacement', () => {
 
 // ── Migration Notice UI Tests (Stage 05 Minimal Fix 01) ────────────────────
 
+// describe('Migration Notice UI', () => {
 describe('Migration Notice UI', () => {
   beforeEach(() => {
     // Reset to default: get_migration_state returns true by default for this describe block
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = null;
   });
 
+  // it('shows migration notice when get_migration_state returns
   it('shows migration notice when get_migration_state returns true', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_migration_state') return Promise.resolve(true);
@@ -1135,6 +1207,7 @@ describe('Migration Notice UI', () => {
     });
   });
 
+  // it('migration notice has open settings action', async () =>
   it('migration notice has open settings action', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_migration_state') return Promise.resolve(true);
@@ -1148,6 +1221,7 @@ describe('Migration Notice UI', () => {
     });
   });
 
+  // it('dismissal alone does not invoke completeMigration', asyn
   it('dismissal alone does not invoke completeMigration', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_migration_state') return Promise.resolve(true);
@@ -1167,6 +1241,7 @@ describe('Migration Notice UI', () => {
     expect(getInvoke()).not.toHaveBeenCalledWith('complete_migration', expect.anything());
   });
 
+  // it('completion calls completeMigration with confirmed: true'
   it('completion calls completeMigration with confirmed: true', async () => {
     let completed = false;
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
@@ -1190,6 +1265,7 @@ describe('Migration Notice UI', () => {
     expect(completed).toBe(true);
   });
 
+  // it('failed migration stays visible with error message', asyn
   it('failed migration stays visible with error message', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_migration_state') return Promise.resolve(true);
@@ -1210,6 +1286,7 @@ describe('Migration Notice UI', () => {
     expect(screen.getByText('检测到旧版凭据')).toBeInTheDocument();
   });
 
+  // it('successful completion removes notice and refreshes profi
   it('successful completion removes notice and refreshes profiles', async () => {
     (globalThis as Record<string, unknown>).__mockInvokeImpl__ = (cmd: string, _args?: Record<string, unknown>) => {
       if (cmd === 'get_migration_state') return Promise.resolve(true);

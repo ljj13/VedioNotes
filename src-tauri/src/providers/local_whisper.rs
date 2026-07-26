@@ -1,3 +1,5 @@
+//! 本地 Whisper 适配器——封装 whisper.cpp CLI 的调用，包括参数构造、输出解析和错误处理.
+
 use async_trait::async_trait;
 use std::ffi::OsString;
 use std::io::{BufRead, BufReader};
@@ -19,6 +21,7 @@ use crate::providers::TranscriptionAdapter;
 use crate::process_utils::hidden_command;
 
 #[derive(Debug, Clone)]
+/// ProcessOutput
 pub struct ProcessOutput {
     pub status_code: i32,
     pub stdout: Vec<u8>,
@@ -27,23 +30,29 @@ pub struct ProcessOutput {
 
 /// Detail-free because process and filesystem details may contain user paths.
 #[derive(Debug, Clone)]
+/// LocalWhisperError
 pub struct LocalWhisperError;
 
+/// WhisperProgressReporter
 pub type WhisperProgressReporter = Arc<dyn Fn(u8) + Send + Sync>;
+/// WhisperComputeFallbackReporter
 pub type WhisperComputeFallbackReporter = Arc<dyn Fn() + Send + Sync>;
 
 #[derive(Debug, Clone)]
+/// WhisperRuntimePaths
 pub struct WhisperRuntimePaths {
     pub cpu_cli: PathBuf,
     pub cuda_cli: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// WhisperComputeSelection
 pub enum WhisperComputeSelection {
     Automatic,
     CpuOnly,
 }
 
+/// WhisperProcessRunner
 pub trait WhisperProcessRunner: Send + Sync {
     fn run(
         &self,
@@ -54,12 +63,14 @@ pub trait WhisperProcessRunner: Send + Sync {
     ) -> Result<ProcessOutput, LocalWhisperError>;
 }
 
+/// WhisperChild
 pub trait WhisperChild: Send {
     fn try_wait(&mut self) -> Result<Option<i32>, LocalWhisperError>;
     fn kill(&mut self) -> Result<(), LocalWhisperError>;
     fn wait(&mut self) -> Result<ProcessOutput, LocalWhisperError>;
 }
 
+/// WhisperProcessSpawner
 pub trait WhisperProcessSpawner: Send + Sync {
     fn spawn(
         &self,
@@ -99,6 +110,7 @@ impl WhisperChild for StdWhisperChild {
     }
 }
 
+/// StdWhisperProcessSpawner
 pub struct StdWhisperProcessSpawner;
 
 impl WhisperProcessSpawner for StdWhisperProcessSpawner {
@@ -129,11 +141,13 @@ impl WhisperProcessSpawner for StdWhisperProcessSpawner {
     }
 }
 
+/// CommandWhisperProcessRunner
 pub struct CommandWhisperProcessRunner {
     spawner: Arc<dyn WhisperProcessSpawner>,
 }
 
 impl CommandWhisperProcessRunner {
+    /// with spawner
     pub fn with_spawner(spawner: Arc<dyn WhisperProcessSpawner>) -> Self {
         Self { spawner }
     }
@@ -171,6 +185,7 @@ impl WhisperProcessRunner for CommandWhisperProcessRunner {
     }
 }
 
+/// LocalWhisperCppAdapter
 pub struct LocalWhisperCppAdapter {
     pub runner: Arc<dyn WhisperProcessRunner>,
     pub model_root: PathBuf,
@@ -183,6 +198,7 @@ pub struct LocalWhisperCppAdapter {
 }
 
 impl LocalWhisperCppAdapter {
+    /// new
     pub fn new(
         runner: Arc<dyn WhisperProcessRunner>,
         model_root: PathBuf,
@@ -204,6 +220,7 @@ impl LocalWhisperCppAdapter {
         }
     }
 
+    /// with runtime paths
     pub fn with_runtime_paths(
         runner: Arc<dyn WhisperProcessRunner>,
         model_root: PathBuf,
@@ -244,6 +261,7 @@ impl LocalWhisperCppAdapter {
         }
     }
 
+    /// with ready model runtime paths
     pub fn with_ready_model_runtime_paths(
         runner: Arc<dyn WhisperProcessRunner>,
         model_path: PathBuf,
@@ -262,11 +280,13 @@ impl LocalWhisperCppAdapter {
         }
     }
 
+    /// with progress reporter
     pub fn with_progress_reporter(mut self, reporter: WhisperProgressReporter) -> Self {
         self.progress_reporter = reporter;
         self
     }
 
+    /// with compute fallback reporter
     pub fn with_compute_fallback_reporter(
         mut self,
         reporter: WhisperComputeFallbackReporter,
@@ -300,12 +320,14 @@ impl LocalWhisperCppAdapter {
     }
 }
 
+/// whisper text output path
 pub fn whisper_text_output_path(output_base: &Path) -> PathBuf {
     let mut output = output_base.as_os_str().to_os_string();
     output.push(".txt");
     PathBuf::from(output)
 }
 
+/// parse whisper progress line
 pub fn parse_whisper_progress_line(line: &str) -> Option<u8> {
     let percent_index = line.rfind('%')?;
     let prefix = line[..percent_index].trim_end();
@@ -322,6 +344,7 @@ pub fn parse_whisper_progress_line(line: &str) -> Option<u8> {
     (percent <= 100).then_some(percent)
 }
 
+/// map whisper to overall percent
 pub fn map_whisper_to_overall_percent(percent: u8) -> u8 {
     35 + ((u16::from(percent.min(100)) * 35) / 100) as u8
 }

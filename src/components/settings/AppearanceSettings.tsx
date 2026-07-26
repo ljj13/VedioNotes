@@ -1,3 +1,8 @@
+/**
+ * 外观设置面板——用户修改主题、密度和动画偏好.
+ * 修改即时生效，通过 saveAppearancePreferences 持久化.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppearancePreferences, AppPreferences } from '../../lib/types';
 import { saveAppearancePreferences } from '../../lib/bridge';

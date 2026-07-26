@@ -1,3 +1,4 @@
+/** production-settings.structure.test 测试 */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -47,13 +48,40 @@ assert.match(sidebar, /ready-dot/, 'collapsed sidebar keeps the service status d
 const cipherEntry = read('src/features/settings/SettingsEntry.tsx')
 const cipherShell = read('src/features/settings/CipherSettingsShell.tsx')
 const cipherCss = read('src/styles/cipher-settings.css')
+const conceptCss = read('src/styles/concept-workbench.css')
 const sourceManifest = read('src/features/settings/sourceManifest.ts')
+const app = read('src/App.tsx')
+const cipherAi = read('src/features/settings/tabs/AiAccessTab.tsx')
+const cipherData = read('src/features/settings/tabs/DataManagementTab.tsx')
 
 assert.match(cipherEntry, /'legacy' \? 'legacy' : 'cipher'/, 'SettingsEntry defaults to cipher')
-assert.match(cipherShell, /cipher-settings-root/, 'CipherSettingsShell uses cipher-settings-root class')
-assert.match(cipherShell, /cipher-settings-body/, 'CipherSettingsShell uses cipher-settings-body class')
-assert.match(cipherCss, /\.cipher-settings-root\s*\{/, 'cipher-settings.css scopes to .cipher-settings-root')
-assert.match(cipherCss, /\.cipher-confirm-overlay/, 'cipher CSS has confirm dialog styles')
+assert.match(cipherShell, /settings-page/, 'CipherSettingsShell preserves CipherTalk settings-page class')
+assert.match(cipherShell, /settings-tabs/, 'CipherSettingsShell preserves CipherTalk settings-tabs class')
+assert.match(cipherShell, /settings-body/, 'CipherSettingsShell preserves CipherTalk settings-body scroll container')
+assert.doesNotMatch(app, /settings-ciphertalk\.css/, 'App no longer globally imports the legacy settings approximation')
+assert.match(cipherAi, /<Select/, 'AI settings use source HeroUI Select composition')
+assert.match(cipherAi, /<ListBox/, 'AI settings use source HeroUI ListBox composition')
+for (const slotClass of [
+  'cipher-settings-select',
+  'cipher-settings-select-trigger',
+  'cipher-settings-select-popover',
+  'cipher-settings-select-listbox',
+  'cipher-settings-select-option',
+  'cipher-settings-select-option-indicator',
+]) {
+  assert.ok(cipherAi.includes(slotClass), `AI settings expose explicit ${slotClass} slot class`)
+  assert.ok(cipherCss.includes(slotClass), `cipher CSS styles explicit ${slotClass} slot class`)
+}
+for (const slotClass of ['cipher-settings-select', 'cipher-settings-select-trigger', 'cipher-settings-select-popover', 'cipher-settings-select-listbox', 'cipher-settings-select-option']) {
+  assert.ok(cipherData.includes(slotClass), `data settings expose explicit ${slotClass} slot class`)
+}
+assert.doesNotMatch(cipherCss, /(^|,)\s*\[data-slot=/m, 'settings dropdown skin must not use an unscoped global data-slot selector')
+assert.match(cipherCss, /\.cipher-settings-select-option\s*\{[^}]*min-height:\s*48px[^}]*border-radius:\s*10px/s, 'HeroUI settings options use the unified option geometry')
+assert.match(conceptCss, /\.concept-workbench \.service-option,\s*\.concept-workbench \.styled-select-option,\s*\.concept-workbench \.searchable-combobox-option\s*\{[^}]*min-height:\s*48px[^}]*border-radius:\s*10px/s, 'hand-written dropdown options share the unified option geometry')
+assert.match(cipherData, /<AlertDialog/, 'data settings use source HeroUI AlertDialog composition')
+assert.match(cipherCss, /\.cipher-settings-root\.settings-page/, 'cipher-settings.css scopes the source settings-page root')
+assert.match(cipherCss, /\.cipher-settings-root \.settings-body/, 'cipher CSS assigns one settings scroll container')
+assert.match(cipherCss, /scrollbar-width:\s*none/, 'settings body hides the duplicate native scrollbar')
 assert.match(cipherCss, /\.cipher-error-banner/, 'cipher CSS has error banner')
 assert.match(cipherCss, /\.cipher-success-banner/, 'cipher CSS has success banner')
 assert.match(cipherCss, /\.cipher-empty-state/, 'cipher CSS has empty state')

@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 QaWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +10,7 @@ import QaWorkspace from './QaWorkspace';
 const bridge = vi.hoisted(() => ({ searchLibrary: vi.fn(), askHistoryNote: vi.fn(), getCapabilityStatus: vi.fn(), webSearch: vi.fn() }));
 vi.mock('../lib/bridge', () => bridge);
 
+// describe('QaWorkspace', () => {
 describe('QaWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -29,6 +34,7 @@ describe('QaWorkspace', () => {
     bridge.webSearch.mockResolvedValue([{ title: '外部资料', url: 'https://example.test/source', snippet: '可核对的外部事实。' }]);
   });
 
+  // it('requires a selected note and sends questions only throug
   it('requires a selected note and sends questions only through the same-note backend', async () => {
     const user = userEvent.setup();
     render(<QaWorkspace />);
@@ -42,6 +48,7 @@ describe('QaWorkspace', () => {
     expect(await screen.findByText('只根据所选笔记回答。')).toBeTruthy();
   });
 
+  // it('keeps web assistance explicit and renders attributed sea
   it('keeps web assistance explicit and renders attributed search results separately', async () => {
     const user = userEvent.setup();
     render(<QaWorkspace />);
@@ -54,5 +61,15 @@ describe('QaWorkspace', () => {
     const source = await screen.findByRole('link', { name: '外部资料' });
     expect(source.getAttribute('href')).toBe('https://example.test/source');
     expect(screen.getByText('可核对的外部事实。')).toBeTruthy();
+  });
+
+  it('exposes the note picker, conversation and composer as independent landmarks', async () => {
+    const user = userEvent.setup();
+    render(<QaWorkspace />);
+
+    expect(await screen.findByRole('complementary', { name: '选择问答笔记' })).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: /选择笔记 傅里叶变换/ }));
+    expect(screen.getByRole('main', { name: '问答对话' })).toBeTruthy();
+    expect(screen.getByRole('form', { name: '提问编辑器' })).toBeTruthy();
   });
 });

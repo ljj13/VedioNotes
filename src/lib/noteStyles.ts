@@ -1,3 +1,8 @@
+/**
+ * 笔记风格配置——定义 9 种可选笔记风格（极简、详细、小红书等），每种风格对应一个标签和一段 AI 提示词.
+ * 被 CreateWorkspace 和 InputPanel 导入.
+ */
+
 import type { NoteStyle } from './types';
 
 export type NoteStyleOption = {

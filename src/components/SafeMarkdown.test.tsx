@@ -1,8 +1,14 @@
+/**
+ *测试文件——测试 SafeMarkdown 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import SafeMarkdown from './SafeMarkdown';
 
+// describe('SafeMarkdown', () => {
 describe('SafeMarkdown', () => {
+  // it('hides leading YAML front matter and renders semantic hea
   it('hides leading YAML front matter and renders semantic headings and lists', () => {
     render(
       <SafeMarkdown
@@ -17,6 +23,7 @@ describe('SafeMarkdown', () => {
     expect(screen.getByText('来源').tagName).toBe('STRONG');
   });
 
+  // it('renders paragraphs, emphasis, quotes, thematic rules and
   it('renders paragraphs, emphasis, quotes, thematic rules and code', () => {
     const { container } = render(
       <SafeMarkdown
@@ -31,6 +38,7 @@ describe('SafeMarkdown', () => {
     expect(screen.getByText('const safe = true;').closest('pre')).toBeTruthy();
   });
 
+  // it('links only http and https while keeping raw HTML inert',
   it('links only http and https while keeping raw HTML inert', () => {
     const { container } = render(
       <SafeMarkdown

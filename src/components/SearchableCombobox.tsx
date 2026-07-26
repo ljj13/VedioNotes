@@ -1,3 +1,7 @@
+/**
+ *应用组件——SearchableCombobox 页面/功能对应的 React UI 组件。
+ */
+
 import { useId, useMemo, useRef, useState } from 'react';
 
 export type SearchableComboboxOption = {
@@ -7,6 +11,7 @@ export type SearchableComboboxOption = {
   disabled?: boolean;
 };
 
+/** SearchableCombobox */
 export default function SearchableCombobox({
   label,
   value,

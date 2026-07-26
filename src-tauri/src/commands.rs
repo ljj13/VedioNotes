@@ -1,16 +1,6 @@
-// == Profile-Aware Commands and One-Shot Fallback Orchestration ==============
-//
-// Stage 03: Profile-aware Tauri commands, task snapshots, one-shot Tencent-to-
-// non-Tencent quota fallback, and listener ordering.
-//
-// Design:
-//   - ManagedServices groups production resources (profile path, registries).
-//   - FallbackEventSink trait allows tests to capture events without Tauri.
-//   - transcribe_with_fallback() is the testable policy/orchestrator seam.
-//   - Profile CRUD commands validate, persist atomically, and handle credential
-//     rollback ordering.
-//   - start_distillation resolves profile snapshots immediately (fail-fast),
-//     then runs the pipeline with immutable copies.
+//! 命令处理器——所有 #[tauri::command] 函数的注册地.
+//! 前端 bridge.ts 中的每个 invoke 调用最终都路由到这里.
+//! 这是最核心的 Rust 文件.
 
 use crate::credential_store::{
     CapabilityKind, CredentialBackend, CredentialBackendError, CredentialStore, KeyringBackend,
@@ -107,12 +97,14 @@ pub fn task_options_or_default(options: Option<TaskOptions>) -> TaskOptions {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// TranscriptionRoute
 pub enum TranscriptionRoute {
     Captions,
     Sensevoice,
     Profile,
 }
 
+/// select transcription route
 pub fn select_transcription_route(
     captions_available: bool,
     mode: Option<TranscriptionMode>,
@@ -188,6 +180,7 @@ pub struct TauriFallbackEventSink {
 }
 
 impl TauriFallbackEventSink {
+    /// new
     pub fn new(app: AppHandle) -> Self {
         Self { app }
     }
@@ -207,6 +200,7 @@ pub struct RecordingEventSink {
 }
 
 impl RecordingEventSink {
+    /// new
     pub fn new() -> Self {
         Self {
             events: std::sync::Mutex::new(Vec::new()),
@@ -287,10 +281,12 @@ impl ManagedServices {
         PreferencesStore::new(self.preferences_path.clone())
     }
 
+    /// capability store
     pub fn capability_store(&self) -> CapabilityStore {
         CapabilityStore::new(self.capability_path.clone())
     }
 
+    /// data management service
     pub fn data_management_service(&self) -> Result<DataManagementService, AppError> {
         let app_data_root = self.profile_path.parent().ok_or_else(|| {
             AppError::new(
@@ -305,6 +301,7 @@ impl ManagedServices {
         ))
     }
 
+    /// capability output root
     pub fn capability_output_root(&self) -> Result<PathBuf, AppError> {
         self.profile_path.parent().map(PathBuf::from).ok_or_else(|| {
             AppError::new(
@@ -328,6 +325,7 @@ impl ManagedServices {
         Ok(local_model_root(app_data_dir))
     }
 
+    /// cuda runtime root
     pub fn cuda_runtime_root(&self) -> Result<PathBuf, AppError> {
         let app_data_dir = self.profile_path.parent().ok_or_else(|| {
             AppError::new(
@@ -339,6 +337,7 @@ impl ManagedServices {
         Ok(cuda_runtime_root(app_data_dir))
     }
 
+    /// sensevoice root
     pub fn sensevoice_root(&self) -> Result<PathBuf, AppError> {
         let app_data_dir = self.profile_path.parent().ok_or_else(|| {
             AppError::new(
@@ -364,6 +363,7 @@ impl ManagedServices {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// DownloadCookieStatus
 pub struct DownloadCookieStatus {
     pub bilibili: bool,
     pub douyin: bool,
@@ -398,6 +398,7 @@ pub fn download_cookie_status(
     })
 }
 
+/// save download cookie for services
 pub fn save_download_cookie_for_services(
     services: &ManagedServices,
     platform: &str,
@@ -408,6 +409,7 @@ pub fn save_download_cookie_for_services(
         .set(parse_download_platform(platform)?, cookie)
 }
 
+/// delete download cookie for services
 pub fn delete_download_cookie_for_services(
     services: &ManagedServices,
     platform: &str,
@@ -418,6 +420,7 @@ pub fn delete_download_cookie_for_services(
 }
 
 #[tauri::command]
+/// get download cookie status
 pub fn get_download_cookie_status(
     services: State<'_, ManagedServices>,
 ) -> Result<DownloadCookieStatus, AppError> {
@@ -425,6 +428,7 @@ pub fn get_download_cookie_status(
 }
 
 #[tauri::command]
+/// save download cookie
 pub fn save_download_cookie(
     platform: String,
     cookie: String,
@@ -434,6 +438,7 @@ pub fn save_download_cookie(
 }
 
 #[tauri::command]
+/// delete download cookie
 pub fn delete_download_cookie(
     platform: String,
     services: State<'_, ManagedServices>,
@@ -443,6 +448,7 @@ pub fn delete_download_cookie(
 
 /// Return recent completed notes. Storage failures use a redacted app error.
 #[tauri::command]
+/// get home snapshot
 pub fn get_home_snapshot(services: State<'_, ManagedServices>) -> Result<HomeSnapshot, AppError> {
     let history = HistoryStore::open(services.history_path.clone())?;
     let tasks = TaskStore::open(services.history_path.clone())?;
@@ -477,6 +483,7 @@ pub fn get_home_snapshot(services: State<'_, ManagedServices>) -> Result<HomeSna
 }
 
 #[tauri::command]
+/// list task records
 pub fn list_task_records(
     services: State<'_, ManagedServices>,
     query: String,
@@ -485,6 +492,7 @@ pub fn list_task_records(
 }
 
 #[tauri::command]
+/// retry task record
 pub fn retry_task_record(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -493,6 +501,7 @@ pub fn retry_task_record(
 }
 
 #[tauri::command]
+/// search library
 pub fn search_library(
     services: State<'_, ManagedServices>,
     query: LibraryQuery,
@@ -501,6 +510,7 @@ pub fn search_library(
 }
 
 #[tauri::command]
+/// set note favorite
 pub fn set_note_favorite(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -510,6 +520,7 @@ pub fn set_note_favorite(
 }
 
 #[tauri::command]
+/// set note tags
 pub fn set_note_tags(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -519,6 +530,7 @@ pub fn set_note_tags(
 }
 
 #[tauri::command]
+/// mark note opened
 pub fn mark_note_opened(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -528,11 +540,13 @@ pub fn mark_note_opened(
 
 /// Return recent completed notes. Storage failures use a redacted app error.
 #[tauri::command]
+/// list history
 pub fn list_history(services: State<'_, ManagedServices>) -> Result<Vec<HistoryEntry>, AppError> {
     HistoryStore::open(services.history_path.clone())?.list()
 }
 
 #[tauri::command]
+/// search history
 pub fn search_history(
     services: State<'_, ManagedServices>,
     query: String,
@@ -541,6 +555,7 @@ pub fn search_history(
 }
 
 #[tauri::command]
+/// get history
 pub fn get_history(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -552,6 +567,7 @@ pub fn get_history(
 /// Accepting an ID instead of a path keeps arbitrary filesystem reads outside
 /// the Tauri command surface.
 #[tauri::command]
+/// get history markdown
 pub fn get_history_markdown(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -560,6 +576,7 @@ pub fn get_history_markdown(
 }
 
 #[tauri::command]
+/// delete history
 pub fn delete_history(services: State<'_, ManagedServices>, id: i64) -> Result<(), AppError> {
     HistoryStore::open(services.history_path.clone())?.delete(id)
 }
@@ -568,6 +585,7 @@ pub fn delete_history(services: State<'_, ManagedServices>, id: i64) -> Result<(
 /// summary profile and its existing credential. This command does not accept a
 /// profile or arbitrary file path, preventing cross-note context expansion.
 #[tauri::command]
+/// ask history note
 pub async fn ask_history_note(
     services: State<'_, ManagedServices>,
     id: i64,
@@ -641,11 +659,13 @@ where
 // ===========================================================================
 
 #[tauri::command]
+/// get preferences
 pub fn get_preferences(services: State<'_, ManagedServices>) -> Result<AppPreferences, AppError> {
     services.preferences_store().load()
 }
 
 #[tauri::command]
+/// set markdown output dir
 pub fn set_markdown_output_dir(
     services: State<'_, ManagedServices>,
     path: Option<String>,
@@ -658,6 +678,7 @@ pub fn set_markdown_output_dir(
 }
 
 #[tauri::command]
+/// get export preferences
 pub fn get_export_preferences(
     services: State<'_, ManagedServices>,
 ) -> Result<ExportPreferences, AppError> {
@@ -665,6 +686,7 @@ pub fn get_export_preferences(
 }
 
 #[tauri::command]
+/// save export preferences
 pub fn save_export_preferences(
     preferences: ExportPreferences,
     services: State<'_, ManagedServices>,
@@ -677,6 +699,7 @@ pub fn save_export_preferences(
 }
 
 #[tauri::command]
+/// restore export preferences
 pub fn restore_export_preferences(
     services: State<'_, ManagedServices>,
 ) -> Result<ExportPreferences, AppError> {
@@ -688,6 +711,7 @@ pub fn restore_export_preferences(
 }
 
 #[tauri::command]
+/// export note
 pub fn export_note(
     title: String,
     markdown: String,
@@ -709,11 +733,13 @@ pub fn export_note(
 }
 
 #[tauri::command]
+/// get cache usage
 pub fn get_cache_usage(services: State<'_, ManagedServices>) -> Result<CacheUsage, AppError> {
     services.data_management_service()?.cache_usage()
 }
 
 #[tauri::command]
+/// clear cache
 pub fn clear_cache(
     category: CacheCategory,
     services: State<'_, ManagedServices>,
@@ -722,6 +748,7 @@ pub fn clear_cache(
 }
 
 #[tauri::command]
+/// list logs
 pub fn list_logs(
     services: State<'_, ManagedServices>,
 ) -> Result<Vec<LogDescriptor>, AppError> {
@@ -729,6 +756,7 @@ pub fn list_logs(
 }
 
 #[tauri::command]
+/// read log
 pub fn read_log(
     id: String,
     max_bytes: Option<usize>,
@@ -740,6 +768,7 @@ pub fn read_log(
 }
 
 #[tauri::command]
+/// set log level
 pub fn set_log_level(
     level: LogLevel,
     services: State<'_, ManagedServices>,
@@ -752,11 +781,13 @@ pub fn set_log_level(
 }
 
 #[tauri::command]
+/// clear logs
 pub fn clear_logs(services: State<'_, ManagedServices>) -> Result<u64, AppError> {
     services.data_management_service()?.clear_logs()
 }
 
 #[tauri::command]
+/// save appearance preferences
 pub fn save_appearance_preferences(
     appearance: AppearancePreferences,
     services: State<'_, ManagedServices>,
@@ -769,6 +800,7 @@ pub fn save_appearance_preferences(
 }
 
 #[tauri::command]
+/// get about snapshot
 pub fn get_about_snapshot(
     services: State<'_, ManagedServices>,
 ) -> Result<AboutSnapshot, AppError> {
@@ -818,6 +850,7 @@ pub fn get_about_snapshot(
 }
 
 #[tauri::command]
+/// open app data directory
 pub fn open_app_data_directory(
     app: AppHandle,
     services: State<'_, ManagedServices>,
@@ -828,6 +861,7 @@ pub fn open_app_data_directory(
 }
 
 #[tauri::command]
+/// open export directory
 pub fn open_export_directory(
     app: AppHandle,
     services: State<'_, ManagedServices>,
@@ -838,6 +872,7 @@ pub fn open_export_directory(
 }
 
 #[tauri::command]
+/// open log directory
 pub fn open_log_directory(
     app: AppHandle,
     services: State<'_, ManagedServices>,
@@ -848,6 +883,7 @@ pub fn open_log_directory(
 }
 
 #[tauri::command]
+/// open documentation
 pub fn open_documentation(
     app: AppHandle,
     services: State<'_, ManagedServices>,
@@ -901,6 +937,7 @@ fn safe_export_filename(title: &str, format: ExportFormat) -> String {
 }
 
 #[tauri::command]
+/// copy markdown result
 pub fn copy_markdown_result(
     source_path: String,
     destination_path: String,
@@ -925,6 +962,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// new
     pub fn new() -> Self {
         Self {
             cancellation_tokens: std::sync::Mutex::new(std::collections::HashMap::new()),
@@ -941,6 +979,7 @@ impl AppState {
 
 /// Return all profiles.
 #[tauri::command]
+/// get profiles
 pub fn get_profiles(services: State<'_, ManagedServices>) -> Result<AppProfiles, AppError> {
     let store = services.profile_store();
     store.load()
@@ -948,12 +987,14 @@ pub fn get_profiles(services: State<'_, ManagedServices>) -> Result<AppProfiles,
 
 /// Return the immutable reviewed models.dev provider snapshot.
 #[tauri::command]
+/// get summary provider catalog
 pub fn get_summary_provider_catalog() -> Result<Vec<SummaryProviderCatalogEntry>, AppError> {
     Ok(summary_catalog()?.providers.clone())
 }
 
 /// Return registry-backed local model status without touching credentials.
 #[tauri::command]
+/// list local models
 pub fn list_local_models(
     services: State<'_, ManagedServices>,
 ) -> Result<Vec<LocalModelStatus>, AppError> {
@@ -968,6 +1009,7 @@ pub fn list_local_models(
 
 /// Download one fixed registry model and emit redacted progress only.
 #[tauri::command]
+/// download local model
 pub async fn download_local_model(
     model_id: String,
     app: AppHandle,
@@ -1014,6 +1056,7 @@ pub async fn download_local_model(
 /// Delete a fixed model only inside the app-owned model root. Deleting the
 /// selected local model requires confirmation and clears that selection.
 #[tauri::command]
+/// delete local model
 pub fn delete_local_model(
     model_id: String,
     confirmed_current_delete: bool,
@@ -1052,6 +1095,7 @@ pub fn delete_local_model(
 }
 
 #[tauri::command]
+/// get cuda runtime status
 pub fn get_cuda_runtime_status(
     services: State<'_, ManagedServices>,
 ) -> Result<CudaRuntimeStatus, AppError> {
@@ -1064,6 +1108,7 @@ pub fn get_cuda_runtime_status(
 }
 
 #[tauri::command]
+/// set local compute mode
 pub fn set_local_compute_mode(
     mode: LocalComputeMode,
     services: State<'_, ManagedServices>,
@@ -1076,6 +1121,7 @@ pub fn set_local_compute_mode(
 }
 
 #[tauri::command]
+/// set transcription preferences
 pub fn set_transcription_preferences(
     transcription_mode: TranscriptionMode,
     sensevoice_languages: Vec<SenseVoiceLanguage>,
@@ -1097,6 +1143,7 @@ pub fn set_transcription_preferences(
 }
 
 #[tauri::command]
+/// download cuda runtime
 pub async fn download_cuda_runtime(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -1162,6 +1209,7 @@ pub async fn download_cuda_runtime(
 }
 
 #[tauri::command]
+/// delete cuda runtime
 pub fn delete_cuda_runtime(
     state: State<'_, AppState>,
     services: State<'_, ManagedServices>,
@@ -1176,6 +1224,7 @@ pub fn delete_cuda_runtime(
 }
 
 #[tauri::command]
+/// get sensevoice status
 pub fn get_sensevoice_status(
     services: State<'_, ManagedServices>,
 ) -> Result<SenseVoiceStatus, AppError> {
@@ -1185,6 +1234,7 @@ pub fn get_sensevoice_status(
 }
 
 #[tauri::command]
+/// download sensevoice
 pub async fn download_sensevoice(
     model_id: SenseVoiceModelId,
     app: AppHandle,
@@ -1251,6 +1301,7 @@ pub async fn download_sensevoice(
 }
 
 #[tauri::command]
+/// cancel sensevoice download
 pub fn cancel_sensevoice_download(state: State<'_, AppState>) -> Result<(), AppError> {
     if state.sensevoice_operation_active.load(Ordering::SeqCst) {
         state
@@ -1261,6 +1312,7 @@ pub fn cancel_sensevoice_download(state: State<'_, AppState>) -> Result<(), AppE
 }
 
 #[tauri::command]
+/// delete sensevoice
 pub fn delete_sensevoice(
     model_id: SenseVoiceModelId,
     confirmed_selected_delete: bool,
@@ -1316,6 +1368,7 @@ pub fn delete_sensevoice(
 }
 
 #[tauri::command]
+/// set sensevoice model
 pub fn set_sensevoice_model(
     model_id: SenseVoiceModelId,
     state: State<'_, AppState>,
@@ -1352,6 +1405,7 @@ pub fn set_sensevoice_model(
 /// Check whether a credential exists for a given profile type and ID.
 /// Returns `true`/`false` only — never returns secret values.
 #[tauri::command]
+/// has profile credential
 pub fn has_profile_credential(
     services: State<'_, ManagedServices>,
     profile_type: String,
@@ -1368,6 +1422,7 @@ pub fn has_profile_credential(
 /// 3. On JSON save failure, restore the previous credential state (or remove
 ///    the newly created credential if no previous state existed).
 #[tauri::command]
+/// save transcription profile
 pub fn save_transcription_profile(
     services: State<'_, ManagedServices>,
     profile: TranscriptionProfile,
@@ -1424,6 +1479,7 @@ pub fn save_transcription_profile(
 
 /// Save (create or update) a summary profile with compensating rollback.
 #[tauri::command]
+/// save summary profile
 pub fn save_summary_profile(
     services: State<'_, ManagedServices>,
     profile: SummaryProfile,
@@ -1481,6 +1537,7 @@ pub fn save_summary_profile(
 /// profile document write. Rust resolves the protocol from the embedded
 /// provider catalog; callers cannot submit or override it.
 #[tauri::command]
+/// save and activate catalog summary profile
 pub fn save_and_activate_catalog_summary_profile(
     provider_id: String,
     model: String,
@@ -1497,6 +1554,7 @@ pub fn save_and_activate_catalog_summary_profile(
     )
 }
 
+/// save and activate catalog summary profile with services
 pub fn save_and_activate_catalog_summary_profile_with_services(
     provider_id: String,
     model: String,
@@ -1625,6 +1683,7 @@ pub fn save_and_activate_catalog_summary_profile_with_services(
 /// 7. On JSON save failure, restore credential; if restoration also fails,
 ///    surface both errors as a combined rollback error.
 #[tauri::command]
+/// delete profile
 pub fn delete_profile(
     services: State<'_, ManagedServices>,
     profile_type: String,
@@ -1745,6 +1804,7 @@ pub fn delete_profile(
 
 /// Set the active profile for a given type.
 #[tauri::command]
+/// set active profile
 pub fn set_active_profile(
     services: State<'_, ManagedServices>,
     profile_type: String,
@@ -1797,6 +1857,7 @@ pub fn set_active_profile(
 
 /// Set the fallback transcription profile (null to clear).
 #[tauri::command]
+/// set fallback transcription profile
 pub fn set_fallback_transcription_profile(
     services: State<'_, ManagedServices>,
     profile_id: Option<String>,
@@ -1811,6 +1872,7 @@ pub fn set_fallback_transcription_profile(
 
 /// Test a profile by attempting a lightweight connectivity check.
 #[tauri::command]
+/// test profile
 pub async fn test_profile(
     services: State<'_, ManagedServices>,
     profile_type: String,
@@ -1900,6 +1962,7 @@ pub async fn test_profile(
 
 /// Discover available models for a summary profile.
 #[tauri::command]
+/// discover summary models
 pub async fn discover_summary_models(
     services: State<'_, ManagedServices>,
     profile_id: String,
@@ -1968,6 +2031,7 @@ fn task_record_display(source: &InputSource) -> (String, String) {
 /// `task_id` is generated by the caller (React) so event listeners are
 /// registered **before** any background progress can be emitted.
 #[tauri::command]
+/// start distillation
 pub async fn start_distillation(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -2241,6 +2305,7 @@ pub async fn start_distillation(
     Ok(())
 }
 
+/// persist completed history
 pub fn persist_completed_history(
     history_path: &std::path::Path,
     task_work_dir: &std::path::Path,
@@ -2303,6 +2368,7 @@ pub fn persist_completed_history(
 
 /// Cancel a running distillation task by its ID.
 #[tauri::command]
+/// cancel distillation
 pub async fn cancel_distillation(
     state: State<'_, AppState>,
     task_id: String,
@@ -2319,6 +2385,7 @@ pub async fn cancel_distillation(
 }
 
 #[tauri::command]
+/// get diagnostic log path
 pub fn get_diagnostic_log_path() -> Result<String, AppError> {
     diagnostics::log_path()
         .map(|path| path.to_string_lossy().into_owned())
@@ -2337,12 +2404,14 @@ pub fn get_diagnostic_log_path() -> Result<String, AppError> {
 
 /// Save an API key to Windows Credential Manager.
 #[tauri::command]
+/// save api key command
 pub async fn save_api_key_command(key: String) -> Result<(), AppError> {
     save_api_key(&key)
 }
 
 /// Return whether a non-empty API key is stored in the credential vault.
 #[tauri::command]
+/// check api key
 pub async fn check_api_key() -> Result<bool, AppError> {
     match load_api_key() {
         Ok(k) => Ok(!k.is_empty()),
@@ -2403,12 +2472,14 @@ impl LegacyCredentialBackend for KeyringLegacyBackend {
 /// `has_legacy` returns the configured boolean.
 /// `delete_legacy` fails if `fail_delete` is true, simulating a backend error.
 #[derive(Clone, Debug)]
+/// InMemoryLegacyBackend
 pub struct InMemoryLegacyBackend {
     pub has: bool,
     pub fail_delete: bool,
 }
 
 impl InMemoryLegacyBackend {
+    /// new
     pub fn new() -> Self {
         Self {
             has: false,
@@ -2416,6 +2487,7 @@ impl InMemoryLegacyBackend {
         }
     }
 
+    /// with legacy
     pub fn with_legacy() -> Self {
         Self {
             has: true,
@@ -2423,6 +2495,7 @@ impl InMemoryLegacyBackend {
         }
     }
 
+    /// with failing delete
     pub fn with_failing_delete() -> Self {
         Self {
             has: true,
@@ -2592,6 +2665,7 @@ pub fn refresh_migration_state(
 /// Returns `true` if a legacy API key was found. Never returns the key value or
 /// any secret data — only a boolean.
 #[tauri::command]
+/// check legacy credential
 pub async fn check_legacy_credential() -> Result<bool, AppError> {
     let backend = KeyringLegacyBackend;
     Ok(backend.has_legacy())
@@ -2610,6 +2684,7 @@ pub async fn check_legacy_credential() -> Result<bool, AppError> {
 ///
 /// Returns the updated `AppProfiles` on success.
 #[tauri::command]
+/// complete migration
 pub fn complete_migration(
     services: State<'_, ManagedServices>,
     confirmed: bool,
@@ -2624,6 +2699,7 @@ pub fn complete_migration(
 /// Get the current `migration_required` state from the profile store.
 /// Returns a boolean only — no secrets or profile data.
 #[tauri::command]
+/// get migration state
 pub fn get_migration_state(services: State<'_, ManagedServices>) -> Result<bool, AppError> {
     let profile_store = services.profile_store();
     let legacy_backend = KeyringLegacyBackend;
@@ -2848,12 +2924,20 @@ async fn run_pipeline(
                 let platform = classify_platform_url(url)?;
                 let cookie_file = DownloadCookieStore::production()
                     .write_netscape_cookie_file(platform, task_work_dir)?;
+                let mut download_percent = 10_u8;
                 download_platform(
                     url,
                     task_work_dir,
                     cookie_file.as_ref().map(|file| file.path()),
                     |message| {
-                        let _ = emit_progress(app, task_id, TaskStage::Downloading, message, 10);
+                        download_percent = download_percent.saturating_add(1).min(24);
+                        let _ = emit_progress(
+                            app,
+                            task_id,
+                            TaskStage::Downloading,
+                            message,
+                            download_percent,
+                        );
                     },
                 )?
             }
@@ -3211,6 +3295,7 @@ fn check_cancelled(flag: &AtomicBool) -> Result<(), AppError> {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// CapabilityStatusItem
 pub struct CapabilityStatusItem {
     pub enabled: bool,
     pub configured: bool,
@@ -3220,6 +3305,7 @@ pub struct CapabilityStatusItem {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// CapabilityStatus
 pub struct CapabilityStatus {
     pub vector: CapabilityStatusItem,
     pub rerank: CapabilityStatusItem,
@@ -3231,6 +3317,7 @@ pub struct CapabilityStatus {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// CapabilityTestResult
 pub struct CapabilityTestResult {
     pub ok: bool,
     pub message: String,
@@ -3238,12 +3325,14 @@ pub struct CapabilityTestResult {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// LocalAgentDetection
 pub struct LocalAgentDetection {
     pub provider_id: String,
     pub configured: bool,
     pub executable_found: bool,
 }
 
+/// capability status for services
 pub fn capability_status_for_services(
     services: &ManagedServices,
 ) -> Result<CapabilityStatus, AppError> {
@@ -3322,6 +3411,7 @@ fn save_capability_secret(
     Ok(())
 }
 
+/// save vector config for services
 pub fn save_vector_config_for_services(
     services: &ManagedServices,
     config: VectorConfig,
@@ -3333,6 +3423,7 @@ pub fn save_vector_config_for_services(
     Ok(capability_status_for_services(services)?.vector)
 }
 
+/// save rerank config for services
 pub fn save_rerank_config_for_services(
     services: &ManagedServices,
     config: RerankConfig,
@@ -3344,6 +3435,7 @@ pub fn save_rerank_config_for_services(
     Ok(capability_status_for_services(services)?.rerank)
 }
 
+/// save web search config for services
 pub fn save_web_search_config_for_services(
     services: &ManagedServices,
     config: WebSearchConfig,
@@ -3360,6 +3452,7 @@ pub fn save_web_search_config_for_services(
     Ok(capability_status_for_services(services)?.web_search)
 }
 
+/// save tts config for services
 pub fn save_tts_config_for_services(
     services: &ManagedServices,
     config: TtsConfig,
@@ -3371,6 +3464,7 @@ pub fn save_tts_config_for_services(
     Ok(capability_status_for_services(services)?.tts)
 }
 
+/// save image config for services
 pub fn save_image_config_for_services(
     services: &ManagedServices,
     config: ImageConfig,
@@ -3382,6 +3476,7 @@ pub fn save_image_config_for_services(
     Ok(capability_status_for_services(services)?.image)
 }
 
+/// save local agent config for services
 pub fn save_local_agent_config_for_services(
     services: &ManagedServices,
     config: LocalAgentConfig,
@@ -3391,6 +3486,7 @@ pub fn save_local_agent_config_for_services(
 }
 
 #[tauri::command]
+/// get capability settings
 pub fn get_capability_settings(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilitySettings, AppError> {
@@ -3398,6 +3494,7 @@ pub fn get_capability_settings(
 }
 
 #[tauri::command]
+/// get capability status
 pub fn get_capability_status(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityStatus, AppError> {
@@ -3405,6 +3502,7 @@ pub fn get_capability_status(
 }
 
 #[tauri::command]
+/// save vector config
 pub fn save_vector_config(
     services: State<'_, ManagedServices>,
     config: VectorConfig,
@@ -3414,6 +3512,7 @@ pub fn save_vector_config(
 }
 
 #[tauri::command]
+/// save rerank config
 pub fn save_rerank_config(
     services: State<'_, ManagedServices>,
     config: RerankConfig,
@@ -3423,6 +3522,7 @@ pub fn save_rerank_config(
 }
 
 #[tauri::command]
+/// save web search config
 pub fn save_web_search_config(
     services: State<'_, ManagedServices>,
     config: WebSearchConfig,
@@ -3432,6 +3532,7 @@ pub fn save_web_search_config(
 }
 
 #[tauri::command]
+/// save tts config
 pub fn save_tts_config(
     services: State<'_, ManagedServices>,
     config: TtsConfig,
@@ -3441,6 +3542,7 @@ pub fn save_tts_config(
 }
 
 #[tauri::command]
+/// save image config
 pub fn save_image_config(
     services: State<'_, ManagedServices>,
     config: ImageConfig,
@@ -3450,6 +3552,7 @@ pub fn save_image_config(
 }
 
 #[tauri::command]
+/// save local agent config
 pub fn save_local_agent_config(
     services: State<'_, ManagedServices>,
     config: LocalAgentConfig,
@@ -3469,6 +3572,7 @@ fn capability_test_ok(message: &str) -> CapabilityTestResult {
 }
 
 #[tauri::command]
+/// test vector config
 pub async fn test_vector_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3477,6 +3581,7 @@ pub async fn test_vector_config(
 }
 
 #[tauri::command]
+/// test rerank config
 pub async fn test_rerank_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3495,6 +3600,7 @@ pub async fn test_rerank_config(
 }
 
 #[tauri::command]
+/// test web search config
 pub async fn test_web_search_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3503,6 +3609,7 @@ pub async fn test_web_search_config(
 }
 
 #[tauri::command]
+/// test tts config
 pub async fn test_tts_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3511,6 +3618,7 @@ pub async fn test_tts_config(
 }
 
 #[tauri::command]
+/// test image config
 pub async fn test_image_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3519,6 +3627,7 @@ pub async fn test_image_config(
 }
 
 #[tauri::command]
+/// test local agent config
 pub fn test_local_agent_config(
     services: State<'_, ManagedServices>,
 ) -> Result<CapabilityTestResult, AppError> {
@@ -3527,6 +3636,7 @@ pub fn test_local_agent_config(
 }
 
 #[tauri::command]
+/// index note
 pub async fn index_note(
     services: State<'_, ManagedServices>,
     note_id: String,
@@ -3581,6 +3691,7 @@ async fn semantic_search_inner(
 }
 
 #[tauri::command]
+/// semantic search
 pub async fn semantic_search(
     services: State<'_, ManagedServices>,
     query: String,
@@ -3604,6 +3715,7 @@ async fn web_search_inner(
 }
 
 #[tauri::command]
+/// web search
 pub async fn web_search(
     services: State<'_, ManagedServices>,
     query: String,
@@ -3633,6 +3745,7 @@ async fn synthesize_speech_inner(
 }
 
 #[tauri::command]
+/// synthesize speech
 pub async fn synthesize_speech(
     services: State<'_, ManagedServices>,
     text: String,
@@ -3662,6 +3775,7 @@ async fn generate_note_image_inner(
 }
 
 #[tauri::command]
+/// generate note image
 pub async fn generate_note_image(
     services: State<'_, ManagedServices>,
     prompt: String,
@@ -3670,6 +3784,7 @@ pub async fn generate_note_image(
 }
 
 #[tauri::command]
+/// detect local agents
 pub fn detect_local_agents(
     services: State<'_, ManagedServices>,
 ) -> Result<Vec<LocalAgentDetection>, AppError> {
@@ -3696,6 +3811,7 @@ fn run_local_agent_inner(
 }
 
 #[tauri::command]
+/// run local agent
 pub fn run_local_agent(
     services: State<'_, ManagedServices>,
     prompt: String,

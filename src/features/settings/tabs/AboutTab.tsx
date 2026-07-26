@@ -1,127 +1,177 @@
+/**
+ *关于页——显示应用版本、组件状态、开源声明和本地目录入口。
+ */
+
+import { BookOpen, CircleCheck, CircleExclamation, FolderOpen } from '@gravity-ui/icons';
+import { Button, Card, Chip, Separator, Typography } from '@heroui/react';
 import { useEffect, useState } from 'react';
-import { Card, Button } from '@heroui/react';
-import { CircleCheck, CircleExclamation, FolderOpen, BookOpen, Globe } from '@gravity-ui/icons';
+import type { AboutComponent, AboutSnapshot } from '../../../lib/types';
 import { settingsPlatform } from '../../../platform/settings';
 import { CIPHERTALK_SETTINGS_SOURCE } from '../sourceManifest';
-import type { AboutSnapshot, AboutComponent } from '../../../lib/types';
 import type { SettingsEntryProps } from '../settingsTypes';
 
-const REPO_URL = 'https://github.com/ljj13/VedioNotes';
-const DOCS_URL = 'https://github.com/ljj13/VedioNotes#readme';
-
+/** AboutTab */
 export default function AboutTab(_props: SettingsEntryProps) {
   const [snapshot, setSnapshot] = useState<AboutSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    settingsPlatform.about.getAboutSnapshot().then((snap) => {
-      setSnapshot(snap);
-      setLoading(false);
-    }).catch((e) => {
-      setError(`加载关于信息失败: ${e instanceof Error ? e.message : String(e)}`);
-      setLoading(false);
-    });
+    settingsPlatform.about.getAboutSnapshot().then(setSnapshot).catch((cause) => {
+      setError(`加载关于信息失败: ${cause instanceof Error ? cause.message : String(cause)}`);
+    }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div role="status">正在加载关于信息...</div>;
+  if (loading) return <div className="tab-content" role="status">正在加载关于信息...</div>;
 
-  const componentStatusIcon = (status: string) => {
-    if (status === 'ready' || status === 'installed') return <CircleCheck width={14} />;
-    return <CircleExclamation width={14} />;
-  };
+  const directories = snapshot ? [
+    { id: 'app-data', label: '应用数据目录', path: snapshot.appDataDir, open: settingsPlatform.about.openAppDataDirectory },
+    { id: 'export', label: 'Markdown 导出目录', path: snapshot.exportDir, open: settingsPlatform.about.openExportDirectory },
+    { id: 'logs', label: '诊断日志目录', path: snapshot.logDir, open: settingsPlatform.about.openLogDirectory },
+  ] : [];
+
+  const versions = snapshot ? [
+    { label: '应用版本', value: `v${snapshot.appVersion}` },
+    { label: 'Tauri', value: snapshot.tauriVersion },
+    { label: 'React', value: snapshot.frontendVersion },
+    { label: 'Rust', value: snapshot.rustVersion },
+  ] : [];
 
   return (
-    <div className="cipher-about-tab">
-      <header className="cipher-feature-header">
-        <h2>关于 VedioNotes</h2>
-        <p>视频核心提炼笔记工具</p>
-      </header>
-
-      {error && <div role="alert" className="cipher-error-banner"><CircleExclamation width={16} /> {error}</div>}
-
+    <div className="tab-content cipher-about-panel">
+      {error && <p role="alert" className="text-sm text-danger"><CircleExclamation width={16} className="inline" /> {error}</p>}
       {snapshot && (
-        <div className="cipher-about-content">
-          {/* Version Info */}
-          <Card className="cipher-about-card">
-            <div className="cipher-about-row"><strong>应用名称</strong><span>VedioNotes</span></div>
-            <div className="cipher-about-row"><strong>版本</strong><span>{snapshot.appVersion}</span></div>
-            <div className="cipher-about-row"><strong>Tauri</strong><span>{snapshot.tauriVersion}</span></div>
-            <div className="cipher-about-row"><strong>React</strong><span>{snapshot.frontendVersion}</span></div>
-            <div className="cipher-about-row"><strong>Rust</strong><span>{snapshot.rustVersion}</span></div>
-            <div className="cipher-about-row"><strong>WebView2</strong><span>系统内置</span></div>
-          </Card>
+        <>
+          <section className="cipher-about-hero">
+            <div className="cipher-about-logo" aria-hidden="true">VN</div>
+            <div className="cipher-about-hero-copy">
+              <div className="cipher-about-title-row">
+                <Typography.Heading level={2} className="text-2xl font-semibold text-foreground">VedioNotes</Typography.Heading>
+                <Chip size="sm" variant="soft" className="cipher-about-version-chip">
+                  <Chip.Label className="cipher-about-safe-copy">v{snapshot.appVersion}</Chip.Label>
+                </Chip>
+              </div>
+              <Typography.Paragraph size="sm" color="muted">把视频、字幕和音频整理成可检索、可追问的结构化笔记。</Typography.Paragraph>
+              <div className="cipher-about-badges">
+                <Chip size="sm" color="success" variant="soft"><CircleCheck width={12} /><Chip.Label>本地数据</Chip.Label></Chip>
+                <Chip size="sm" variant="secondary"><Chip.Label>Tauri 2</Chip.Label></Chip>
+                <Chip size="sm" variant="secondary"><Chip.Label>WebView2</Chip.Label></Chip>
+              </div>
+            </div>
+          </section>
 
-          {/* Component Status */}
-          {snapshot.components.length > 0 && (
-            <section className="cipher-about-section">
-              <h3>组件状态</h3>
-              <Card className="cipher-components-card">
-                {snapshot.components.map((comp: AboutComponent) => (
-                  <div key={comp.name} className="cipher-component-item">
-                    <span className="cipher-component-status">{componentStatusIcon(comp.status)}</span>
-                    <strong>{comp.name}</strong>
-                    <span className="cipher-component-version">{comp.version}</span>
-                    <span className="cipher-component-license">{comp.license}</span>
-                    <span className="cipher-component-state">{comp.status}</span>
-                  </div>
+          <Separator />
+
+          <section className="cipher-about-primary-grid">
+            <div className="cipher-about-section">
+              <div className="cipher-about-section-heading">
+                <Typography.Heading level={3} className="text-lg font-semibold">运行组件</Typography.Heading>
+                <Typography.Paragraph size="sm" color="muted">来自当前 VedioNotes 运行环境的真实状态。</Typography.Paragraph>
+              </div>
+              <div className="cipher-about-component-grid">
+                {snapshot.components.map((component: AboutComponent) => (
+                  <Card key={component.name} className="cipher-about-component-card">
+                    <Card.Header className="cipher-about-component-head">
+                      <div className="cipher-about-component-copy cipher-about-safe-copy">
+                        <Card.Title>{component.name}</Card.Title>
+                        <Card.Description>{component.license}</Card.Description>
+                      </div>
+                      <Chip
+                        size="sm"
+                        color={component.status === 'ready' || component.status === 'installed' ? 'success' : 'warning'}
+                        variant="soft"
+                        className="cipher-about-component-status"
+                      >
+                        <Chip.Label className="cipher-about-safe-copy">{component.status}</Chip.Label>
+                      </Chip>
+                    </Card.Header>
+                    <Card.Content>
+                      <span className="cipher-about-component-version cipher-about-safe-copy">{component.version || '未报告版本'}</span>
+                    </Card.Content>
+                  </Card>
                 ))}
-              </Card>
-            </section>
-          )}
-
-          {/* Repository and Documentation */}
-          <section className="cipher-about-section">
-            <h3>仓库与文档</h3>
-            <div className="cipher-about-links">
-              <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="cipher-about-link">
-                <Globe width={16} /> GitHub 仓库
-              </a>
-              <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className="cipher-about-link">
-                <BookOpen width={16} /> 在线文档
-              </a>
+              </div>
             </div>
-            <div className="cipher-model-actions">
-              <Button variant="ghost" onClick={() => settingsPlatform.about.openAppDataDirectory()}>
-                <FolderOpen width={14} />打开应用数据目录
-              </Button>
-              <Button variant="ghost" onClick={() => settingsPlatform.about.openExportDirectory()}>
-                <FolderOpen width={14} />打开导出目录
-              </Button>
-              <Button variant="ghost" onClick={() => settingsPlatform.about.openLogDirectory()}>
-                <FolderOpen width={14} />打开日志目录
-              </Button>
-              <Button variant="ghost" onClick={() => settingsPlatform.about.openDocumentation()}>
-                <BookOpen width={14} />打开文档
-              </Button>
-            </div>
-          </section>
 
-          {/* CipherTalk Attribution */}
-          <section className="cipher-about-section">
-            <h3>第三方来源</h3>
-            <Card className="cipher-attribution-card">
-              <div className="cipher-attribution-row">
-                <strong>设置界面来源</strong>
-                <span>CipherTalk</span>
-              </div>
-              <div className="cipher-attribution-row">
-                <strong>源码提交</strong>
-                <code>{CIPHERTALK_SETTINGS_SOURCE.commit}</code>
-              </div>
-              <div className="cipher-attribution-row">
-                <strong>许可证</strong>
-                <span>{CIPHERTALK_SETTINGS_SOURCE.license}</span>
-              </div>
-              <div className="cipher-attribution-note">
-                VedioNotes 的设置界面（外观、语音转文字、AI 接入、数据管理、关于）的选择性源码移植自 CipherTalk 项目，基于 CC BY-NC-SA 4.0 许可证。移植过程中适配了 Tauri/Rust 后端，移除了 Electron、微信和数据库解密等无关功能。
-              </div>
+            <Card className="cipher-about-version-card">
+              <Card.Header>
+                <Card.Title>版本信息</Card.Title>
+                <Card.Description>当前应用和运行框架版本</Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <dl className="cipher-about-version-list">
+                  {versions.map((version) => (
+                    <div key={version.label} className="cipher-about-version-item">
+                      <dt>{version.label}</dt>
+                      <dd className="cipher-about-safe-copy">{version.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Card.Content>
             </Card>
-            <p className="cipher-attribution-extra">
-              本项目还使用 whisper.cpp (MIT)、sherpa-onnx (Apache-2.0) 等开源项目。详见 <code>THIRD_PARTY_NOTICES.md</code>。
-            </p>
           </section>
-        </div>
+
+          <section className="cipher-about-links-section">
+            <div className="cipher-about-section-heading">
+              <Typography.Heading level={3} className="text-lg font-semibold">相关链接</Typography.Heading>
+              <Typography.Paragraph size="sm" color="muted">打开 VedioNotes 项目文档。</Typography.Paragraph>
+            </div>
+            <Button variant="outline" onPress={() => settingsPlatform.about.openDocumentation()}>
+              <BookOpen width={16} />项目文档
+            </Button>
+          </section>
+
+          <section className="cipher-about-section">
+            <div className="cipher-about-section-heading">
+              <Typography.Heading level={3} className="text-lg font-semibold">本地目录</Typography.Heading>
+              <Typography.Paragraph size="sm" color="muted">查看应用数据、Markdown 输出和诊断日志的实际位置。</Typography.Paragraph>
+            </div>
+            <div className="cipher-about-directory-grid">
+              {directories.map((directory) => (
+                <Card key={directory.id} className="cipher-about-directory-card">
+                  <Card.Header>
+                    <Card.Title>{directory.label}</Card.Title>
+                  </Card.Header>
+                  <Card.Content className="cipher-about-directory-content">
+                    <code className="cipher-about-directory-path cipher-about-safe-copy">{directory.path || '未配置'}</code>
+                    <Button variant="outline" onPress={() => directory.open()}>
+                      <FolderOpen width={16} />打开目录
+                    </Button>
+                  </Card.Content>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          <section className="cipher-about-section">
+            <div className="cipher-about-section-heading">
+              <Typography.Heading level={3} className="text-lg font-semibold">第三方来源</Typography.Heading>
+              <Typography.Paragraph size="sm" color="muted">保留移植来源、版本和许可证信息。</Typography.Paragraph>
+            </div>
+            <Card className="cipher-about-source-card">
+              <Card.Header>
+                <Card.Title>CipherTalk Settings frontend</Card.Title>
+                <Card.Description>选择性源码移植并适配 Tauri/Rust</Card.Description>
+              </Card.Header>
+              <Card.Content>
+                <dl className="cipher-about-source-list">
+                  <div className="cipher-about-source-row">
+                    <dt>Source commit</dt>
+                    <dd><code className="cipher-about-safe-copy">{CIPHERTALK_SETTINGS_SOURCE.commit}</code></dd>
+                  </div>
+                  <div className="cipher-about-source-row">
+                    <dt>License</dt>
+                    <dd className="cipher-about-safe-copy">{CIPHERTALK_SETTINGS_SOURCE.license}</dd>
+                  </div>
+                  <div className="cipher-about-source-row">
+                    <dt>移植范围</dt>
+                    <dd className="cipher-about-safe-copy">保留外观、语音转文字、AI 接入、数据管理和关于页面的结构与视觉行为；未移植 Electron、微信、数据库解密、插件和 updater。</dd>
+                  </div>
+                </dl>
+              </Card.Content>
+            </Card>
+          </section>
+        </>
       )}
     </div>
   );

@@ -1,3 +1,7 @@
+/**
+ *服务选择器——一个下拉选择框，用于选择当前使用的转写或 AI 总结服务。
+ */
+
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 export type ServicePickerOption = {
@@ -19,6 +23,7 @@ type Props = {
   searchable?: boolean;
 };
 
+/** ServicePicker */
 export default function ServicePicker({
   label,
   prefix,
@@ -97,6 +102,9 @@ export default function ServicePicker({
     if (event.key === 'Escape') {
       event.preventDefault();
       closeAndRestoreFocus();
+    } else if (event.key === 'Tab') {
+      setOpen(false);
+      setQuery('');
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       setActiveIndex((index) => Math.min(filteredOptions.length - 1, index + 1));
@@ -201,14 +209,17 @@ export default function ServicePicker({
   );
 }
 
+/** ChevronIcon */
 function ChevronIcon() {
   return <svg className="service-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5" /></svg>;
 }
 
+/** SearchIcon */
 function SearchIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>;
 }
 
+/** CheckIcon */
 function CheckIcon() {
   return <svg className="service-option-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }

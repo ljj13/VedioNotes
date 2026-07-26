@@ -1,3 +1,4 @@
+/** ai-capability-bridge.test 测试 */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -17,7 +18,7 @@ for (const name of [
   'WebSearchResult',
   'LocalAgentResult',
 ]) {
-  assert.match(types, new RegExp(`export interface ${name}\\b`), `missing ${name}`);
+  assert.match(types, new RegExp(`export (?:interface|type) ${name}\\b`), `missing ${name}`);
 }
 
 for (const command of [

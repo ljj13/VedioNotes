@@ -1,6 +1,11 @@
+/**
+ *窗口控制按钮——最小化、最大化、关闭。只在 Tauri 桌面环境下显示。
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
+/** tryGetWindow */
 function tryGetWindow() {
   try {
     return getCurrentWindow();
@@ -9,6 +14,7 @@ function tryGetWindow() {
   }
 }
 
+/** WindowControls */
 export default function WindowControls() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [win] = useState<ReturnType<typeof getCurrentWindow> | null>(() => tryGetWindow());

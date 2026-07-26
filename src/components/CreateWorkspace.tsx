@@ -1,3 +1,12 @@
+/**
+ *"新建提炼"页面组件——用户在这里输入视频链接并启动提炼任务。
+ * *
+ * * 页面上有：
+ * *   1. 来源选择区（输入视频链接或选择本地文件）
+ * *   2. 处理计划卡片（显示将用哪个转写/总结服务、什么笔记风格）
+ * *   3. 处理状态（就绪中、禁止启动等）
+ */
+
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { TaskProgress, TaskStage } from '../lib/types';
 
@@ -11,6 +20,7 @@ type Props = {
   children: ReactNode;
 };
 
+/** CreateWorkspaceAction */
 export type CreateWorkspaceAction = {
   label: string;
   disabled: boolean;
@@ -21,6 +31,7 @@ type RegisterCreateWorkspaceAction = (action: CreateWorkspaceAction | null) => v
 
 const CreateWorkspaceActionContext = createContext<RegisterCreateWorkspaceAction | null>(null);
 
+/** useCreateWorkspaceAction */
 export function useCreateWorkspaceAction() {
   return useContext(CreateWorkspaceActionContext);
 }
@@ -39,6 +50,7 @@ const STATE_LABELS: Record<PipelineState, string> = {
   failed: '失败',
 };
 
+/** CreateWorkspace */
 export default function CreateWorkspace({ view, progress, services, children }: Props) {
   const [registeredAction, setRegisteredAction] = useState<CreateWorkspaceAction | null>(null);
   const registerAction = useCallback<RegisterCreateWorkspaceAction>((action) => setRegisteredAction(action), []);
@@ -67,9 +79,10 @@ export default function CreateWorkspace({ view, progress, services, children }: 
         </span>
       </header>
       <div className="create-workspace-main">
+        {services && <div className="create-service-selectors" aria-label="处理服务">{services}</div>}
         <CreateWorkspaceActionContext.Provider value={registerAction}>{children}</CreateWorkspaceActionContext.Provider>
       </div>
-      <aside className="pipeline-card" aria-label="处理方案">
+      <aside className="pipeline-card" aria-label="处理流程预览">
         <header className="pipeline-header">
           <div>
             <span className="workspace-eyebrow">PROCESSING PLAN</span>
@@ -80,7 +93,6 @@ export default function CreateWorkspace({ view, progress, services, children }: 
             {view === 'running' ? '处理中' : view === 'success' ? '已完成' : view === 'error' ? '需处理' : '就绪'}
           </span>
         </header>
-        {services && <div className="pipeline-services" aria-label="处理服务">{services}</div>}
         <ol className="pipeline-list">
           {PIPELINE_STEPS.map((step, index) => {
             const state = stateFor(index);
@@ -115,10 +127,12 @@ export default function CreateWorkspace({ view, progress, services, children }: 
   );
 }
 
+/** CheckIcon */
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
 }
 
+/** PlayIcon */
 function PlayIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7 8 5-8 5z" /></svg>;
 }

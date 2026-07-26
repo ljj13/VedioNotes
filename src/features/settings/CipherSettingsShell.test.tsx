@@ -1,4 +1,9 @@
-import { render, screen } from '@testing-library/react';
+/**
+ *测试文件——测试 CipherSettingsShell 组件/模块的行为是否符合预期。
+ */
+
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import CipherSettingsShell from './CipherSettingsShell';
 import type { SettingsEntryProps } from './settingsTypes';
@@ -42,7 +47,9 @@ const baseProps: SettingsEntryProps = {
   onToggleSidebar: vi.fn(),
 };
 
+// describe('CipherSettingsShell', () => {
 describe('CipherSettingsShell', () => {
+  // it('renders five icon tabs with correct labels and active pa
   it('renders five icon tabs with correct labels and active page', async () => {
     render(<CipherSettingsShell {...baseProps} section="ai" />);
     expect(screen.getByText('外观')).toBeTruthy();
@@ -53,19 +60,47 @@ describe('CipherSettingsShell', () => {
     expect(await screen.findByText('AI 接入')).toBeTruthy();
   });
 
-  it('calls onReturn when back button is clicked', () => {
+  // it('keeps return navigation outside the transplanted CipherT
+  it('keeps return navigation outside the transplanted CipherTalk shell', () => {
     render(<CipherSettingsShell {...baseProps} />);
-    const back = screen.getByLabelText('返回工作台');
-    back.click();
-    expect(baseProps.onReturn).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('返回工作台')).toBeNull();
   });
 
+  // it('renders root with theme data attribute', () => {
   it('renders root with theme data attribute', () => {
     const { container } = render(<CipherSettingsShell {...baseProps} theme="light" />);
     const root = container.querySelector('.cipher-settings-root');
     expect(root?.getAttribute('data-theme')).toBe('light');
+    expect(screen.getByRole('region', { name: '设置工作区' })).toBeTruthy();
+    expect(container.querySelector('.settings-page-header')).toBeTruthy();
   });
 
+  it('places the compact heading and five settings tabs in the C layout header row', () => {
+    const { container } = render(<CipherSettingsShell {...baseProps} section="ai" />);
+    const layout = container.querySelector('.settings-shell-layout');
+    expect(layout).toBeTruthy();
+    expect(layout?.children[0]?.classList.contains('settings-page-header')).toBe(true);
+    expect(layout?.children[1]?.classList.contains('settings-navigation-tabs')).toBe(true);
+    expect(layout?.children[2]?.classList.contains('settings-body')).toBe(true);
+    expect(container.querySelector('.settings-navigation-rail')).toBeNull();
+    expect(container.querySelector('.settings-navigation-heading')).toBeNull();
+
+    const tablist = screen.getByRole('tablist', { name: '设置分类' });
+    expect(within(tablist).getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
+      '外观', '语音转文字', 'AI 接入', '数据管理', '关于',
+    ]);
+    expect(within(tablist).getByRole('tab', { name: 'AI 接入' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('keeps the existing controlled section change contract', async () => {
+    const onSelectSection = vi.fn();
+    render(<CipherSettingsShell {...baseProps} section="appearance" onSelectSection={onSelectSection} />);
+    await userEvent.click(screen.getByRole('tab', { name: '数据管理' }));
+    expect(onSelectSection).toHaveBeenCalledTimes(1);
+    expect(onSelectSection).toHaveBeenCalledWith('data');
+  });
+
+  // it('does not render excluded tabs', () => {
   it('does not render excluded tabs', () => {
     render(<CipherSettingsShell {...baseProps} />);
     expect(screen.queryByText('数据解密')).toBeNull();
@@ -74,8 +109,11 @@ describe('CipherSettingsShell', () => {
     expect(screen.queryByText('插件')).toBeNull();
   });
 
-  it('shows loading skeleton placeholder', () => {
+  // it('renders the settings body without a lazy-loading placeho
+  it('renders the settings body without a lazy-loading placeholder', () => {
     const { container } = render(<CipherSettingsShell {...baseProps} />);
-    expect(container.querySelector('.cipher-settings-body')).toBeTruthy();
+    expect(container.querySelector('.settings-body')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '外观' })).toBeTruthy();
+    expect(screen.queryByLabelText('正在加载设置页面')).toBeNull();
   });
 });

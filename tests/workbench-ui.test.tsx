@@ -1,3 +1,4 @@
+/** workbench-ui.test 测试 */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -37,6 +38,7 @@ async function openHistoryWorkspace(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByLabelText('搜索笔记');
 }
 
+// describe('workbench UI', () => {
 describe('workbench UI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,6 +75,7 @@ describe('workbench UI', () => {
     bridge.cancelDistillation.mockResolvedValue(undefined);
   });
 
+  // it('starts a platform-neutral URL task with core-distillatio
   it('starts a platform-neutral URL task with core-distillation and screenshots disabled', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -84,6 +87,7 @@ describe('workbench UI', () => {
     expect(bridge.invokeStartDistillation.mock.calls[0][4]).toEqual({ note_template: 'core_distillation', note_style: 'minimal', include_screenshots: false, transcription_mode: 'online_profile', sensevoice_model: 'int8', sensevoice_languages: ['zh'] });
   });
 
+  // it('starts a task with screenshots enabled when the accessib
   it('starts a task with screenshots enabled when the accessible key-screenshot checkbox is selected', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -94,6 +98,7 @@ describe('workbench UI', () => {
     expect(bridge.invokeStartDistillation.mock.calls[0][4]).toEqual({ note_template: 'core_distillation', note_style: 'minimal', include_screenshots: true, transcription_mode: 'online_profile', sensevoice_model: 'int8', sensevoice_languages: ['zh'] });
   });
 
+  // it('filters history and requires a second confirmation befor
   it('filters history and requires a second confirmation before deleting a note', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -108,13 +113,14 @@ describe('workbench UI', () => {
     await waitFor(() => expect(bridge.deleteHistory).toHaveBeenCalledWith(7));
   });
 
+  // it('opens a selected note drawer and sends questions only fo
   it('opens a selected note drawer and sends questions only for that history id', async () => {
     bridge.askHistoryNote.mockResolvedValue([{ role: 'user', content: '新的问题' }, { role: 'assistant', content: '答案' }]);
     render(<App />);
     const user = userEvent.setup();
     await openHistoryWorkspace(user);
     await screen.findByText('Linear algebra lecture');
-    const historyRail = screen.getByRole('complementary', { name: '笔记筛选' });
+    const historyRail = screen.getByRole('complementary', { name: '笔记列表' });
     await user.click(within(historyRail).getByRole('button', { name: '打开笔记 Linear algebra lecture' }));
     await user.click(await screen.findByRole('button', { name: '向笔记提问' }));
     await screen.findByRole('complementary', { name: '笔记问答' });
@@ -126,6 +132,7 @@ describe('workbench UI', () => {
     expect(screen.getByText('答案')).toBeInTheDocument();
   });
 
+  // it('loads and renders the selected saved Markdown again afte
   it('loads and renders the selected saved Markdown again after reopening a history note', async () => {
     render(<App />); const user = userEvent.setup();
     await openHistoryWorkspace(user);
@@ -134,12 +141,13 @@ describe('workbench UI', () => {
     expect(await screen.findByText(/Full saved Markdown/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '向笔记提问' }));
     await user.click(screen.getByRole('button', { name: '关闭笔记问答' }));
-    const historyRail = screen.getByRole('complementary', { name: '笔记筛选' });
+    const historyRail = screen.getByRole('complementary', { name: '笔记列表' });
     await user.click(within(historyRail).getByRole('button', { name: '打开笔记 Linear algebra lecture' }));
     await screen.findByText(/Full saved Markdown/);
     expect(bridge.markNoteOpened).toHaveBeenCalledTimes(2);
   });
 
+  // it('returns from an open history note to the create workspac
   it('returns from an open history note to the create workspace', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -155,6 +163,7 @@ describe('workbench UI', () => {
     expect(screen.queryByRole('complementary', { name: '笔记问答' })).toBeNull();
   });
 
+  // it('keeps the history rail available inside the full-window
   it('keeps the history rail available inside the full-window workbench', async () => {
     render(<App />);
     const user = userEvent.setup();
@@ -164,6 +173,7 @@ describe('workbench UI', () => {
     expect(document.querySelector('.library-browser')).toBeTruthy();
   });
 
+  // it('ignores completion and error callbacks delivered after c
   it('ignores completion and error callbacks delivered after cancellation', async () => {
     const callbacks: Record<string, (payload: any) => void> = {};
     bridge.onTaskProgress.mockImplementation(async (_id: string, callback: any) => { callbacks.progress = callback; return vi.fn(); });
@@ -185,6 +195,7 @@ describe('workbench UI', () => {
     resolveCancel();
   });
 
+  // it('preserves a live task across harmless navigation and can
   it('preserves a live task across harmless navigation and cancels that exact task id', async () => {
     const callbacks: Record<string, (payload: any) => void> = {};
     bridge.onTaskProgress.mockImplementation(async (_id: string, callback: any) => { callbacks.progress = callback; return vi.fn(); });

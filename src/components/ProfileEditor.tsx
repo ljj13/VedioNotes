@@ -1,3 +1,7 @@
+/**
+ *应用组件——ProfileEditor 页面/功能对应的 React UI 组件。
+ */
+
 import { useState } from 'react';
 import type {
   TranscriptionProfile,
@@ -15,6 +19,7 @@ import StyledSelect from './StyledSelect';
 
 type ProfileType = 'transcription' | 'summary';
 
+/** ProfileEditorProps */
 export interface ProfileEditorProps {
   profileType: ProfileType;
   initialState: 'create' | 'edit';
@@ -75,6 +80,7 @@ const SUMMARY_PRESETS: Array<{
   },
 ];
 
+/** ProfileEditor */
 export default function ProfileEditor({
   profileType,
   initialState,

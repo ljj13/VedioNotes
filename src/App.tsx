@@ -1,14 +1,76 @@
+/**
+ * App.tsx — VedioNotes 应用的主组件（整个前端应用的"入口点"）
+ *
+ * ===== 文件级别 =====
+ *   本文件属于"前端根组件层"。它是整个 React 应用的最顶层组件——
+ *   所有其他组件都是它的子节点。main.tsx 中只有一行 `<App />`，
+ *   那一行就把整个应用的 UI 交给了本文件。
+ *
+ *   调用链：main.tsx → App → WorkbenchShell → 各工作区组件
+ *
+ * ===== 核心职责 =====
+ *   1. 管理全部"全局状态"——主题、当前页面、任务进度、错误等
+ *   2. 注册 Rust 后端事件监听器（任务进度、完成、错误、服务商切换）
+ *   3. 启动/取消"视频蒸馏"任务
+ *   4. 在启动时从 Rust 加载 profiles 和 preferences
+ *   5. 根据导航状态渲染对应的页面组件
+ *
+ * ===== C/C++ 开发者的视角 =====
+ *   这个文件和你熟悉的"main 函数 + 全局变量"模式最大的不同：
+ *
+ *   C 中：
+ *     int g_currentView = HOME;  // 全局变量，直接赋值
+ *     void setView(int v) { g_currentView = v; }
+ *
+ *   React 中：
+ *     const [view, setView] = useState('idle');  // 状态 + 更新函数
+ *     // 你只能通过 setView() 修改 view——不能直接赋值 view = 'xxx'
+ *     // 每次调用 setView() 都会触发整个 App 函数重新执行
+ *
+ *   useState 是 React 的"钩子"（Hook）——一个保存组件状态的机制。
+ *   类比 C：如果把 App() 理解成循环被调用的函数，useState 就像
+ *   一个"每次循环都记得上次值的静态变量"，但修改它时必须用配套的
+ *   setter 函数，否则 React 不知道你改了，就不会重新渲染。
+ *
+ * ===== 执行流（从启动到显示） =====
+ *   1. main.tsx 调用 ReactDOM.createRoot(...).render(<App />)
+ *   2. App() 被 React 第一次调用
+ *   3. 所有 useState 初始化（theme 从 localStorage 读，其余用默认值）
+ *   4. useEffect（第一次渲染后执行）：
+ *      - 调用 Rust 获取 profiles、preferences、SenseVoice 状态、本地模型列表
+ *      - 注册四个事件监听器（进度、完成、错误、服务商切换）
+ *   5. 返回 JSX → React 渲染 WorkbenchShell + 对应的页面组件
+ *   6. 用户交互 → setXxx() 更新状态 → App() 被重新调用 → 渲染新 UI
+ *
+ * ===== 阅读顺序 =====
+ *   1. 第 51-80 行：所有 useState 声明——理解全局有哪些状态变量
+ *   2. 第 85-145 行：useEffect 启动逻辑——理解应用初始化流程
+ *   3. 第 147-175 行：startTask 函数——理解任务启动的完整流程
+ *   4. 第 250-320 行：return JSX——理解整体布局结构
+ */
+
 import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
+// useState：声明一个"状态变量"，返回 [当前值, 更新函数]
+// useEffect：在渲染后执行"副作用"（如数据获取、事件注册）
+// useCallback：缓存一个函数引用（避免每次渲染都创建新函数）
+// useRef：持有一个"贯穿渲染周期的可变引用"
+// useReducer：复杂状态的状态机（类似 Redux）
+
 import { v4 as uuidv4 } from 'uuid';
+// uuidv4()：生成随机的唯一 ID 字符串
+
 import { openPath } from '@tauri-apps/plugin-opener';
+// 调用系统的默认程序打开文件/文件夹（类似 C 中调用 ShellExecute）
+
 import type { AppError, AppPreferences, AppProfiles, Distillation, DistillationResult, HistoryEntry, InputSource, LocalModelStatus, ProviderFallbackEvent, SenseVoiceStatus, TaskOptions, TaskProgress, TaskRetryRequest } from './lib/types';
+
 import {
-  invokeStartDistillation,
-  cancelDistillation,
-  onTaskProgress,
-  onTaskComplete,
-  onTaskError,
-  onProviderFallback,
+  invokeStartDistillation,   // 向 Rust 发起"开始蒸馏"命令
+  cancelDistillation,        // 取消正在运行的任务
+  onTaskProgress,            // 注册任务进度事件监听
+  onTaskComplete,            // 注册任务完成事件监听
+  onTaskError,               // 注册任务错误事件监听
+  onProviderFallback,        // 注册服务商切换事件监听
   getProfiles,
   hasProfileCredential,
   getMigrationState,
@@ -20,6 +82,8 @@ import {
   getSenseVoiceStatus,
   setTranscriptionPreferences,
 } from './lib/bridge';
+
+// 导入各页面/功能组件（每个都是独立的 React 函数组件）
 import InputPanel from './components/InputPanel';
 import ProfileSelectors from './components/ProfileSelectors';
 import FallbackNotice from './components/FallbackNotice';
@@ -34,15 +98,44 @@ import LibraryWorkspace from './components/LibraryWorkspace';
 import QaWorkspace from './components/QaWorkspace';
 import TaskHistoryWorkspace from './components/TaskHistoryWorkspace';
 import ErrorPanel from './components/ErrorPanel';
+
+// 导入导航状态机
 import { initialWorkbenchNavigationState, workbenchNavigationReducer } from './lib/workbenchNavigation';
 import type { PrimaryWorkbenchView, SettingsSection } from './lib/workbenchNavigation';
-import './styles/app.css';
-import './styles/settings-ciphertalk.css';
 
+import './styles/app.css';
+import './styles/concept-workbench.css';
+
+/**
+ * AppView：应用所处的"全局阶段"——不是"哪个页面"，而是业务层面的状态。
+ *   idle    → 待启动（还没有任务在跑）
+ *   running → 任务正在运行中
+ *   success → 任务已成功完成
+ *   error   → 任务出错了
+ */
 type AppView = 'idle' | 'running' | 'success' | 'error';
 
+/** App */
 function App() {
+  // ==========================================================
+  // 第一部分：全局状态声明（约 20 个 useState / useReducer）
+  //
+  // 在 React 中，所有会变化的 UI 数据都必须放在 state 中。
+  // 原因：React 只有检测到 state 变化时才会重新渲染。
+  //
+  // const [变量, 更新函数] = useState(初始值);
+  //   类比 C：int x = 0; void setX(int v) { x = v; rerender(); }
+  //   但 useState 把"值"和"更新方法"绑在一起返回。
+  //
+  // useReducer：用于复杂状态的状态机（类似 switch-case 模式），
+  //   本文件中导航状态用它（见 workbenchNavigation.ts 的 reducer 函数）。
+  // ==========================================================
+
+  // view：当前业务阶段（不是页面，是业务状态）
   const [view, setView] = useState<AppView>('idle');
+
+  // navigation：导航状态（当前页面 + 设置子页面 + 返回目标 + 侧栏折叠）
+  // dispatchNavigation 是"发出操作"的函数——类似 C 中向状态机发送事件。
   const [navigation, dispatchNavigation] = useReducer(workbenchNavigationReducer, initialWorkbenchNavigationState);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const stored = window.localStorage.getItem('video-distiller-theme');
@@ -554,6 +647,7 @@ function App() {
 
 export default App;
 
+/** inputSourceLabel */
 function inputSourceLabel(source: InputSource) {
   if (source.kind === 'file') return source.path?.split(/[\\/]/).pop() || '本地媒体文件';
   if (source.kind === 'bilibili_url') return 'Bilibili 公开链接';
@@ -561,6 +655,7 @@ function inputSourceLabel(source: InputSource) {
   return '抖音公开链接';
 }
 
+/** defaultPreferences */
 function defaultPreferences(): AppPreferences {
   return {
     schemaVersion: 1,

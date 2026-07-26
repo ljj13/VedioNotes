@@ -1,4 +1,9 @@
-import { render, screen } from '@testing-library/react';
+/**
+ *测试文件——测试 TranscriptionTab 组件/模块的行为是否符合预期。
+ */
+
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TranscriptionTab from './TranscriptionTab';
 import type { SettingsEntryProps } from '../settingsTypes';
@@ -80,6 +85,7 @@ function makeCudaStatus(overrides = {}) {
   };
 }
 
+// describe('TranscriptionTab', () => {
 describe('TranscriptionTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,23 +95,53 @@ describe('TranscriptionTab', () => {
     platformMocks.onSenseVoiceDownloadProgress.mockResolvedValue(() => {});
     platformMocks.onLocalModelDownloadProgress.mockResolvedValue(() => {});
     platformMocks.onCudaRuntimeDownloadProgress.mockResolvedValue(() => {});
+    platformMocks.downloadSenseVoice.mockResolvedValue(undefined);
     platformMocks.setLocalComputeMode.mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto', transcriptionMode: 'sensevoice_cpu', sensevoiceModel: 'int8', sensevoiceLanguages: ['zh'], appearance: { theme: 'system', compactDensity: false, reducedMotion: false } });
     prefMocks.saveTranscription.mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto', transcriptionMode: 'sensevoice_cpu', sensevoiceModel: 'int8', sensevoiceLanguages: ['zh'] });
   });
 
-  it('renders three mode tabs: CPU, GPU, Online', async () => {
+  // it('renders three mode tabs: CPU, GPU, Online', async () =>
+  it('renders the compact heading and three mode tabs', async () => {
     render(<TranscriptionTab {...baseProps} />);
-    expect(await screen.findByText('CPU 转写')).toBeTruthy();
-    expect(screen.getByText('GPU 转写')).toBeTruthy();
-    expect(screen.getByText('在线转写')).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '语音转文字' })).toBeTruthy();
+    expect(screen.getByText('根据使用场景选择本地 CPU、本地 GPU 或在线转写模式。')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /CPU 模式/ })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /GPU 模式/ })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /在线模式/ })).toBeTruthy();
   });
 
+  it('renders the CPU model configuration and language picker as two columns', async () => {
+    const { container } = render(<TranscriptionTab {...baseProps} />);
+    await screen.findByText('SenseVoice 本地模型');
+
+    const layout = container.querySelector('.cipher-transcription-dual-layout');
+    expect(layout).toBeTruthy();
+    expect(layout?.querySelector('.cipher-transcription-left-panel')).toBeTruthy();
+    const languagePanel = layout?.querySelector('.cipher-transcription-right-panel');
+    expect(languagePanel).toBeTruthy();
+    expect(within(languagePanel as HTMLElement).getByRole('heading', { name: '识别语言' })).toBeTruthy();
+    expect(within(languagePanel as HTMLElement).getByText('Chinese')).toBeTruthy();
+    expect(within(languagePanel as HTMLElement).getByText('Cantonese')).toBeTruthy();
+  });
+
+  it('downloads the model selected in the shared model card', async () => {
+    const user = userEvent.setup();
+    render(<TranscriptionTab {...baseProps} />);
+
+    await user.click(await screen.findByRole('radio', { name: /float32 完整版/ }));
+    await user.click(screen.getByRole('button', { name: /下载模型/ }));
+
+    expect(platformMocks.downloadSenseVoice).toHaveBeenCalledWith('float32');
+  });
+
+  // it('CPU tab shows SenseVoice model status and language selec
   it('CPU tab shows SenseVoice model status and language selection', async () => {
     render(<TranscriptionTab {...baseProps} />);
     expect(await screen.findByText(/int8 量化版/)).toBeTruthy();
-    expect(screen.getByText(/中文/)).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /中文/ })).toBeTruthy();
   });
 
+  // it('renders language checkboxes for all five languages', asy
   it('renders language checkboxes for all five languages', async () => {
     render(<TranscriptionTab {...baseProps} />);
     await screen.findByText(/int8 量化版/);
@@ -116,6 +152,7 @@ describe('TranscriptionTab', () => {
     expect(screen.getByRole('checkbox', { name: /中文/ })).toBeTruthy();
   });
 
+  // it('GPU tab shows CUDA runtime status', async () => {
   it('GPU tab shows CUDA runtime status', async () => {
     const gpuProps = { ...baseProps, preferences: { ...baseProps.preferences, transcriptionMode: 'whisper_local' as const } };
     render(<TranscriptionTab {...gpuProps} />);
@@ -123,6 +160,7 @@ describe('TranscriptionTab', () => {
     expect(screen.getByText('暂无已下载的本地模型。')).toBeTruthy();
   });
 
+  // it('shows compute mode buttons', async () => {
   it('shows compute mode buttons', async () => {
     const gpuProps = { ...baseProps, preferences: { ...baseProps.preferences, transcriptionMode: 'whisper_local' as const } };
     render(<TranscriptionTab {...gpuProps} />);

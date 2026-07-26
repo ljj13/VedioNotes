@@ -1,17 +1,5 @@
-// == Transcription Provider Adapters =========================================
-//
-// Implementations of the `TranscriptionAdapter` trait for all supported ASR
-// providers:
-//
-//   - OpenAiCompatibleAsrAdapter  — OpenAI-compatible /v1/audio/transcriptions
-//   - MiMoAsrAdapter              — MiMo /v1/chat/completions with Base64 audio
-//   - TencentFlashAsrAdapter      — Tencent Cloud Flash ASR signed request
-//
-// Security:
-//   - Audio bytes and Base64 buffers are dropped after the HTTP response.
-//   - No secret or audio content is ever written to logs.
-//   - Cancellation is checked before reading audio, before HTTP, and after
-//     the response.
+//! 转写服务——语音识别任务的分发和结果处理。
+
 
 use async_trait::async_trait;
 use base64::Engine;

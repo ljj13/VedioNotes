@@ -1,3 +1,7 @@
+/**
+ *自定义下拉选择框——一个统一样式的 select 组件。
+ */
+
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 
 export type StyledSelectOption = {
@@ -17,6 +21,7 @@ type Props = {
   className?: string;
 };
 
+/** StyledSelect */
 export default function StyledSelect({
   label,
   value,

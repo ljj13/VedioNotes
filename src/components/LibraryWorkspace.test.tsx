@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 LibraryWorkspace 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -41,6 +45,7 @@ const snapshot: LibrarySnapshot = {
   total: 1,
 };
 
+// describe('LibraryWorkspace', () => {
 describe('LibraryWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,6 +69,7 @@ describe('LibraryWorkspace', () => {
     bridge.runLocalAgent.mockResolvedValue({ answer: '本地智能体处理完成。' });
   });
 
+  // it('filters through the typed backend query and renders owne
   it('filters through the typed backend query and renders owned Markdown semantically', async () => {
     const user = userEvent.setup();
     render(<LibraryWorkspace />);
@@ -77,6 +83,7 @@ describe('LibraryWorkspace', () => {
     await waitFor(() => expect(bridge.searchLibrary).toHaveBeenCalledWith(expect.objectContaining({ favorite: true })));
   });
 
+  // it('reserves a real note Q&A region instead of covering the
   it('reserves a real note Q&A region instead of covering the Markdown', async () => {
     const user = userEvent.setup();
     render(<LibraryWorkspace />);
@@ -89,6 +96,7 @@ describe('LibraryWorkspace', () => {
     expect(chat.parentElement?.classList.contains('with-chat')).toBe(true);
   });
 
+  // it('supports semantic retrieval, reindexing, and explicit lo
   it('supports semantic retrieval, reindexing, and explicit local-agent handoff', async () => {
     const user = userEvent.setup();
     render(<LibraryWorkspace />);
@@ -105,5 +113,18 @@ describe('LibraryWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '发送到本地智能体' }));
     await waitFor(() => expect(bridge.runLocalAgent).toHaveBeenCalledWith(expect.stringContaining('矩阵课程笔记')));
     expect(await screen.findByText('本地智能体处理完成。')).toBeTruthy();
+  });
+
+  it('separates real filters, note list, safe reader and selected-note inspector', async () => {
+    const user = userEvent.setup();
+    render(<LibraryWorkspace />);
+
+    expect(await screen.findByRole('navigation', { name: '笔记分类' })).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: '笔记列表' })).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: /打开笔记 矩阵课程笔记/ }));
+    expect(screen.getByRole('main', { name: '笔记正文' })).toBeTruthy();
+    const inspector = screen.getByRole('complementary', { name: '笔记信息' });
+    expect(inspector.textContent).toContain('矩阵课程笔记');
+    expect(inspector.textContent).toContain('数学');
   });
 });

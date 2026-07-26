@@ -19,6 +19,8 @@ target/
 # Generated reports, browser profiles, screenshots and inspection artifacts
 outputs/
 coverage/
+.codex-research/
+.edge-cdp-profile*/
 
 # Local secrets and machine-specific environment
 .env
@@ -43,6 +45,18 @@ src-tauri/binaries/ffmpeg-*.exe
 task_plan.md
 findings.md
 progress.md
+
+# Local migration/debugging scratch files
+*.backup
+*.backup[0-9]*
+*.clean
+douyin-fix.patch
+douyin-quote-fix.patch
+download_platform_patch.txt
+src-tauri/binaries/yt-dlp-test.exe
+src/styles/cipher-settings-fixes.css
+scripts/_node_run_matrix.cmd
+scripts/run-settings-visual-matrix.ps1
 
 # Editor directories and files
 .vscode/*

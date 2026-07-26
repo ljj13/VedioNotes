@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 StyledSelect 组件/模块的行为是否符合预期。
+ */
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -9,7 +13,9 @@ const options = [
   { value: 'ollama', label: 'Ollama', description: '本地服务' },
 ];
 
+// describe('StyledSelect', () => {
 describe('StyledSelect', () => {
+  // it('opens a custom rounded listbox and reports the selected
   it('opens a custom rounded listbox and reports the selected option', async () => {
     const onChange = vi.fn();
     render(<StyledSelect label="服务商" value="deepseek" options={options} onChange={onChange} />);
@@ -26,6 +32,7 @@ describe('StyledSelect', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  // it('supports Arrow keys, Enter, Escape, and outside dismissa
   it('supports Arrow keys, Enter, Escape, and outside dismissal', async () => {
     const onChange = vi.fn();
     render(<StyledSelect label="模型" value="deepseek" options={options} onChange={onChange} />);
@@ -47,6 +54,7 @@ describe('StyledSelect', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  // it('has a disabled state and does not rely on color for sele
   it('has a disabled state and does not rely on color for selection', async () => {
     const { rerender } = render(<StyledSelect label="协议" value="deepseek" options={options} onChange={vi.fn()} />);
     await userEvent.setup().click(screen.getByRole('button', { name: '协议' }));

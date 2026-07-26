@@ -1,11 +1,15 @@
+//! B站服务——B站视频链接解析、字幕获取.
+
 use crate::domain::AppError;
 use crate::subtitles::TimedCaption;
 use std::time::Duration;
 
+/// BilibiliHttpClient
 pub trait BilibiliHttpClient {
     fn get_json(&self, url: &str, cookie: Option<&str>) -> Result<serde_json::Value, AppError>;
 }
 
+/// ReqwestBilibiliHttpClient
 pub struct ReqwestBilibiliHttpClient;
 
 impl BilibiliHttpClient for ReqwestBilibiliHttpClient {
@@ -30,6 +34,7 @@ impl BilibiliHttpClient for ReqwestBilibiliHttpClient {
     }
 }
 
+/// fetch bilibili subtitles
 pub fn fetch_bilibili_subtitles(
     url: &str,
     cookie: Option<&str>,
@@ -37,6 +42,7 @@ pub fn fetch_bilibili_subtitles(
     fetch_bilibili_subtitles_with(&ReqwestBilibiliHttpClient, url, cookie)
 }
 
+/// fetch bilibili subtitles with
 pub fn fetch_bilibili_subtitles_with(
     client: &dyn BilibiliHttpClient,
     url: &str,

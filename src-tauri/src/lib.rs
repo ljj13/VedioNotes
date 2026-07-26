@@ -1,3 +1,6 @@
+//! VedioNotes Rust 后端入口——声明所有模块和 Tauri 插件，注册命令处理器，定义 run() 入口函数.
+//! 类似 C main 之前的所有初始化代码.
+
 pub mod artifact_download;
 pub mod ai_capabilities;
 pub mod capability_store;
@@ -27,6 +30,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// run
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

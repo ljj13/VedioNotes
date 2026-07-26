@@ -1,3 +1,7 @@
+/**
+ *CUDA 运行时管理器——检测 GPU、下载/删除 CUDA 运行时，设置计算模式。
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import {
   deleteCudaRuntime,
@@ -17,6 +21,7 @@ const stateLabels: Record<CudaRuntimeStatus['state'], string> = {
   error: '组件需要修复',
 };
 
+/** CudaRuntimeManager */
 export default function CudaRuntimeManager() {
   const [status, setStatus] = useState<CudaRuntimeStatus | null>(null);
   const [progress, setProgress] = useState<CudaRuntimeDownloadProgress | null>(null);

@@ -1,3 +1,4 @@
+/** setup 测试 */
 import '@testing-library/jest-dom/vitest';
 
 // HeroUI ScrollShadow and other components rely on ResizeObserver, which is

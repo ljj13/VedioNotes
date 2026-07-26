@@ -1,3 +1,7 @@
+/**
+ *测试文件——测试 DataManagementTab 组件/模块的行为是否符合预期。
+ */
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { settingsPlatform } from '../../../platform/settings';
@@ -45,6 +49,7 @@ const mockLogs = [
   { id: 'transcription.log', name: 'transcription.log', bytes: 2048, modifiedAt: '2025-07-16T09:00:00Z' },
 ];
 
+// describe('DataManagementTab', () => {
 describe('DataManagementTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,11 +66,13 @@ describe('DataManagementTab', () => {
     vi.spyOn(settingsPlatform.data, 'chooseExportDirectory').mockResolvedValue('D:\\test');
   });
 
+  // it('renders data management heading', async () => {
   it('renders data management heading', async () => {
     render(<DataManagementTab {...baseProps} />);
     expect(await screen.findByText('数据管理')).toBeTruthy();
   });
 
+  // it('loads and displays export preferences', async () => {
   it('loads and displays export preferences', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -74,6 +81,24 @@ describe('DataManagementTab', () => {
     });
   });
 
+  it('assigns explicit settings slot classes to the export format select', async () => {
+    render(<DataManagementTab {...baseProps} />);
+    await screen.findByText('数据管理');
+    await waitFor(() => expect(settingsPlatform.data.getExportPreferences).toHaveBeenCalled());
+
+    const select = document.querySelector('.cipher-settings-select');
+    const trigger = document.querySelector('[data-slot="select-trigger"]') as HTMLElement;
+    expect(select).toBeTruthy();
+    expect(trigger.classList.contains('cipher-settings-select-trigger')).toBe(true);
+
+    fireEvent.click(trigger);
+    const listbox = await screen.findByRole('listbox');
+    expect(listbox.classList.contains('cipher-settings-select-listbox')).toBe(true);
+    expect(listbox.closest('[data-slot="select-popover"]')?.classList.contains('cipher-settings-select-popover')).toBe(true);
+    expect(Array.from(listbox.querySelectorAll('[role="option"]')).every((option) => option.classList.contains('cipher-settings-select-option'))).toBe(true);
+  });
+
+  // it('loads and displays cache usage categories', async () =>
   it('loads and displays cache usage categories', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -82,6 +107,7 @@ describe('DataManagementTab', () => {
     });
   });
 
+  // it('displays total cache size in human-readable format', asy
   it('displays total cache size in human-readable format', async () => {
     render(<DataManagementTab {...baseProps} />);
     await waitFor(() => {
@@ -93,6 +119,7 @@ describe('DataManagementTab', () => {
     });
   });
 
+  // it('lists log files from the backend', async () => {
   it('lists log files from the backend', async () => {
     render(<DataManagementTab {...baseProps} />);
     await waitFor(() => {
@@ -101,6 +128,7 @@ describe('DataManagementTab', () => {
     });
   });
 
+  // it('reads log content when clicking the view button', async
   it('reads log content when clicking the view button', async () => {
     render(<DataManagementTab {...baseProps} />);
     await waitFor(() => {
@@ -116,6 +144,7 @@ describe('DataManagementTab', () => {
     }
   });
 
+  // it('saves export preferences when save is clicked', async ()
   it('saves export preferences when save is clicked', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -142,6 +171,7 @@ describe('DataManagementTab', () => {
     }
   });
 
+  // it('confirms before clearing cache', async () => {
   it('confirms before clearing cache', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -160,17 +190,15 @@ describe('DataManagementTab', () => {
       expect(dialog).toBeTruthy();
       // clearCache should NOT have been called yet
       expect(settingsPlatform.data.clearCache).not.toHaveBeenCalled();
-      // Click the confirm button (inside the dialog)
-      const confirmBtn = dialog.querySelector('button');
-      if (confirmBtn) {
-        fireEvent.click(confirmBtn);
-      }
+      // Click the explicit destructive action inside the HeroUI AlertDialog.
+      fireEvent.click(screen.getByRole('button', { name: '确认清理' }));
       await waitFor(() => {
         expect(settingsPlatform.data.clearCache).toHaveBeenCalled();
       });
     }
   });
 
+  // it('does not call clearCache(all) by default without confirm
   it('does not call clearCache(all) by default without confirmation', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -181,6 +209,7 @@ describe('DataManagementTab', () => {
     expect(settingsPlatform.data.clearCache).not.toHaveBeenCalled();
   });
 
+  // it('opens export directory when button clicked', async () =>
   it('opens export directory when button clicked', async () => {
     render(<DataManagementTab {...baseProps} />);
     await screen.findByText('数据管理');
@@ -193,6 +222,7 @@ describe('DataManagementTab', () => {
     }
   });
 
+  // it('shows empty state when no logs exist', async () => {
   it('shows empty state when no logs exist', async () => {
     vi.spyOn(settingsPlatform.data, 'listLogs').mockResolvedValue([]);
     render(<DataManagementTab {...baseProps} />);
@@ -202,6 +232,7 @@ describe('DataManagementTab', () => {
     });
   });
 
+  // it('shows error message when cache usage fails to load', asy
   it('shows error message when cache usage fails to load', async () => {
     vi.spyOn(settingsPlatform.data, 'getCacheUsage').mockRejectedValue(new Error('disk full'));
     render(<DataManagementTab {...baseProps} />);

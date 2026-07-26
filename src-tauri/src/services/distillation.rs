@@ -1,3 +1,5 @@
+//! `distillation` 模块——services 层的具体实现。
+
 use crate::domain::{AppError, Distillation, KeyEvidence, NoteStyle};
 
 /// The system prompt for the LLM distillation.

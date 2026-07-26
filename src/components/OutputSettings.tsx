@@ -1,3 +1,7 @@
+/**
+ *应用组件——OutputSettings 页面/功能对应的 React UI 组件。
+ */
+
 import { useEffect, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
@@ -6,11 +10,13 @@ import {
 } from '../lib/bridge';
 import type { AppError, AppPreferences } from '../lib/types';
 
+/** errorMessage */
 function errorMessage(error: unknown): string {
   const candidate = error as Partial<AppError> | Error | null;
   return candidate?.message || '保存位置更新失败，请重试。';
 }
 
+/** OutputSettings */
 export default function OutputSettings() {
   const [preferences, setPreferences] = useState<AppPreferences | null>(null);
   const [pending, setPending] = useState(false);

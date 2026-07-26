@@ -1,3 +1,8 @@
+/**
+ *视频链接输入面板——用户在这里粘贴 B站/抖音/YouTube 链接或选择本地文件。
+ * * 这是"新建提炼"流程的第一步。
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import type { InputSource, InputSourceKind, NoteStyle, SenseVoiceLanguage, SenseVoiceModelId, TaskOptions, TaskRetryRequest, TranscriptionMode } from '../lib/types';
 import { NOTE_STYLE_OPTIONS } from '../lib/noteStyles';
@@ -24,6 +29,7 @@ interface InputPanelProps {
   senseVoiceLanguages?: SenseVoiceLanguage[];
 }
 
+/** InputPanel */
 export default function InputPanel({
   onStart,
   onOpenSettings,
@@ -278,6 +284,7 @@ export default function InputPanel({
   );
 }
 
+/** urlKind */
 function urlKind(url: string): InputSourceKind {
   const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ''; } })();
   if (host.includes('bilibili.com') || host === 'b23.tv') return 'bilibili_url';
@@ -285,6 +292,7 @@ function urlKind(url: string): InputSourceKind {
   return 'douyin_url';
 }
 
+/** platformName */
 function platformName(url: string): 'Bilibili' | 'YouTube' | '抖音' | null {
   const host = (() => { try { return new URL(url.trim()).hostname.toLowerCase(); } catch { return ''; } })();
   if (host === 'bilibili.com' || host.endsWith('.bilibili.com') || host === 'b23.tv') return 'Bilibili';
@@ -293,16 +301,19 @@ function platformName(url: string): 'Bilibili' | 'YouTube' | '抖音' | null {
   return null;
 }
 
+/** MediaIcon */
 function MediaIcon({ kind }: { kind: 'audio' | 'video' }) {
   return kind === 'audio'
     ? <svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="16" cy="16" r="3" /></svg>
     : <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m10 9 5 3-5 3z" /></svg>;
 }
 
+/** CloseIcon */
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>;
 }
 
+/** CheckIcon */
 function CheckIcon() {
   return <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>;
 }

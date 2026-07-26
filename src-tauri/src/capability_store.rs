@@ -1,3 +1,6 @@
+//! AI 能力配置存储——读写 capabilities.json，管理 vector/rerank/web/tts/image/agent 配置.
+//! 凭据分离存储.
+
 use crate::domain::AppError;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -8,6 +11,7 @@ const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// VectorConfig
 pub struct VectorConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -32,6 +36,7 @@ impl Default for VectorConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// RerankConfig
 pub struct RerankConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -52,6 +57,7 @@ impl Default for RerankConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// WebSearchConfig
 pub struct WebSearchConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -72,6 +78,7 @@ impl Default for WebSearchConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// TtsConfig
 pub struct TtsConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -94,6 +101,7 @@ impl Default for TtsConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// ImageConfig
 pub struct ImageConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -116,6 +124,7 @@ impl Default for ImageConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// LocalAgentConfig
 pub struct LocalAgentConfig {
     pub enabled: bool,
     pub provider_id: String,
@@ -138,6 +147,7 @@ impl Default for LocalAgentConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+/// CapabilitySettings
 pub struct CapabilitySettings {
     pub schema_version: u32,
     #[serde(default)]
@@ -169,15 +179,18 @@ impl Default for CapabilitySettings {
 }
 
 #[derive(Debug, Clone)]
+/// AI能力存储——管理向量搜索、TTS等扩展能力的配置。
 pub struct CapabilityStore {
     path: PathBuf,
 }
 
 impl CapabilityStore {
+    /// new
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self { path: path.into() }
     }
 
+    /// load
     pub fn load(&self) -> Result<CapabilitySettings, AppError> {
         if !self.path.exists() {
             return Ok(CapabilitySettings::default());
@@ -193,6 +206,7 @@ impl CapabilityStore {
         Ok(settings)
     }
 
+    /// save
     pub fn save(&self, settings: &CapabilitySettings) -> Result<(), AppError> {
         validate_settings(settings)?;
         if let Some(parent) = self.path.parent() {
@@ -208,36 +222,42 @@ impl CapabilityStore {
         Ok(())
     }
 
+    /// save vector
     pub fn save_vector(&self, config: VectorConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.vector = config;
         self.save(&settings)
     }
 
+    /// save rerank
     pub fn save_rerank(&self, config: RerankConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.rerank = config;
         self.save(&settings)
     }
 
+    /// save web search
     pub fn save_web_search(&self, config: WebSearchConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.web_search = config;
         self.save(&settings)
     }
 
+    /// save tts
     pub fn save_tts(&self, config: TtsConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.tts = config;
         self.save(&settings)
     }
 
+    /// save image
     pub fn save_image(&self, config: ImageConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.image = config;
         self.save(&settings)
     }
 
+    /// save local agent
     pub fn save_local_agent(&self, config: LocalAgentConfig) -> Result<(), AppError> {
         let mut settings = self.load()?;
         settings.local_agent = config;

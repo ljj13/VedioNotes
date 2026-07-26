@@ -1,6 +1,4 @@
-// == Provider endpoint normalization =========================================
-//
-// Pure URL resolution shared by OpenAI-compatible provider adapters.
+//! 端点解析——规范化用户输入的 API 地址，自动补全路径（如添加 /v1/chat/completions）.
 
 use url::Url;
 
@@ -8,6 +6,7 @@ use super::error::{ProviderError, ProviderErrorKind};
 
 /// The known endpoint types that can be resolved from a base URL.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// EndpointKind
 pub enum EndpointKind {
     ChatCompletions,
     Responses,

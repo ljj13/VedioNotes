@@ -1,3 +1,6 @@
+//! 文件下载器——实现带断点续传的 HTTP 文件下载.
+//! 用于 AI 模型等大文件.
+
 use crate::domain::AppError;
 use sha1::Digest as _;
 use std::fs::{File, OpenOptions};
@@ -6,6 +9,7 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// ArtifactDigest
 pub enum ArtifactDigest {
     Sha1(&'static str),
     Sha256(&'static str),
@@ -14,6 +18,7 @@ pub enum ArtifactDigest {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// ArtifactDescriptor
 pub struct ArtifactDescriptor {
     pub id: &'static str,
     pub file_name: &'static str,
@@ -24,6 +29,7 @@ pub struct ArtifactDescriptor {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
+/// ArtifactState
 pub enum ArtifactState {
     Missing,
     Partial,
@@ -34,6 +40,7 @@ pub enum ArtifactState {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+/// ArtifactStatus
 pub struct ArtifactStatus {
     pub id: String,
     pub state: ArtifactState,
@@ -48,17 +55,20 @@ enum ArtifactDownloadErrorKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// ArtifactDownloadError
 pub struct ArtifactDownloadError {
     kind: ArtifactDownloadErrorKind,
 }
 
 impl ArtifactDownloadError {
+    /// transport
     pub fn transport() -> Self {
         Self {
             kind: ArtifactDownloadErrorKind::Transport,
         }
     }
 
+    /// cancelled
     pub fn cancelled() -> Self {
         Self {
             kind: ArtifactDownloadErrorKind::Cancelled,
@@ -70,6 +80,7 @@ impl ArtifactDownloadError {
     }
 }
 
+/// ArtifactHttpClient
 pub trait ArtifactHttpClient: Send + Sync {
     fn download(
         &self,
@@ -82,6 +93,7 @@ pub trait ArtifactHttpClient: Send + Sync {
     ) -> Result<(), ArtifactDownloadError>;
 }
 
+/// ReqwestArtifactHttpClient
 pub struct ReqwestArtifactHttpClient;
 
 impl ArtifactHttpClient for ReqwestArtifactHttpClient {
@@ -145,6 +157,7 @@ impl ArtifactHttpClient for ReqwestArtifactHttpClient {
     }
 }
 
+/// inspect verified artifact
 pub fn inspect_verified_artifact(root: &Path, descriptor: &ArtifactDescriptor) -> ArtifactStatus {
     let final_path = root.join(descriptor.file_name);
     let part_path = part_path(root, descriptor);
@@ -177,6 +190,7 @@ pub fn inspect_verified_artifact(root: &Path, descriptor: &ArtifactDescriptor) -
     }
 }
 
+/// download verified artifact
 pub fn download_verified_artifact(
     root: &Path,
     descriptor: &ArtifactDescriptor,
@@ -272,6 +286,7 @@ pub fn download_verified_artifact(
     })
 }
 
+/// delete verified artifact
 pub fn delete_verified_artifact(
     root: &Path,
     descriptor: &ArtifactDescriptor,

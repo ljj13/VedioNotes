@@ -1,3 +1,5 @@
+//! AI 扩展能力后端——实现向量搜索、重排、联网、语音合成、AI 作图、本地智能体的后端逻辑.
+
 use crate::{
     capability_store::{
         ImageConfig, LocalAgentConfig, RerankConfig, TtsConfig, VectorConfig, WebSearchConfig,
@@ -22,10 +24,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// MAX CAPABILITY RESPONSE BYTES
 pub const MAX_CAPABILITY_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
+/// MAX CAPABILITY OUTPUT BYTES
 pub const MAX_CAPABILITY_OUTPUT_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq)]
+/// CapabilityHttpRequest
 pub struct CapabilityHttpRequest {
     pub url: String,
     pub bearer_token: Option<String>,
@@ -34,6 +39,7 @@ pub struct CapabilityHttpRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// CapabilityHttpResponse
 pub struct CapabilityHttpResponse {
     pub status: u16,
     pub content_type: String,
@@ -41,6 +47,7 @@ pub struct CapabilityHttpResponse {
 }
 
 #[async_trait]
+/// CapabilityHttpClient
 pub trait CapabilityHttpClient: Send + Sync {
     async fn execute(
         &self,
@@ -49,6 +56,7 @@ pub trait CapabilityHttpClient: Send + Sync {
 }
 
 #[derive(Debug, Default)]
+/// ReqwestCapabilityHttpClient
 pub struct ReqwestCapabilityHttpClient;
 
 #[async_trait]
@@ -105,12 +113,14 @@ impl CapabilityHttpClient for ReqwestCapabilityHttpClient {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// SearchHit
 pub struct SearchHit {
     pub id: String,
     pub score: f64,
     pub text: String,
 }
 
+/// VectorClient
 pub struct VectorClient {
     http: Arc<dyn CapabilityHttpClient>,
     config: VectorConfig,
@@ -118,6 +128,7 @@ pub struct VectorClient {
 }
 
 impl VectorClient {
+    /// new
     pub fn new(
         http: Arc<dyn CapabilityHttpClient>,
         config: VectorConfig,
@@ -130,6 +141,7 @@ impl VectorClient {
         }
     }
 
+    /// search
     pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchHit>, AppError> {
         if query.trim().is_empty() || !(1..=50).contains(&limit) {
             return Err(capability_invalid_request());
@@ -152,6 +164,7 @@ impl VectorClient {
         parse_json_response::<SearchEnvelope>(response).map(|envelope| envelope.data)
     }
 
+    /// index
     pub async fn index(&self, id: &str, text: &str) -> Result<(), AppError> {
         if id.trim().is_empty() || text.trim().is_empty() || text.len() > 2_000_000 {
             return Err(capability_invalid_request());
@@ -182,12 +195,14 @@ struct SearchEnvelope {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+/// RankedCandidate
 pub struct RankedCandidate {
     pub id: String,
     pub text: String,
     pub score: f64,
 }
 
+/// RerankClient
 pub struct RerankClient {
     http: Arc<dyn CapabilityHttpClient>,
     config: RerankConfig,
@@ -195,6 +210,7 @@ pub struct RerankClient {
 }
 
 impl RerankClient {
+    /// new
     pub fn new(
         http: Arc<dyn CapabilityHttpClient>,
         config: RerankConfig,
@@ -207,6 +223,7 @@ impl RerankClient {
         }
     }
 
+    /// rank
     pub async fn rank(
         &self,
         candidates: &[RankedCandidate],
@@ -263,12 +280,14 @@ struct RerankScore {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// WebSearchResult
 pub struct WebSearchResult {
     pub title: String,
     pub url: String,
     pub snippet: String,
 }
 
+/// WebSearchClient
 pub struct WebSearchClient {
     http: Arc<dyn CapabilityHttpClient>,
     config: WebSearchConfig,
@@ -276,6 +295,7 @@ pub struct WebSearchClient {
 }
 
 impl WebSearchClient {
+    /// new
     pub fn new(
         http: Arc<dyn CapabilityHttpClient>,
         config: WebSearchConfig,
@@ -288,6 +308,7 @@ impl WebSearchClient {
         }
     }
 
+    /// search
     pub async fn search(&self, query: &str) -> Result<Vec<WebSearchResult>, AppError> {
         if query.trim().is_empty() {
             return Err(capability_invalid_request());
@@ -311,6 +332,7 @@ struct WebSearchEnvelope {
     results: Vec<WebSearchResult>,
 }
 
+/// TtsClient
 pub struct TtsClient {
     http: Arc<dyn CapabilityHttpClient>,
     config: TtsConfig,
@@ -318,6 +340,7 @@ pub struct TtsClient {
 }
 
 impl TtsClient {
+    /// new
     pub fn new(
         http: Arc<dyn CapabilityHttpClient>,
         config: TtsConfig,
@@ -330,6 +353,7 @@ impl TtsClient {
         }
     }
 
+    /// synthesize
     pub async fn synthesize(&self, text: &str) -> Result<Vec<u8>, AppError> {
         if text.trim().is_empty() || text.len() > 100_000 {
             return Err(capability_invalid_request());
@@ -348,6 +372,7 @@ impl TtsClient {
     }
 }
 
+/// ImageClient
 pub struct ImageClient {
     http: Arc<dyn CapabilityHttpClient>,
     config: ImageConfig,
@@ -355,6 +380,7 @@ pub struct ImageClient {
 }
 
 impl ImageClient {
+    /// new
     pub fn new(
         http: Arc<dyn CapabilityHttpClient>,
         config: ImageConfig,
@@ -367,6 +393,7 @@ impl ImageClient {
         }
     }
 
+    /// generate
     pub async fn generate(&self, prompt: &str) -> Result<Vec<u8>, AppError> {
         if prompt.trim().is_empty() || prompt.len() > 100_000 {
             return Err(capability_invalid_request());
@@ -386,6 +413,7 @@ impl ImageClient {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// LocalAgentRunRequest
 pub struct LocalAgentRunRequest {
     pub program: PathBuf,
     pub args: Vec<String>,
@@ -395,12 +423,14 @@ pub struct LocalAgentRunRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// LocalAgentProcessOutput
 pub struct LocalAgentProcessOutput {
     pub status: i32,
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
 }
 
+/// LocalAgentProcessRunner
 pub trait LocalAgentProcessRunner: Send + Sync {
     fn run(
         &self,
@@ -410,6 +440,7 @@ pub trait LocalAgentProcessRunner: Send + Sync {
 }
 
 #[derive(Debug, Default)]
+/// CommandLocalAgentProcessRunner
 pub struct CommandLocalAgentProcessRunner;
 
 impl LocalAgentProcessRunner for CommandLocalAgentProcessRunner {
@@ -470,10 +501,12 @@ impl LocalAgentProcessRunner for CommandLocalAgentProcessRunner {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// LocalAgentResult
 pub struct LocalAgentResult {
     pub answer: String,
 }
 
+/// LocalAgentClient
 pub struct LocalAgentClient {
     runner: Arc<dyn LocalAgentProcessRunner>,
     config: LocalAgentConfig,
@@ -481,6 +514,7 @@ pub struct LocalAgentClient {
 }
 
 impl LocalAgentClient {
+    /// new
     pub fn new(
         runner: Arc<dyn LocalAgentProcessRunner>,
         config: LocalAgentConfig,
@@ -493,6 +527,7 @@ impl LocalAgentClient {
         }
     }
 
+    /// run
     pub fn run(&self, prompt: &str, cancel: &AtomicBool) -> Result<LocalAgentResult, AppError> {
         if prompt.trim().is_empty() || prompt.len() > 1_000_000 {
             return Err(capability_invalid_request());
@@ -519,6 +554,7 @@ impl LocalAgentClient {
     }
 }
 
+/// write capability output
 pub fn write_capability_output(
     app_data_root: &Path,
     category: &str,

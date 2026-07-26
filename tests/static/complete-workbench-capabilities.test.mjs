@@ -1,3 +1,4 @@
+/** complete-workbench-capabilities.test 测试 */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 

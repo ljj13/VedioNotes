@@ -1,3 +1,8 @@
+/**
+ *"笔记库"页面组件——展示所有已生成的笔记，支持搜索和分类。
+ * * 用户可以在这里浏览、搜索、收藏历史笔记，以及对笔记进行 AI 问答。
+ */
+
 import type { ReactNode } from 'react';
 import type { HistoryEntry } from '../lib/types';
 import { noteStyleLabel } from '../lib/noteStyles';
@@ -11,12 +16,14 @@ type Props = {
   chat?: ReactNode;
 };
 
+/** HistoryMarkdownState */
 export type HistoryMarkdownState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'ready'; content: string }
   | { status: 'error'; message: string; recovery?: string };
 
+/** HistoryWorkspace */
 export default function HistoryWorkspace({ library, selectedEntry, markdownState, onRetry, chat }: Props) {
   return (
     <section className="history-workspace" aria-label="历史工作区">
@@ -59,6 +66,7 @@ export default function HistoryWorkspace({ library, selectedEntry, markdownState
   );
 }
 
+/** MarkdownDetail */
 function MarkdownDetail({ state, onRetry }: { state: HistoryMarkdownState; onRetry: () => void }) {
   if (state.status === 'loading') {
     return <div className="history-detail-state history-detail-loading" role="status" aria-live="polite">正在读取 Markdown…</div>;
@@ -81,6 +89,7 @@ function MarkdownDetail({ state, onRetry }: { state: HistoryMarkdownState; onRet
   return null;
 }
 
+/** DocumentIcon */
 function DocumentIcon() {
   return <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M9 12h6M9 16h6" /></svg>;
 }

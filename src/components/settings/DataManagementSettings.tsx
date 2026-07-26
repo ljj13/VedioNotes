@@ -1,3 +1,7 @@
+/**
+ * 数据管理设置面板——导出偏好、缓存清理、日志级别管理.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import type {
   CacheCategory,

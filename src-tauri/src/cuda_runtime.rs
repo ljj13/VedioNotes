@@ -1,3 +1,5 @@
+//! CUDA 运行时管理——检测 NVIDIA GPU、下载/删除 CUDA 运行时库，设置计算模式.
+
 use crate::domain::AppError;
 use crate::process_utils::hidden_command;
 use serde::{Deserialize, Serialize};
@@ -7,11 +9,16 @@ use std::io::{BufReader, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::Stdio;
 
+/// CUDA RUNTIME VERSION
 pub const CUDA_RUNTIME_VERSION: &str = "v1.8.3";
+/// CUDA ARCHIVE FILE NAME
 pub const CUDA_ARCHIVE_FILE_NAME: &str = "whisper-cublas-12.4.0-bin-x64.zip";
+/// CUDA ARCHIVE URL
 pub const CUDA_ARCHIVE_URL: &str = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.3/whisper-cublas-12.4.0-bin-x64.zip";
+/// CUDA ARCHIVE SHA256
 pub const CUDA_ARCHIVE_SHA256: &str =
     "c12a563333d3c3707be70754dc0e87c1cb58aa6333a87055bbcf9b524488dfb0";
+/// CUDA ARCHIVE BYTES
 pub const CUDA_ARCHIVE_BYTES: u64 = 459_854_042;
 
 const REQUIRED_RUNTIME_FILES: [&str; 12] = [
@@ -33,6 +40,7 @@ const MAX_EXTRACTED_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+/// LocalComputeMode
 pub enum LocalComputeMode {
     #[default]
     Auto,
@@ -41,6 +49,7 @@ pub enum LocalComputeMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// CudaRuntimeState
 pub enum CudaRuntimeState {
     Unavailable,
     NotInstalled,
@@ -52,6 +61,7 @@ pub enum CudaRuntimeState {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// CudaRuntimeStatus
 pub struct CudaRuntimeStatus {
     pub state: CudaRuntimeState,
     pub gpu_name: Option<String>,
@@ -62,18 +72,21 @@ pub struct CudaRuntimeStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// CudaRuntimeDownloadProgress
 pub struct CudaRuntimeDownloadProgress {
     pub downloaded_bytes: u64,
     pub total_bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// DetectedGpu
 pub struct DetectedGpu {
     pub name: String,
     pub compute_capability: (u16, u16),
 }
 
 #[derive(Debug, Clone)]
+/// CudaRuntimeManifest
 pub struct CudaRuntimeManifest {
     pub version: String,
     pub archive_file_name: String,
@@ -83,6 +96,7 @@ pub struct CudaRuntimeManifest {
     pub strip_prefix: Option<String>,
 }
 
+/// production manifest
 pub fn production_manifest() -> CudaRuntimeManifest {
     CudaRuntimeManifest {
         version: CUDA_RUNTIME_VERSION.into(),
@@ -94,10 +108,12 @@ pub fn production_manifest() -> CudaRuntimeManifest {
     }
 }
 
+/// CudaProbe
 pub trait CudaProbe: Send + Sync {
     fn detect(&self) -> Result<Option<DetectedGpu>, AppError>;
 }
 
+/// NvidiaSmiProbe
 pub struct NvidiaSmiProbe;
 
 impl CudaProbe for NvidiaSmiProbe {
@@ -148,6 +164,7 @@ impl CudaProbe for NvidiaSmiProbe {
     }
 }
 
+/// CudaHttpClient
 pub trait CudaHttpClient: Send + Sync {
     fn download(
         &self,
@@ -158,6 +175,7 @@ pub trait CudaHttpClient: Send + Sync {
     ) -> Result<(), ()>;
 }
 
+/// ReqwestCudaHttpClient
 pub struct ReqwestCudaHttpClient;
 
 impl CudaHttpClient for ReqwestCudaHttpClient {
@@ -204,6 +222,7 @@ impl CudaHttpClient for ReqwestCudaHttpClient {
     }
 }
 
+/// cuda runtime root
 pub fn cuda_runtime_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir
         .join("runtime")
@@ -212,6 +231,7 @@ pub fn cuda_runtime_root(app_data_dir: &Path) -> PathBuf {
         .join(CUDA_RUNTIME_VERSION)
 }
 
+/// inspect cuda runtime
 pub fn inspect_cuda_runtime(
     root: &Path,
     compute_mode: LocalComputeMode,
@@ -262,6 +282,7 @@ pub fn inspect_cuda_runtime(
     }
 }
 
+/// download cuda runtime with client
 pub fn download_cuda_runtime_with_client(
     root: &Path,
     client: &dyn CudaHttpClient,
@@ -271,6 +292,7 @@ pub fn download_cuda_runtime_with_client(
     download_cuda_runtime_for_manifest(root, &manifest, client, on_progress)
 }
 
+/// download cuda runtime for manifest
 pub fn download_cuda_runtime_for_manifest(
     root: &Path,
     manifest: &CudaRuntimeManifest,
@@ -308,6 +330,7 @@ pub fn download_cuda_runtime_for_manifest(
     Ok(())
 }
 
+/// install verified archive
 pub fn install_verified_archive(
     root: &Path,
     archive_path: &Path,
@@ -393,6 +416,7 @@ pub fn install_verified_archive(
     extraction
 }
 
+/// delete cuda runtime
 pub fn delete_cuda_runtime(root: &Path, in_use: bool) -> Result<(), AppError> {
     if in_use {
         return Err(AppError::new(
@@ -413,6 +437,7 @@ pub fn delete_cuda_runtime(root: &Path, in_use: bool) -> Result<(), AppError> {
     })
 }
 
+/// ready cuda cli
 pub fn ready_cuda_cli(root: &Path) -> Option<PathBuf> {
     runtime_files_ready(root, &production_manifest()).then(|| root.join("whisper-cli.exe"))
 }
