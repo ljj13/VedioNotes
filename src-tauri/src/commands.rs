@@ -6,7 +6,7 @@ use crate::credential_store::{
     CapabilityKind, CredentialBackend, CredentialBackendError, CredentialStore, KeyringBackend,
     SecretPayload,
 };
-use crate::download_cookies::DownloadCookieStore;
+use crate::download_cookies::{inspect_douyin_cookie_fields, DownloadCookieStore};
 use crate::{
     ai_capabilities::{
         write_capability_output, CommandLocalAgentProcessRunner, ImageClient, LocalAgentClient,
@@ -30,9 +30,9 @@ use crate::{
         ReqwestCudaHttpClient,
     },
     domain::{
-        AppError, Distillation, DistillationResult, InputSource, ProfileTestResult,
-        ProviderFallbackEvent, SecretInput, SenseVoiceLanguage, TaskOptions, TaskProgress,
-        TaskStage, TranscriptionMode,
+        AppError, Distillation, DistillationResult, DownloadTelemetry, InputSource,
+        ProfileTestResult, ProviderFallbackEvent, SecretInput, SenseVoiceLanguage, TaskOptions,
+        TaskProgress, TaskStage, TranscriptionMode,
     },
     history_store::{
         capture_evidence_with, HistoryEntry, HistoryEntryInput, HistoryStore, LibraryEntry,
@@ -62,7 +62,7 @@ use crate::{
         TranscriptionRegistry,
     },
     services::{
-        download::{classify_platform_url, download_platform},
+        download::{classify_platform_url, download_platform, DownloadProgress},
         media::{prepare_audio, LocalFfmpegScreenshotCapturer},
         results::{copy_markdown_file, save_markdown},
     },
@@ -1415,6 +1415,34 @@ pub fn has_profile_credential(
     cred_store.has(&profile_type, &profile_id)
 }
 
+/// Read a summary provider bearer credential after an explicit user action.
+///
+/// This command is intentionally limited to summary profiles and returns no
+/// redacted placeholder. Callers must keep the value in transient memory and
+/// must never log or persist it.
+pub fn reveal_summary_profile_credential_for_services(
+    services: &ManagedServices,
+    profile_id: &str,
+) -> Result<String, AppError> {
+    match services.credential_store().get("summary", profile_id)? {
+        SecretPayload::Bearer { api_key } => Ok(api_key),
+        SecretPayload::Tencent { .. } => Err(AppError::new(
+            "credential_type_unsupported",
+            "当前凭据类型不支持显示。",
+            "请重新输入凭据以替换现有配置。",
+        )),
+    }
+}
+
+#[tauri::command]
+/// Reveal one saved summary provider bearer credential.
+pub fn reveal_summary_profile_credential(
+    services: State<'_, ManagedServices>,
+    profile_id: String,
+) -> Result<String, AppError> {
+    reveal_summary_profile_credential_for_services(&services, &profile_id)
+}
+
 /// Save (create or update) a transcription profile with compensating rollback.
 ///
 /// 1. Load profiles, apply mutation, and validate BEFORE credential write.
@@ -2073,6 +2101,7 @@ pub async fn start_distillation(
             provider: TranscriptionProviderKind::LocalWhisperCpp,
             base_url: String::new(),
             model: options.sensevoice_model.as_str().into(),
+            online_options: Default::default(),
             enabled: true,
             built_in: true,
         },
@@ -2922,24 +2951,34 @@ async fn run_pipeline(
                 )?;
                 check_cancelled(cancel_flag)?;
                 let platform = classify_platform_url(url)?;
-                let cookie_file = DownloadCookieStore::production()
-                    .write_netscape_cookie_file(platform, task_work_dir)?;
-                let mut download_percent = 10_u8;
+                let cookie_material = DownloadCookieStore::production()
+                    .prepare_download_cookie(platform, task_work_dir)?;
+                if platform == crate::services::download::VideoPlatform::Douyin {
+                    if let Some(header) = cookie_material.raw_header() {
+                        let fields = inspect_douyin_cookie_fields(header);
+                        if !(fields.ms_token && fields.ttwid && fields.s_v_web_id) {
+                            emit_download_progress(
+                                app,
+                                task_id,
+                                DownloadProgress::message(
+                                    crate::services::download::DownloadPhase::Resolving,
+                                    "当前抖音 Cookie 会话字段可能不完整；先尝试公开分享页。",
+                                ),
+                            )?;
+                        }
+                    }
+                }
                 download_platform(
                     url,
                     task_work_dir,
-                    cookie_file.as_ref().map(|file| file.path()),
-                    |message| {
-                        download_percent = download_percent.saturating_add(1).min(24);
-                        let _ = emit_progress(
-                            app,
-                            task_id,
-                            TaskStage::Downloading,
-                            message,
-                            download_percent,
-                        );
+                    cookie_material.raw_header(),
+                    cookie_material.netscape_file_path(),
+                    &|| cancel_flag.load(Ordering::SeqCst),
+                    |download| {
+                        let _ = emit_download_progress(app, task_id, download);
                     },
-                )?
+                )
+                .await?
             }
             InputSource::File { path } => PathBuf::from(path),
         };
@@ -3087,6 +3126,7 @@ async fn run_pipeline(
                                 stage: TaskStage::Transcribing,
                                 message: "CUDA 不可用，正在改用 CPU 转写…".to_string(),
                                 percent,
+                                download: None,
                             },
                         );
                     }))
@@ -3273,9 +3313,57 @@ fn emit_progress(
             stage,
             message: message.to_string(),
             percent,
+            download: None,
         },
     )
     .map_err(|e| AppError::new("emit_error", format!("事件发送失败: {}", e), "请重试。"))
+}
+
+fn emit_download_progress(
+    app: &AppHandle,
+    task_id: &str,
+    progress: DownloadProgress,
+) -> Result<(), AppError> {
+    let overall_percent = progress
+        .percent
+        .map(|percent| 10.0 + percent.clamp(0.0, 100.0) * 0.14)
+        .unwrap_or(10.0)
+        .round()
+        .clamp(10.0, 24.0) as u8;
+    diagnostics::record(DiagnosticRecord {
+        level: DiagnosticLevel::Info,
+        event: DiagnosticEventKind::StageChanged,
+        task_id: Some(task_id.to_string()),
+        stage: Some(TaskStage::Downloading),
+        percent: Some(overall_percent),
+        elapsed_ms: None,
+        exit_code: None,
+        output_exists: None,
+        output_bytes: Some(progress.downloaded_bytes),
+    });
+    app.emit(
+        &format!("task-progress:{task_id}"),
+        &TaskProgress {
+            stage: TaskStage::Downloading,
+            message: progress.message,
+            percent: overall_percent,
+            download: Some(DownloadTelemetry {
+                phase: progress.phase.as_str().to_string(),
+                percent: progress.percent,
+                downloaded_bytes: progress.downloaded_bytes,
+                total_bytes: progress.total_bytes,
+                speed_bytes_per_second: progress.speed_bytes_per_second,
+                eta_seconds: progress.eta_seconds,
+            }),
+        },
+    )
+    .map_err(|error| {
+        AppError::new(
+            "emit_error",
+            format!("下载进度事件发送失败: {error}"),
+            "请重试。",
+        )
+    })
 }
 
 fn check_cancelled(flag: &AtomicBool) -> Result<(), AppError> {

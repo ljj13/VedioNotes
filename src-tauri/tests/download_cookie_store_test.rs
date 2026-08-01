@@ -68,6 +68,36 @@ fn cookie_store_creates_a_task_scoped_netscape_file_and_removes_it_on_drop() {
 }
 
 #[test]
+fn prepared_cookie_material_keeps_raw_header_and_netscape_file_separate() {
+    let store = DownloadCookieStore::new(InMemoryBackend::new());
+    let work_dir = tempdir().unwrap();
+    store
+        .set(
+            VideoPlatform::Douyin,
+            "msToken=test_token; ttwid=test_ttwid; s_v_web_id=verify_test",
+        )
+        .unwrap();
+
+    let material = store
+        .prepare_download_cookie(VideoPlatform::Douyin, work_dir.path())
+        .unwrap();
+    let raw = material.raw_header().expect("native header should exist");
+    let file_path = material
+        .netscape_file_path()
+        .expect("yt-dlp cookie file should exist");
+    let file_body = std::fs::read_to_string(file_path).unwrap();
+
+    assert_eq!(
+        raw,
+        "msToken=test_token; ttwid=test_ttwid; s_v_web_id=verify_test"
+    );
+    assert!(!raw.contains(['\r', '\n', '\t']));
+    assert!(file_body.starts_with("# Netscape HTTP Cookie File\n"));
+    assert!(file_body.contains("\tmsToken\ttest_token"));
+    assert_ne!(raw, file_body);
+}
+
+#[test]
 fn command_helpers_return_status_only_and_redact_invalid_cookie_errors() {
     let dir = tempdir().unwrap();
     let services =

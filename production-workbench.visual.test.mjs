@@ -31,9 +31,9 @@ const routeSelectors = {
 };
 const settingsTopLabels = { appearance: '外观', transcription: '语音转文字', ai: 'AI 接入', data: '数据管理', about: '关于' };
 const settingsSubLabels = {
-  'transcription-cpu': { label: 'CPU 转写', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
-  'transcription-gpu': { label: 'GPU 转写', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
-  'transcription-online': { label: '在线转写', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
+  'transcription-cpu': { label: 'CPU 模式', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
+  'transcription-gpu': { label: 'GPU 模式', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
+  'transcription-online': { label: '在线模式', selector: '[role="tablist"][aria-label="语音转文字模式"]' },
   'ai-llm': { label: '大语言模型', selector: '[role="tablist"][aria-label="AI 能力"]' },
   'ai-vector': { label: '向量', selector: '[role="tablist"][aria-label="AI 能力"]' },
   'ai-rerank': { label: '重排', selector: '[role="tablist"][aria-label="AI 能力"]' },
@@ -482,6 +482,7 @@ await send('Page.addScriptToEvaluateOnNewDocument', {
         if (command === 'get_sensevoice_status') return senseVoiceStatus;
         if (command === 'set_transcription_preferences') return { schemaVersion: 1, markdownOutputDir: 'D:\\\\Project\\\\notes\\\\export', localComputeMode: 'auto', transcriptionMode: args?.transcriptionMode ?? 'sensevoice_cpu', sensevoiceModel: 'int8', sensevoiceLanguages: args?.sensevoiceLanguages ?? ['zh','en'] };
         if (command === 'has_profile_credential') return true;
+        if (command === 'reveal_summary_profile_credential') return 'sk-test-not-a-real-secret';
         if (command === 'get_profiles') return {
           schemaVersion: 1,
           activeTranscriptionProfileId: 'local-whisper-cpp',
@@ -567,14 +568,20 @@ while (Date.now() < deadline) {
 const settingsMode = mode.startsWith('settings') || mode === 'route-settings';
 if (settingsMode) {
   await send('Runtime.evaluate', { expression: `document.querySelector('.workbench-sidebar button[aria-label="设置"]')?.click()`, returnByValue: true });
-  const settingsDeadline = Date.now() + 5000;
+  const settingsDeadline = Date.now() + 10000;
   while (Date.now() < settingsDeadline) {
-    const probe = await send('Runtime.evaluate', { expression: `Boolean(document.querySelector('.cipher-settings-root'))`, returnByValue: true });
+    const probe = await send('Runtime.evaluate', {
+      expression: `Boolean(document.querySelector('.cipher-settings-root .settings-page-header') && document.querySelector('.cipher-settings-root .settings-tabs [role="tab"]'))`,
+      returnByValue: true,
+    });
     if (probe.result.value) break;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  const settingsReady = await send('Runtime.evaluate', { expression: `Boolean(document.querySelector('.cipher-settings-root'))`, returnByValue: true });
-  assert.equal(settingsReady.result.value, true, 'settings visual mode must enter the Settings workspace');
+  const settingsReady = await send('Runtime.evaluate', {
+    expression: `Boolean(document.querySelector('.cipher-settings-root .settings-page-header') && document.querySelector('.cipher-settings-root .settings-tabs [role="tab"]'))`,
+    returnByValue: true,
+  });
+  assert.equal(settingsReady.result.value, true, 'settings visual mode must finish loading the Cipher settings workspace');
 
   const section = mode.startsWith('settings-data') ? 'data'
     : mode.startsWith('settings-appearance') ? 'appearance'
@@ -630,22 +637,22 @@ if (settingsMode) {
       const probe = await send('Runtime.evaluate', {
         expression: `(() => {
           const label = ${JSON.stringify(dropdownLabel)};
-          const root = [...document.querySelectorAll('[data-slot="select"]')]
-            .find((select) => select.querySelector('[data-slot="label"]')?.textContent.trim() === label);
-          return Boolean(root?.querySelector('[data-slot="select-trigger"]'));
+          const root = [...document.querySelectorAll('[data-slot="select"], [data-slot="combo-box"]')]
+            .find((control) => control.querySelector('[data-slot="label"]')?.textContent.trim() === label);
+          return Boolean(root?.querySelector('[data-slot="select-trigger"], [data-slot="combo-box-trigger"]'));
         })()`,
         returnByValue: true,
       });
       if (probe.result.value) { dropdownReady = true; break; }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    assert.equal(dropdownReady, true, `current Cipher Select must render: ${dropdownLabel}`);
+    assert.equal(dropdownReady, true, `current Cipher Select/ComboBox must render: ${dropdownLabel}`);
     await send('Runtime.evaluate', {
       expression: `(() => {
         const label = ${JSON.stringify(dropdownLabel)};
-        const root = [...document.querySelectorAll('[data-slot="select"]')]
-          .find((select) => select.querySelector('[data-slot="label"]')?.textContent.trim() === label);
-        root?.querySelector('[data-slot="select-trigger"]')?.click();
+        const root = [...document.querySelectorAll('[data-slot="select"], [data-slot="combo-box"]')]
+          .find((control) => control.querySelector('[data-slot="label"]')?.textContent.trim() === label);
+        root?.querySelector('[data-slot="select-trigger"], [data-slot="combo-box-trigger"]')?.click();
         return Boolean(root);
       })()`,
       returnByValue: true,
@@ -659,8 +666,16 @@ if (settingsMode) {
     });
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
+  if (mode.startsWith('settings-ai-llm-api-key-focus')) {
+    const focused = await send('Runtime.evaluate', {
+      expression: `(() => { const input = document.querySelector('.cipher-ai-api-key-field input'); input?.focus(); return document.activeElement === input; })()`,
+      returnByValue: true,
+    });
+    assert.equal(focused.result.value, true, 'AI API Key input must receive focus for the focus-style audit');
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
 }
-if (lightMode) { await new Promise((resolve) => setTimeout(resolve, 180)); }
+await applyAuditTheme(lightMode ? 'light' : 'dark');
 
 if (collapsedMode) {
   await send('Runtime.evaluate', {
@@ -883,6 +898,100 @@ const inspected = await send('Runtime.evaluate', {
       aboutCardCount: aboutCards.length,
       aboutCardOverflowFailures,
     };
+    const activeSettingText = document.querySelector('.settings-tabs [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null;
+    const subtabLabel = activeSettingText === '语音转文字' ? '语音转文字模式'
+      : activeSettingText === 'AI 接入' ? 'AI 能力'
+        : activeSettingText === '数据管理' ? '数据管理分类'
+          : null;
+    const activeSubtabText = subtabLabel
+      ? document.querySelector('[role="tablist"][aria-label="' + subtabLabel + '"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null
+      : null;
+    const aiFormControlAudit = (() => {
+      const providerTrigger = document.querySelector('.cipher-ai-provider-trigger');
+      const providerCopy = providerTrigger?.querySelector('.cipher-ai-provider-option-copy');
+      const providerIndicator = providerTrigger?.querySelector('.cipher-settings-select-indicator');
+      const apiKeyInput = document.querySelector('.cipher-ai-api-key-field input');
+      const apiKeyGroup = apiKeyInput?.closest('[data-slot="input-group"]');
+      const modelGroup = document.querySelector('.cipher-ai-model-input-group');
+      const modelTrigger = document.querySelector('.cipher-ai-model-trigger');
+      const modelIndicator = modelTrigger?.querySelector('svg');
+      const missing = [
+        !providerTrigger && 'providerTrigger',
+        !providerCopy && 'providerCopy',
+        !providerIndicator && 'providerIndicator',
+        !apiKeyInput && 'apiKeyInput',
+        !apiKeyGroup && 'apiKeyGroup',
+        !modelGroup && 'modelGroup',
+        !modelTrigger && 'modelTrigger',
+      ].filter(Boolean);
+      if (missing.length) return { missing };
+      const centerDelta = (parent, child) => {
+        const parentRect = parent.getBoundingClientRect();
+        const childRect = child.getBoundingClientRect();
+        return Math.abs((parentRect.top + parentRect.height / 2) - (childRect.top + childRect.height / 2));
+      };
+      const providerStyle = getComputedStyle(providerTrigger);
+      const providerIndicatorStyle = getComputedStyle(providerIndicator);
+      const providerTriggerRect = providerTrigger.getBoundingClientRect();
+      const providerIndicatorRect = providerIndicator.getBoundingClientRect();
+      const apiKeyStyle = getComputedStyle(apiKeyInput);
+      const apiKeyGroupStyle = getComputedStyle(apiKeyGroup);
+      const modelGroupStyle = getComputedStyle(modelGroup);
+      const modelTriggerStyle = getComputedStyle(modelTrigger);
+      const modelInputStyle = getComputedStyle(modelGroup.querySelector('.cipher-ai-model-input'));
+      const modelTriggerBeforeStyle = getComputedStyle(modelTrigger, '::before');
+      const modelTriggerAfterStyle = getComputedStyle(modelTrigger, '::after');
+      return {
+        apiKeyPaddingLeft: apiKeyStyle.paddingLeft,
+        apiKeyOutlineStyle: apiKeyStyle.outlineStyle,
+        apiKeyBoxShadow: apiKeyStyle.boxShadow,
+        apiKeyGroupOutlineStyle: apiKeyGroupStyle.outlineStyle,
+        apiKeyGroupBoxShadow: apiKeyGroupStyle.boxShadow,
+        apiKeyVisibleFocusLayerCount: [
+          apiKeyStyle.outlineStyle !== 'none',
+          apiKeyStyle.boxShadow !== 'none',
+          apiKeyGroupStyle.outlineStyle !== 'none',
+          apiKeyGroupStyle.boxShadow !== 'none',
+        ].filter(Boolean).length,
+        apiKeyLineHeight: apiKeyStyle.lineHeight,
+        providerTriggerOutlineStyle: providerStyle.outlineStyle,
+        providerTriggerBoxShadow: providerStyle.boxShadow,
+        providerIndicatorCount: providerTrigger.querySelectorAll('.cipher-settings-select-indicator').length,
+        providerCopyCenterDelta: centerDelta(providerTrigger, providerCopy),
+        providerIndicatorCenterDelta: centerDelta(providerTrigger, providerIndicator),
+        providerTriggerRect: { top: providerTriggerRect.top, height: providerTriggerRect.height },
+        providerIndicatorRect: { top: providerIndicatorRect.top, height: providerIndicatorRect.height },
+        providerIndicatorStyle: {
+          display: providerIndicatorStyle.display,
+          position: providerIndicatorStyle.position,
+          top: providerIndicatorStyle.top,
+          transform: providerIndicatorStyle.transform,
+        },
+        modelGroupOutlineStyle: modelGroupStyle.outlineStyle,
+        modelGroupBoxShadow: modelGroupStyle.boxShadow,
+        modelTriggerOutlineStyle: modelTriggerStyle.outlineStyle,
+        modelTriggerBoxShadow: modelTriggerStyle.boxShadow,
+        modelTriggerBorder: [modelTriggerStyle.borderLeftWidth, modelTriggerStyle.borderLeftStyle, modelTriggerStyle.borderLeftColor].join(' '),
+        modelInputOutlineStyle: modelInputStyle.outlineStyle,
+        modelInputBoxShadow: modelInputStyle.boxShadow,
+        modelTriggerBefore: {
+          content: modelTriggerBeforeStyle.content,
+          boxShadow: modelTriggerBeforeStyle.boxShadow,
+          border: [modelTriggerBeforeStyle.borderLeftWidth, modelTriggerBeforeStyle.borderLeftStyle, modelTriggerBeforeStyle.borderLeftColor].join(' '),
+          background: modelTriggerBeforeStyle.backgroundColor,
+        },
+        modelTriggerAfter: {
+          content: modelTriggerAfterStyle.content,
+          boxShadow: modelTriggerAfterStyle.boxShadow,
+          border: [modelTriggerAfterStyle.borderLeftWidth, modelTriggerAfterStyle.borderLeftStyle, modelTriggerAfterStyle.borderLeftColor].join(' '),
+          background: modelTriggerAfterStyle.backgroundColor,
+        },
+        modelIndicatorCount: modelGroup.querySelectorAll('.cipher-ai-model-trigger').length,
+        modelIndicatorCenterDelta: modelIndicator
+          ? centerDelta(modelTrigger, modelIndicator)
+          : centerDelta(modelGroup, modelTrigger),
+      };
+    })();
 
     return JSON.stringify({
     mode: ${JSON.stringify(mode)},
@@ -902,18 +1011,74 @@ const inspected = await send('Runtime.evaluate', {
     sidebarScrollTop: Math.round(document.querySelector('.workbench-sidebar').scrollTop),
     contentScrollTop: Math.round(document.querySelector('.workbench-content').scrollTop),
     activePrimary: document.querySelector('.sidebar-nav [aria-current="page"]')?.getAttribute('aria-label') ?? null,
-    activeSetting: document.querySelector('.settings-tabs [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null,
-    activeSubtab: ([
-      ...document.querySelectorAll('[role="tablist"][aria-label="语音转文字模式"] [role="tab"][aria-selected="true"]'),
-      ...document.querySelectorAll('[role="tablist"][aria-label="AI 能力"] [role="tab"][aria-selected="true"]'),
-      ...document.querySelectorAll('[role="tablist"][aria-label="数据管理分类"] [role="tab"][aria-selected="true"]')
-    ][0])?.textContent.trim() ?? null,
+    activeSetting: activeSettingText,
+    activeSubtab: activeSubtabText,
+    aiFormControlAudit,
+    settingsButtons: [...document.querySelectorAll('.cipher-settings-root .button')].map((button) => {
+      const style = getComputedStyle(button);
+      const icon = button.querySelector('svg');
+      const iconStyle = icon ? getComputedStyle(icon) : null;
+      return {
+        text: button.textContent.trim(),
+        variant: [...button.classList].find((name) => name.startsWith('button--') && !['button--sm', 'button--md', 'button--lg', 'button--full-width', 'button--icon-only'].includes(name)) ?? null,
+        disabled: button.matches(':disabled,[aria-disabled="true"]'),
+        background: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        opacity: Number(style.opacity),
+        iconColor: iconStyle?.color ?? null,
+        hoverBackground: style.getPropertyValue('--button-bg-hover').trim(),
+        pressedBackground: style.getPropertyValue('--button-bg-pressed').trim(),
+      };
+    }),
+    gpuAccelerationSwitch: (() => {
+      const input = document.querySelector('.cipher-settings-root [role="switch"][aria-label="启用 Whisper GPU 加速"]');
+      const control = document.querySelector('.cipher-whisper-gpu-switch-control');
+      const thumb = document.querySelector('.cipher-whisper-gpu-switch-thumb');
+      if (!input || !control || !thumb) return null;
+      const controlStyle = getComputedStyle(control);
+      const thumbStyle = getComputedStyle(thumb);
+      return {
+        checked: input.checked,
+        controlWidth: controlStyle.width,
+        controlHeight: controlStyle.height,
+        controlBackground: controlStyle.backgroundColor,
+        thumbWidth: thumbStyle.width,
+        thumbHeight: thumbStyle.height,
+        thumbBackground: thumbStyle.backgroundColor,
+        thumbTransform: thumbStyle.transform,
+      };
+    })(),
     collapsedLabels: [...document.querySelectorAll('.workbench-sidebar .sidebar-label')].map((element) => ({
       maxWidth: getComputedStyle(element).maxWidth,
       opacity: getComputedStyle(element).opacity,
       visibility: getComputedStyle(element).visibility
     })),
     readyDotVisible: document.querySelector('.ready-dot')?.getBoundingClientRect().width > 0,
+    titlebarAlignment: (() => {
+      const topbar = document.querySelector('.window-top-bar');
+      const identity = document.querySelector('.window-title-identity');
+      const mark = document.querySelector('.window-title-mark');
+      const name = document.querySelector('.window-title-name');
+      const sidebar = document.querySelector('.workbench-sidebar');
+      if (!topbar || !identity || !mark || !name || !sidebar) return null;
+      const topbarStyle = getComputedStyle(topbar);
+      const identityRect = identity.getBoundingClientRect();
+      const markRect = mark.getBoundingClientRect();
+      const nameRect = name.getBoundingClientRect();
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const nameStyle = getComputedStyle(name);
+      return {
+        firstColumn: topbarStyle.gridTemplateColumns.split(' ')[0],
+        sidebarRight: Number(sidebarRect.right.toFixed(2)),
+        identityRight: Number(identityRect.right.toFixed(2)),
+        identityOverflow: Number((identityRect.right - sidebarRect.right).toFixed(2)),
+        markCenterDelta: Number(((markRect.left + markRect.width / 2) - (sidebarRect.left + sidebarRect.width / 2)).toFixed(2)),
+        nameWidth: Number(nameRect.width.toFixed(2)),
+        nameOpacity: nameStyle.opacity,
+        nameVisibility: nameStyle.visibility,
+      };
+    })(),
     keyWidths: [
       '.workbench-sidebar', '.window-top-bar', '.app-main',
       '.home-workspace', '.home-hero', '.home-hero-visual',
@@ -975,6 +1140,56 @@ if (settingsMode) {
     assert.ok(state.settingsCLayout.aboutCardCount >= 6, `About visual must render all information cards: ${JSON.stringify(state.settingsCLayout)}`);
     assert.equal(state.settingsCLayout.aboutCardOverflowFailures.length, 0, `About cards must contain long text: ${JSON.stringify(state.settingsCLayout)}`);
   }
+  if (expectedSetting === 'AI 接入') {
+    const audit = state.aiFormControlAudit;
+    assert.ok(audit, `AI form controls must render for geometry audit: ${JSON.stringify(state)}`);
+    assert.equal(audit.apiKeyPaddingLeft, '56px', `API key text must keep the approved left inset: ${JSON.stringify(audit)}`);
+    assert.equal(audit.apiKeyOutlineStyle, 'none', `API key input must not draw an inner rectangular outline: ${JSON.stringify(audit)}`);
+    assert.equal(audit.apiKeyBoxShadow, 'none', `API key input must not draw an inner focus shadow: ${JSON.stringify(audit)}`);
+    assert.equal(audit.apiKeyGroupOutlineStyle, 'none', `API key group must not draw an outer outline: ${JSON.stringify(audit)}`);
+    assert.ok(audit.apiKeyVisibleFocusLayerCount <= 1, `API key focus must render at most one visual focus layer: ${JSON.stringify(audit)}`);
+    assert.equal(audit.providerTriggerOutlineStyle, 'none', `provider trigger must not draw an outer outline: ${JSON.stringify(audit)}`);
+    assert.equal(audit.providerTriggerBoxShadow, 'none', `provider trigger must not draw an outer focus ring: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelGroupOutlineStyle, 'none', `model group must not draw an outer outline: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelGroupBoxShadow, 'none', `model group must not draw an outer focus ring: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelTriggerOutlineStyle, 'none', `model trigger must not draw an inner focus line: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelTriggerBoxShadow, 'none', `model trigger must not draw an inner focus ring: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelInputBoxShadow, 'none', `model input must not draw the clipped green focus ring: ${JSON.stringify(audit)}`);
+    assert.equal(audit.providerIndicatorCount, 1, `provider trigger must render one chevron: ${JSON.stringify(audit)}`);
+    assert.equal(audit.modelIndicatorCount, 1, `model trigger must render one chevron: ${JSON.stringify(audit)}`);
+    assert.ok(audit.providerCopyCenterDelta <= 1, `provider copy must be vertically centered: ${JSON.stringify(audit)}`);
+    assert.ok(audit.providerIndicatorCenterDelta <= 1, `provider chevron must be vertically centered: ${JSON.stringify(audit)}`);
+    assert.ok(audit.modelIndicatorCenterDelta <= 1, `model chevron must be vertically centered: ${JSON.stringify(audit)}`);
+  }
+  const transparent = new Set(['rgba(0, 0, 0, 0)', 'transparent']);
+  for (const button of state.settingsButtons) {
+    if (['button--primary', 'button--danger', 'button--secondary'].includes(button.variant)) {
+      assert.equal(transparent.has(button.background), false, `${button.variant} button must have a visible background: ${JSON.stringify(button)}`);
+    }
+    if (button.variant === 'button--outline') {
+      assert.equal(transparent.has(button.borderColor), false, `outline button must keep a visible border: ${JSON.stringify(button)}`);
+    }
+    if (button.iconColor) {
+      assert.equal(button.iconColor, button.color, `button icon must follow currentColor: ${JSON.stringify(button)}`);
+    }
+    if (button.disabled) {
+      assert.ok(button.opacity >= .35 && button.opacity <= .7, `disabled button must remain legible: ${JSON.stringify(button)}`);
+    }
+    assert.ok(button.hoverBackground, `button hover token must be defined: ${JSON.stringify(button)}`);
+    assert.ok(button.pressedBackground, `button pressed token must be defined: ${JSON.stringify(button)}`);
+  }
+  if (mode.startsWith('settings-transcription-gpu')) {
+    assert.deepEqual(
+      {
+        controlWidth: state.gpuAccelerationSwitch?.controlWidth,
+        controlHeight: state.gpuAccelerationSwitch?.controlHeight,
+        thumbWidth: state.gpuAccelerationSwitch?.thumbWidth,
+        thumbHeight: state.gpuAccelerationSwitch?.thumbHeight,
+      },
+      { controlWidth: '42px', controlHeight: '24px', thumbWidth: '18px', thumbHeight: '18px' },
+      `GPU acceleration must render as the approved slider: ${JSON.stringify(state.gpuAccelerationSwitch)}`,
+    );
+  }
 }
 if (currentDropdownModes.has(mode)) assert.ok(state.openListboxes > 0, `current Cipher dropdown mode must keep a listbox open: ${JSON.stringify(state)}`);
 if (legacyOnlyMode) {
@@ -988,6 +1203,18 @@ if (collapsedMode) {
   assert.equal(state.sidebarWidth, 88, `collapsed sidebar must be 88px wide: ${JSON.stringify(state)}`);
   assert.ok(state.collapsedLabels.every((label) => label.maxWidth === '0px' && label.opacity === '0' && label.visibility === 'hidden'), `collapsed labels must occupy no visible space: ${JSON.stringify(state.collapsedLabels)}`);
   assert.equal(state.readyDotVisible, true, 'collapsed sidebar keeps the green service indicator visible');
+  assert.equal(state.titlebarAlignment?.firstColumn, '88px', `collapsed title-bar column must match the sidebar: ${JSON.stringify(state.titlebarAlignment)}`);
+  assert.ok(Math.abs(state.titlebarAlignment?.identityOverflow ?? 999) <= 0.25, `collapsed title identity must end at the sidebar boundary: ${JSON.stringify(state.titlebarAlignment)}`);
+  assert.ok(Math.abs(state.titlebarAlignment?.markCenterDelta ?? 999) <= 0.25, `collapsed title logo must be centered over the sidebar: ${JSON.stringify(state.titlebarAlignment)}`);
+  assert.deepEqual(
+    { width: state.titlebarAlignment?.nameWidth, opacity: state.titlebarAlignment?.nameOpacity, visibility: state.titlebarAlignment?.nameVisibility },
+    { width: 0, opacity: '0', visibility: 'hidden' },
+    `collapsed title brand name must leave the visible layout: ${JSON.stringify(state.titlebarAlignment)}`,
+  );
+} else {
+  assert.equal(state.titlebarAlignment?.firstColumn, '220px', `expanded title-bar column must match the sidebar: ${JSON.stringify(state.titlebarAlignment)}`);
+  assert.ok(Math.abs(state.titlebarAlignment?.identityOverflow ?? 999) <= 0.25, `expanded title identity must end at the sidebar boundary: ${JSON.stringify(state.titlebarAlignment)}`);
+  assert.equal(state.titlebarAlignment?.nameVisibility, 'visible', `expanded title brand name must remain visible: ${JSON.stringify(state.titlebarAlignment)}`);
 }
 
 const capture = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });

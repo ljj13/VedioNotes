@@ -223,7 +223,7 @@ export default function DataManagementTab(_props: SettingsEntryProps) {
           <Card className="cipher-export-card">
               <Select className="cipher-settings-select" selectedKey={exportDraft.format} onSelectionChange={(key) => { if (key != null) setExportDraft({ ...exportDraft, format: String(key) as ExportFormat }); }} variant="secondary" fullWidth>
                 <Label className="cipher-settings-select-label">默认导出格式</Label>
-                <Select.Trigger className="cipher-settings-select-trigger"><Select.Value className="cipher-settings-select-value">{EXPORT_FORMATS.find((item) => item.value === exportDraft.format)?.label}</Select.Value><Select.Indicator className="cipher-settings-select-indicator" /></Select.Trigger>
+                <Select.Trigger className="cipher-settings-select-trigger cipher-export-format-trigger"><Select.Value className="cipher-settings-select-value">{EXPORT_FORMATS.find((item) => item.value === exportDraft.format)?.label}</Select.Value><Select.Indicator className="cipher-settings-select-indicator" /></Select.Trigger>
                 <Select.Popover className="cipher-settings-select-popover"><ListBox className="cipher-settings-select-listbox">{EXPORT_FORMATS.map((item) => <ListBox.Item className="cipher-settings-select-option" key={item.value} id={item.value} textValue={item.label}>{item.label}<ListBox.ItemIndicator className="cipher-settings-select-option-indicator" /></ListBox.Item>)}</ListBox></Select.Popover>
             </Select>
             <div className="cipher-checkbox-group">

@@ -14,8 +14,8 @@ test('production Cipher settings uses the approved C layout and container querie
   assert.doesNotMatch(shell, /settings-navigation-heading/);
   assert.match(css, /\.cipher-settings-root\.settings-page\s*\{[^}]*container-type:\s*inline-size[^}]*container-name:\s*settings-stage/s);
   assert.match(css, /\.cipher-settings-root \.settings-shell-layout\s*\{[^}]*grid-template-areas:\s*['"]header tabs['"]\s*['"]body body['"]/s);
-  assert.match(css, /@container settings-stage \(max-width:\s*900px\)/);
-  assert.match(css, /@container settings-stage \(max-width:\s*620px\)/);
+  assert.match(css, /@container settings-stage \(max-width:\s*760px\)/);
+  assert.match(css, /@container settings-stage \(max-width:\s*520px\)/);
   assert.match(css, /\.cipher-settings-root \.settings-navigation-tabs\s*\{[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.cipher-settings-root \.settings-body\s*\{[^}]*grid-area:\s*body/s);
 });

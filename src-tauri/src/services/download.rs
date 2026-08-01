@@ -1,9 +1,11 @@
 //! 下载服务——视频/音频文件的下载功能.
 
 use crate::domain::AppError;
-use std::io::Read;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::mpsc;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::process_utils::hidden_command;
@@ -25,6 +27,52 @@ pub enum VideoPlatform {
     Bilibili,
     Youtube,
     Douyin,
+}
+
+/// Fine-grained media download phase shared by native and sidecar paths.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DownloadPhase {
+    Resolving,
+    Downloading,
+    Processing,
+}
+
+impl DownloadPhase {
+    /// Stable frontend wire label.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Resolving => "resolving",
+            Self::Downloading => "downloading",
+            Self::Processing => "processing",
+        }
+    }
+}
+
+/// Structured progress emitted by a platform downloader.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DownloadProgress {
+    pub phase: DownloadPhase,
+    pub message: String,
+    pub percent: Option<f64>,
+    pub downloaded_bytes: u64,
+    pub total_bytes: Option<u64>,
+    pub speed_bytes_per_second: Option<u64>,
+    pub eta_seconds: Option<u64>,
+}
+
+impl DownloadProgress {
+    /// A stage message with no measurable media bytes yet.
+    pub fn message(phase: DownloadPhase, message: impl Into<String>) -> Self {
+        Self {
+            phase,
+            message: message.into(),
+            percent: None,
+            downloaded_bytes: 0,
+            total_bytes: None,
+            speed_bytes_per_second: None,
+            eta_seconds: None,
+        }
+    }
 }
 
 fn is_official_host(host: &str, allowed_hosts: &[&str]) -> bool {
@@ -105,6 +153,7 @@ pub struct CaptureAttempt {
 /// AttemptFailureCategory
 pub enum AttemptFailureCategory {
     None,
+    Cancelled,
     ToolMissing,
     BrowserUnavailable,
     CookieUnavailable,
@@ -124,17 +173,36 @@ pub struct AttemptOutcome {
 
 /// DownloadExecutor
 pub trait DownloadExecutor {
-    fn execute(&self, executable: &Path, attempt: &CaptureAttempt) -> AttemptOutcome;
+    fn execute(
+        &self,
+        executable: &Path,
+        attempt: &CaptureAttempt,
+        cancelled: &dyn Fn() -> bool,
+        progress: &mut dyn FnMut(DownloadProgress),
+    ) -> AttemptOutcome;
 }
 
 /// ProcessDownloadExecutor
 pub struct ProcessDownloadExecutor;
 
 impl DownloadExecutor for ProcessDownloadExecutor {
-    fn execute(&self, executable: &Path, attempt: &CaptureAttempt) -> AttemptOutcome {
+    fn execute(
+        &self,
+        executable: &Path,
+        attempt: &CaptureAttempt,
+        cancelled: &dyn Fn() -> bool,
+        progress: &mut dyn FnMut(DownloadProgress),
+    ) -> AttemptOutcome {
+        if cancelled() {
+            return AttemptOutcome {
+                success: false,
+                exit_code: None,
+                category: AttemptFailureCategory::Cancelled,
+            };
+        }
         let child = hidden_command(executable)
             .args(&attempt.args)
-            .stdout(Stdio::null())
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn();
         let Ok(mut child) = child else {
@@ -145,13 +213,67 @@ impl DownloadExecutor for ProcessDownloadExecutor {
             };
         };
 
-        let started = Instant::now();
+        #[derive(Clone, Copy)]
+        enum PipeSource {
+            Stdout,
+            Stderr,
+        }
+
+        let (sender, receiver) = mpsc::channel::<(PipeSource, String)>();
+        let stdout_thread = child.stdout.take().map(|stdout| {
+            let sender = sender.clone();
+            thread::spawn(move || {
+                for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+                    let _ = sender.send((PipeSource::Stdout, line));
+                }
+            })
+        });
+        let stderr_thread = child.stderr.take().map(|stderr| {
+            let sender = sender.clone();
+            thread::spawn(move || {
+                for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+                    let _ = sender.send((PipeSource::Stderr, line));
+                }
+            })
+        });
+        drop(sender);
+
+        let mut stderr = String::new();
+        let mut last_output = Instant::now();
         loop {
+            if cancelled() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return AttemptOutcome {
+                    success: false,
+                    exit_code: None,
+                    category: AttemptFailureCategory::Cancelled,
+                };
+            }
+            match receiver.recv_timeout(Duration::from_millis(100)) {
+                Ok((source, line)) => {
+                    last_output = Instant::now();
+                    if let Some(update) = parse_yt_dlp_progress_line(&line) {
+                        progress(update);
+                    } else if matches!(source, PipeSource::Stderr) && stderr.len() < 64 * 1024 {
+                        stderr.push_str(&line);
+                        stderr.push('\n');
+                    }
+                }
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => {}
+            }
             match child.try_wait() {
                 Ok(Some(status)) => {
-                    let mut stderr = Vec::new();
-                    if let Some(mut pipe) = child.stderr.take() {
-                        let _ = pipe.read_to_end(&mut stderr);
+                    let _ = stdout_thread.map(|handle| handle.join());
+                    let _ = stderr_thread.map(|handle| handle.join());
+                    for (source, line) in receiver.try_iter() {
+                        if let Some(update) = parse_yt_dlp_progress_line(&line) {
+                            progress(update);
+                        } else if matches!(source, PipeSource::Stderr) && stderr.len() < 64 * 1024 {
+                            stderr.push_str(&line);
+                            stderr.push('\n');
+                        }
                     }
                     return AttemptOutcome {
                         success: status.success(),
@@ -159,14 +281,11 @@ impl DownloadExecutor for ProcessDownloadExecutor {
                         category: if status.success() {
                             AttemptFailureCategory::None
                         } else {
-                            classify_failure(&String::from_utf8_lossy(&stderr))
+                            classify_failure(&stderr)
                         },
                     };
                 }
-                Ok(None) if started.elapsed() < Duration::from_secs(75) => {
-                    std::thread::sleep(Duration::from_millis(100));
-                }
-                Ok(None) => {
+                Ok(None) if last_output.elapsed() >= Duration::from_secs(180) => {
                     let _ = child.kill();
                     let _ = child.wait();
                     return AttemptOutcome {
@@ -175,6 +294,7 @@ impl DownloadExecutor for ProcessDownloadExecutor {
                         category: AttemptFailureCategory::Timeout,
                     };
                 }
+                Ok(None) => {}
                 Err(_) => {
                     return AttemptOutcome {
                         success: false,
@@ -185,6 +305,38 @@ impl DownloadExecutor for ProcessDownloadExecutor {
             }
         }
     }
+}
+
+fn parse_optional_number(value: &str) -> Option<f64> {
+    let trimmed = value.trim().trim_end_matches('%');
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("na") || trimmed.eq_ignore_ascii_case("none") {
+        None
+    } else {
+        trimmed.parse::<f64>().ok().filter(|value| value.is_finite())
+    }
+}
+
+/// Parse the stable machine-readable line emitted by our yt-dlp template.
+pub fn parse_yt_dlp_progress_line(line: &str) -> Option<DownloadProgress> {
+    let payload = line.trim().strip_prefix("vedionotes-progress:")?;
+    let fields = payload.split('|').collect::<Vec<_>>();
+    if fields.len() != 5 {
+        return None;
+    }
+    let downloaded_bytes = parse_optional_number(fields[1])?.max(0.0).round() as u64;
+    let total_bytes = parse_optional_number(fields[2]).map(|value| value.max(0.0).round() as u64);
+    let speed_bytes_per_second =
+        parse_optional_number(fields[3]).map(|value| value.max(0.0).round() as u64);
+    let eta_seconds = parse_optional_number(fields[4]).map(|value| value.max(0.0).round() as u64);
+    Some(DownloadProgress {
+        phase: DownloadPhase::Downloading,
+        message: "正在通过 yt-dlp 下载媒体...".to_string(),
+        percent: parse_optional_number(fields[0]).map(|value| value.clamp(0.0, 100.0)),
+        downloaded_bytes,
+        total_bytes,
+        speed_bytes_per_second,
+        eta_seconds,
+    })
 }
 
 fn classify_failure(stderr: &str) -> AttemptFailureCategory {
@@ -227,7 +379,10 @@ pub fn build_platform_capture_attempts(
             let mut args = vec![
                 "--ignore-config".to_string(),
                 "--no-playlist".to_string(),
-                "--no-progress".to_string(),
+                "--newline".to_string(),
+                "--progress".to_string(),
+                "--progress-template".to_string(),
+                "download:vedionotes-progress:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes,progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s".to_string(),
                 "--no-update".to_string(),
                 "--socket-timeout".to_string(),
                 "15".to_string(),
@@ -273,7 +428,7 @@ pub fn capture_douyin_with(
     executable: &Path,
     url: &str,
     work_dir: &Path,
-    progress: impl FnMut(&str),
+    progress: impl FnMut(DownloadProgress),
 ) -> Result<PathBuf, AppError> {
     validate_douyin_url(url)?;
     capture_platform_with(
@@ -295,7 +450,29 @@ pub fn capture_platform_with(
     url: &str,
     work_dir: &Path,
     cookie_file: Option<&Path>,
-    mut progress: impl FnMut(&str),
+    progress: impl FnMut(DownloadProgress),
+) -> Result<PathBuf, AppError> {
+    capture_platform_with_cancel(
+        executor,
+        executable,
+        platform,
+        url,
+        work_dir,
+        cookie_file,
+        &|| false,
+        progress,
+    )
+}
+
+fn capture_platform_with_cancel(
+    executor: &dyn DownloadExecutor,
+    executable: &Path,
+    platform: VideoPlatform,
+    url: &str,
+    work_dir: &Path,
+    cookie_file: Option<&Path>,
+    cancelled: &dyn Fn() -> bool,
+    mut progress: impl FnMut(DownloadProgress),
 ) -> Result<PathBuf, AppError> {
     classify_platform_url(url)?;
     std::fs::create_dir_all(work_dir).map_err(|_| {
@@ -317,8 +494,11 @@ pub fn capture_platform_with(
     let mut categories = Vec::new();
     for attempt in attempts {
         remove_stale_capture_files(work_dir);
-        progress(attempt.method.progress_message());
-        let outcome = executor.execute(executable, &attempt);
+        progress(DownloadProgress::message(
+            DownloadPhase::Resolving,
+            format!("[yt_dlp] {}", attempt.method.progress_message()),
+        ));
+        let outcome = executor.execute(executable, &attempt, cancelled, &mut progress);
         if outcome.success {
             if let Ok(path) = find_downloaded_file(work_dir) {
                 if path.metadata().map(|meta| meta.len() > 0).unwrap_or(false) {
@@ -331,65 +511,109 @@ pub fn capture_platform_with(
         }
     }
 
-    let recovery = if categories.contains(&AttemptFailureCategory::ToolMissing) {
-        "未找到 yt-dlp，请重新安装应用或检查程序文件。"
+    let (code, message, recovery) = if categories.contains(&AttemptFailureCategory::Cancelled) {
+        (
+            "cancelled",
+            "任务已取消。",
+            "点击开始提炼可以重新开始。",
+        )
+    } else if categories.contains(&AttemptFailureCategory::ToolMissing) {
+        (
+            "download_tool_missing",
+            "未找到可用的 yt-dlp 下载工具。",
+            "请重新安装应用或检查程序文件。",
+        )
     } else if categories.contains(&AttemptFailureCategory::Timeout) {
-        "下载工具等待响应超时，请检查网络后重试；抖音仍失败时请配置最新 Cookie。"
+        (
+            "download_timeout",
+            "下载工具长时间没有收到数据。",
+            "请检查网络后重试；抖音仍失败时请更新 Cookie。",
+        )
     } else if categories.contains(&AttemptFailureCategory::CookieUnavailable) {
         if has_cookie_attempt {
-            "已保存的 Cookie 不可用，请在设置的数据管理中更新抖音 Cookie 后重试。"
+            (
+                "download_cookie_unavailable",
+                "已保存的 Cookie 不可用或已经过期。",
+                "请在设置的数据管理中更新对应平台 Cookie 后重试。",
+            )
         } else {
-            "抖音当前要求登录状态，请在设置的数据管理中保存最新抖音 Cookie 后重试。"
+            (
+                "download_cookie_unavailable",
+                "该平台当前要求有效的 Cookie 会话。",
+                "请在设置的数据管理中保存最新 Cookie 后重试。",
+            )
         }
+    } else if categories.contains(&AttemptFailureCategory::BrowserUnavailable) {
+        (
+            "download_browser_unavailable",
+            "下载工具所需的浏览器环境不可用。",
+            "请使用手动 Cookie 或选择本地视频/音频。",
+        )
     } else if categories.contains(&AttemptFailureCategory::AccessDenied) {
-        "当前登录状态仍无权访问该内容，请检查链接权限或选择本地媒体。"
+        (
+            "download_access_denied",
+            "视频平台拒绝了当前下载请求。",
+            "请检查链接权限、更新 Cookie，或选择本地媒体。",
+        )
     } else if categories.contains(&AttemptFailureCategory::NoAudio) {
-        "未找到可转写的音频流，请选择本地视频或音频。"
+        (
+            "download_media_missing",
+            "没有找到可转写的媒体流。",
+            "请检查链接内容，或选择本地视频/音频。",
+        )
     } else {
-        "请检查链接是否有效，或选择本地视频/音频。"
+        (
+            "download_process_failed",
+            "下载进程异常退出。",
+            "请检查链接是否有效，或选择本地视频/音频。",
+        )
     };
-    Err(AppError::new(
-        "download_failed",
-        "可用的下载方式均未成功。",
-        recovery,
-    ))
+    Err(AppError::new(code, message, recovery))
 }
 
 /// download douyin
-pub fn download_douyin(
+pub async fn download_douyin(
     url: &str,
     work_dir: &Path,
-    progress: impl FnMut(&str),
+    progress: impl FnMut(DownloadProgress) + Send,
 ) -> Result<PathBuf, AppError> {
-    download_platform(url, work_dir, None, progress)
+    download_platform(url, work_dir, None, None, &|| false, progress).await
 }
 
 /// download platform
 /// download platform - 带原生下载器支持和降级策略
-pub fn download_platform(
+pub async fn download_platform(
     url: &str,
     work_dir: &Path,
+    raw_cookie_header: Option<&str>,
     cookie_file: Option<&Path>,
-    mut progress: impl FnMut(&str),
+    cancelled: &(dyn Fn() -> bool + Send + Sync),
+    mut progress: impl FnMut(DownloadProgress) + Send,
 ) -> Result<PathBuf, AppError> {
     let platform = classify_platform_url(url)?;
 
     // Bilibili 优先使用原生下载器（解决 HTTP 412 问题）
     if platform == VideoPlatform::Bilibili {
-        progress("尝试使用原生下载器（含风控参数）...");
+        progress(DownloadProgress::message(
+            DownloadPhase::Resolving,
+            "正在使用 Bilibili 原生下载器解析链接...",
+        ));
 
-        // 读取 Cookie 文件内容（如果有）
-        let cookie_str = cookie_file.and_then(|path| std::fs::read_to_string(path).ok());
-
+        let mut bilibili_progress = |message: &str| {
+            progress(DownloadProgress::message(DownloadPhase::Resolving, message));
+        };
         match crate::services::bilibili_native::download_bilibili_native(
             url,
             work_dir,
-            cookie_str.as_deref(),
-            &mut progress,
+            raw_cookie_header,
+            &mut bilibili_progress,
         ) {
             Ok(path) => return Ok(path),
             Err(e) => {
-                progress(&format!("原生下载器失败: {}，回退到 yt-dlp...", e.message));
+                progress(DownloadProgress::message(
+                    DownloadPhase::Resolving,
+                    format!("Bilibili 原生下载器失败：{}，正在回退到 yt-dlp...", e.message),
+                ));
                 // 继续执行后面的 yt-dlp 逻辑
             }
         }
@@ -397,66 +621,53 @@ pub fn download_platform(
 
     // Douyin 优先使用原生下载器（C 方案）
     if platform == VideoPlatform::Douyin {
-        progress("尝试使用 Rust 原生下载器（X-Bogus 签名）...");
-
-        // 创建异步运行时来执行异步下载
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| {
-            AppError::new(
-                "runtime_error",
-                &format!("无法创建异步运行时: {}", e),
-                "这是一个内部错误，请重启应用。",
-            )
-        })?;
-
-        // 读取 Cookie（如果有）
-        let cookie_str = cookie_file.and_then(|path| std::fs::read_to_string(path).ok());
+        progress(DownloadProgress::message(
+            DownloadPhase::Resolving,
+            "[router_data] 正在解析抖音公开分享页...",
+        ));
 
         let url_owned = canonicalize_platform_url(platform, url);
         let work_dir_owned = work_dir.to_path_buf();
 
-        let native_result = {
-            let mut native_progress = |message: &str| progress(message);
-            runtime.block_on(tokio::time::timeout(
-                Duration::from_secs(150),
-                crate::services::douyin::download_douyin_dual_strategy(
-                    &url_owned,
-                    work_dir_owned,
-                    cookie_str,
-                    &mut native_progress,
-                ),
-            ))
-        };
+        let native_result = crate::services::douyin::download_douyin_dual_strategy(
+            &url_owned,
+            work_dir_owned,
+            raw_cookie_header.map(ToOwned::to_owned),
+            cancelled,
+            &mut progress,
+        )
+        .await;
 
         match native_result {
-            Ok(Ok(result)) => {
-                progress(&format!(
-                    "✅ 原生下载成功（策略：{}）",
-                    result.strategy_used
-                ));
+            Ok(result) => {
                 return Ok(PathBuf::from(result.file_path));
             }
-            Ok(Err(error)) => {
-                progress(&format!(
-                    "原生直连未成功：{error}。正在尝试 yt-dlp；若仍失败，请在设置的数据管理中更新抖音 Cookie。"
+            Err(error) => {
+                if cancelled() {
+                    return Err(AppError::new(
+                        "cancelled",
+                        "任务已取消。",
+                        "点击开始提炼可以重新开始。",
+                    ));
+                }
+                progress(DownloadProgress::message(
+                    DownloadPhase::Resolving,
+                    format!("抖音原生直连未成功：{error}。正在尝试 yt-dlp..."),
                 ));
-            }
-            Err(_) => {
-                progress(
-                    "原生下载已达到 150 秒安全时限，正在尝试 yt-dlp；若仍失败，请配置最新抖音 Cookie。",
-                );
             }
         }
     }
 
     // 其他平台或原生下载失败时使用 yt-dlp
     let executable = find_yt_dlp();
-    capture_platform_with(
+    capture_platform_with_cancel(
         &ProcessDownloadExecutor,
         &executable,
         platform,
         url,
         work_dir,
         cookie_file,
+        cancelled,
         progress,
     )
 }

@@ -12,6 +12,7 @@ fn production_child_process_sites_use_the_shared_builder() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     for relative in [
         "src/providers/local_whisper.rs",
+        "src/services/bilibili_native.rs",
         "src/services/download.rs",
         "src/services/media.rs",
         "src/subtitles.rs",

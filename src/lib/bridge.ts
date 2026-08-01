@@ -351,6 +351,14 @@ export function hasProfileCredential(profileType: string, profileId: string): Pr
   return invoke<boolean>('has_profile_credential', { profileType, profileId });
 }
 
+/**
+ * Read one saved summary-provider API key after an explicit user action.
+ * The caller must keep the returned value transient and must not persist it.
+ */
+export function revealSummaryProfileCredential(profileId: string): Promise<string> {
+  return invoke<string>('reveal_summary_profile_credential', { profileId });
+}
+
 // ================================================================
 // 旧数据迁移
 // ================================================================

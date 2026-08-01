@@ -30,7 +30,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use video_distiller_lib::credential_store::SecretPayload;
 use video_distiller_lib::domain::{KeyEvidence, NoteStyle};
 use video_distiller_lib::profiles::{
-    SummaryProfile, SummaryProviderKind, TranscriptionProfile, TranscriptionProviderKind,
+    OnlineTranscriptionLanguage, OnlineTranscriptionOptions, SummaryProfile, SummaryProviderKind,
+    TranscriptionProfile, TranscriptionProviderKind,
 };
 use video_distiller_lib::providers::error::{self, ProviderError, ProviderErrorKind};
 use video_distiller_lib::providers::summary::{
@@ -78,6 +79,7 @@ fn mock_transcription_profile(
         provider: kind,
         base_url: mock.uri(),
         model: "test-model".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     }
@@ -226,6 +228,7 @@ async fn openai_asr_sends_multipart_and_parses() {
     let mut profile =
         mock_transcription_profile(&mock, TranscriptionProviderKind::OpenAiCompatible);
     profile.base_url = format!("{}/v1", mock.uri());
+    profile.online_options.language = OnlineTranscriptionLanguage::En;
     let secret = SecretPayload::Bearer {
         api_key: "test-api-key-123".into(),
     };
@@ -258,6 +261,38 @@ async fn openai_asr_sends_multipart_and_parses() {
         body_str.contains("test_audio.mp3"),
         "multipart body should contain file name"
     );
+    assert!(body_str.contains("name=\"language\""));
+    assert!(body_str.contains("en"));
+}
+
+#[tokio::test]
+async fn openai_asr_honors_the_profile_timeout() {
+    let mock = MockServer::start().await;
+    let dir = tempfile::TempDir::new().unwrap();
+    let audio_path = create_audio_fixture(&dir);
+    Mock::given(wiremock::matchers::method("POST"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(std::time::Duration::from_millis(120))
+                .set_body_json(serde_json::json!({ "text": "too late" })),
+        )
+        .mount(&mock)
+        .await;
+
+    let adapter = OpenAiCompatibleAsrAdapter;
+    let mut profile = mock_transcription_profile(&mock, TranscriptionProviderKind::OpenAiCompatible);
+    profile.online_options.timeout_ms = 20;
+    let result = adapter
+        .transcribe(
+            &audio_path,
+            &profile,
+            &SecretPayload::Bearer { api_key: "test-key".into() },
+            &non_cancelled(),
+        )
+        .await;
+
+    assert!(result.is_err(), "the request must be cancelled by the configured timeout");
+    assert_eq!(result.unwrap_err().kind, ProviderErrorKind::NetworkError);
 }
 
 #[tokio::test]
@@ -521,6 +556,7 @@ async fn mimo_asr_sends_correct_request_and_parses() {
     let adapter = MiMoAsrAdapter;
     let mut profile = mock_transcription_profile(&mock, TranscriptionProviderKind::MimoAsr);
     profile.base_url = format!("{}/v1", mock.uri());
+    profile.online_options.language = OnlineTranscriptionLanguage::Zh;
     let secret = SecretPayload::Bearer {
         api_key: "test-mimo-key".into(),
     };
@@ -547,7 +583,7 @@ async fn mimo_asr_sends_correct_request_and_parses() {
         .as_str()
         .unwrap()
         .starts_with("data:audio/mpeg;base64,"));
-    assert_eq!(req_body["asr_options"]["language"], "auto");
+    assert_eq!(req_body["asr_options"]["language"], "zh");
 }
 
 #[tokio::test]
@@ -1173,6 +1209,7 @@ async fn tencent_asr_connection_failure_does_not_leak_credentials() {
         provider: TranscriptionProviderKind::TencentFlash,
         base_url: "http://127.0.0.1:1".into(),
         model: "16k_zh".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };

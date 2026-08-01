@@ -10,7 +10,8 @@ import App from './App';
 const bridge = vi.hoisted(() => ({
   getProfiles: vi.fn(), listLocalModels: vi.fn(), hasProfileCredential: vi.fn(), getMigrationState: vi.fn(),
   getHistory: vi.fn(), listHistory: vi.fn(), searchHistory: vi.fn(),
-  getPreferences: vi.fn(), getSenseVoiceStatus: vi.fn(),
+  getPreferences: vi.fn(), getSenseVoiceStatus: vi.fn(), getCudaRuntimeStatus: vi.fn(),
+  discoverSummaryModels: vi.fn(),
   invokeStartDistillation: vi.fn(), cancelDistillation: vi.fn(),
   onTaskProgress: vi.fn(), onTaskComplete: vi.fn(), onTaskError: vi.fn(), onProviderFallback: vi.fn(),
 }));
@@ -30,6 +31,8 @@ describe('stale active local profile', () => {
     bridge.hasProfileCredential.mockResolvedValue(true);
     bridge.getPreferences.mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto' });
     bridge.getSenseVoiceStatus.mockResolvedValue(null);
+    bridge.getCudaRuntimeStatus.mockResolvedValue({ state: 'unavailable', version: null, gpuName: null, error: null });
+    bridge.discoverSummaryModels.mockResolvedValue([]);
     bridge.getProfiles.mockResolvedValue({
       schemaVersion: 1, activeTranscriptionProfileId: 'local-whisper-cpp', activeSummaryProfileId: 'summary', fallbackTranscriptionProfileId: null, migrationRequired: false,
       transcriptionProfiles: [
@@ -65,5 +68,23 @@ describe('stale active local profile', () => {
     expect(readyPicker.textContent).toContain('本地 Whisper');
     expect(readyPicker.textContent).not.toContain('在线转写');
     expect(screen.queryByText('请先下载并选择本地 Whisper 模型。')).toBeNull();
+  });
+
+  it('shows the active Q8 Whisper model name in the sidebar service status', async () => {
+    bridge.getProfiles.mockResolvedValue({
+      schemaVersion: 1, activeTranscriptionProfileId: 'local-whisper-cpp', activeSummaryProfileId: 'summary', fallbackTranscriptionProfileId: null, migrationRequired: false,
+      transcriptionProfiles: [
+        { id: 'local-whisper-cpp', name: '本地 Whisper', provider: 'local_whisper_cpp', baseUrl: '', model: 'large-v3-turbo-q8', enabled: true, builtIn: true },
+      ],
+      summaryProfiles: [{ id: 'summary', name: '总结', provider: 'mimo', baseUrl: 'https://example.com', model: 'summary', enabled: true, builtIn: true }],
+    });
+    bridge.listLocalModels.mockResolvedValue([
+      { id: 'large-v3-turbo-q8', state: 'ready', downloadedBytes: 1, totalBytes: 1, isCurrent: true },
+    ]);
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole('status', { name: '服务正常' }).textContent)
+      .toContain('本地 Whisper · Turbo-Q8 就绪'));
   });
 });

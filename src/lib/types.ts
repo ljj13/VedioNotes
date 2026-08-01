@@ -74,6 +74,17 @@ export interface TaskProgress {
   stage: TaskStage;
   message: string;
   percent: number;
+  download?: DownloadTelemetry;
+}
+
+/** Real media-download telemetry. Optional for non-download task stages. */
+export interface DownloadTelemetry {
+  phase: 'resolving' | 'downloading' | 'processing';
+  percent?: number;
+  downloadedBytes: number;
+  totalBytes?: number;
+  speedBytesPerSecond?: number;
+  etaSeconds?: number;
 }
 
 // ---- AI 提炼结果（任务完成后产出什么） ----
@@ -500,6 +511,16 @@ export type TranscriptionProviderKind =
   | 'open_ai_compatible'// OpenAI 兼容接口
   | 'local_whisper_cpp';// 本地 Whisper（CPU/GPU）
 
+/** 在线转写识别语言；腾讯云仍以具体 engine/model 的语言能力为准。 */
+export type OnlineTranscriptionLanguage = 'auto' | 'zh' | 'en' | 'ja' | 'ko' | 'yue';
+
+/** 每个在线转写配置档的运行参数。 */
+export interface OnlineTranscriptionOptions {
+  language: OnlineTranscriptionLanguage;
+  timeoutMs: number;
+  maxConcurrency: number;
+}
+
 /** 服务商目录中的一个模型 */
 export interface SummaryModelCatalogEntry {
   id: string;
@@ -554,6 +575,7 @@ export interface TranscriptionProfile {
   model: string;         // 使用的模型
   enabled: boolean;      // 是否启用
   builtIn: boolean;      // 是否内置（内置的不让删）
+  onlineOptions?: OnlineTranscriptionOptions; // 旧配置缺省时由前后端使用安全默认值
 }
 
 /** 一个 AI 总结配置 */

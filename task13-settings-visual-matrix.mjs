@@ -12,6 +12,7 @@
  * Usage: node task13-settings-visual-matrix.mjs <cdp-endpoint> <url> [output-dir]
  */
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -48,14 +49,20 @@ const aiSubTabs = [
 
 const transcriptionModes = [
   { id: 'cpu', label: 'CPU 模式', expectedPanel: 'SenseVoice 本地模型', modeValue: 'sensevoice_cpu' },
-  { id: 'gpu', label: 'GPU 模式', expectedPanel: 'Whisper GPU 转写', modeValue: 'whisper_local' },
-  { id: 'online', label: '在线模式', expectedPanel: '在线转写服务', modeValue: 'online_profile' },
+  { id: 'gpu', label: 'GPU 模式', expectedPanel: 'Whisper GPU 模型', modeValue: 'whisper_local' },
+  { id: 'online', label: '在线模式', expectedPanel: '在线语音转写', modeValue: 'online_profile' },
 ];
 
 // ---- CipherTalk baseline CSS: extract literal --settings-* values ----
-const cipherTalkCssPath = resolve('../CipherTalk/src/pages/SettingsPage.css');
+const CIPHERTALK_LOCKED_COMMIT = 'b5b580c5af7672a729a0c7fc10b8b1511fe6d478';
+const cipherTalkRoot = resolve('../CipherTalk');
+const cipherTalkCssPath = `${cipherTalkRoot}@${CIPHERTALK_LOCKED_COMMIT}:src/pages/SettingsPage.css`;
 const ourCssPath = resolve('src/styles/cipher-settings.css');
-const cipherTalkBaseline = existsSync(cipherTalkCssPath) ? readFileSync(cipherTalkCssPath, 'utf8') : '';
+const cipherTalkBaseline = execFileSync(
+  'git',
+  ['-C', cipherTalkRoot, 'show', `${CIPHERTALK_LOCKED_COMMIT}:src/pages/SettingsPage.css`],
+  { encoding: 'utf8' },
+);
 const ourCssSource = existsSync(ourCssPath) ? readFileSync(ourCssPath, 'utf8') : '';
 
 function extractLiteralVars(css) {
@@ -678,17 +685,27 @@ async function openHeroSelect(label) {
   const clickResult = await send('Runtime.evaluate', {
     expression: `(() => {
       const label = ${JSON.stringify(label)};
-      const root = [...document.querySelectorAll('[data-slot="select"]')]
+      const selectRoot = [...document.querySelectorAll('[data-slot="select"]')]
         .find((select) => select.querySelector('[data-slot="label"]')?.textContent.trim() === label);
-      const trigger = root?.querySelector('[data-slot="select-trigger"]');
-      if (!root || !trigger) {
+      const comboRoot = label === '模型'
+        ? document.querySelector('.cipher-ai-model-combobox')
+        : null;
+      const trigger = selectRoot?.querySelector('[data-slot="select-trigger"]')
+        ?? comboRoot?.querySelector('.cipher-ai-model-trigger');
+      const controlKind = selectRoot ? 'select' : comboRoot ? 'combobox' : null;
+      if (!trigger || !controlKind) {
         return {
           clicked: false,
-          available: [...document.querySelectorAll('[data-slot="select"] [data-slot="label"]')].map((item) => item.textContent.trim()),
+          controlKind,
+          available: [
+            ...[...document.querySelectorAll('[data-slot="select"] [data-slot="label"]')]
+              .map((item) => item.textContent.trim()),
+            ...(document.querySelector('.cipher-ai-model-combobox') ? ['模型'] : []),
+          ],
         };
       }
       trigger.click();
-      return { clicked: true };
+      return { clicked: true, controlKind };
     })()`,
     returnByValue: true,
   });
@@ -702,12 +719,19 @@ async function openHeroSelect(label) {
   const probeResult = await send('Runtime.evaluate', {
     expression: `(() => {
       const label = ${JSON.stringify(label)};
-      const root = [...document.querySelectorAll('[data-slot="select"]')]
+      const selectRoot = [...document.querySelectorAll('[data-slot="select"]')]
         .find((select) => select.querySelector('[data-slot="label"]')?.textContent.trim() === label);
-      const trigger = root?.querySelector('[data-slot="select-trigger"]');
+      const comboRoot = label === '模型'
+        ? document.querySelector('.cipher-ai-model-combobox')
+        : null;
+      const trigger = selectRoot?.querySelector('[data-slot="select-trigger"]')
+        ?? comboRoot?.querySelector('.cipher-ai-model-trigger');
+      const comboInput = comboRoot?.querySelector('[role="combobox"]');
+      const controlKind = selectRoot ? 'select' : comboRoot ? 'combobox' : null;
       const listboxes = [...document.querySelectorAll('[role="listbox"]')];
       return {
-        expanded: trigger?.getAttribute('aria-expanded') ?? null,
+        controlKind,
+        expanded: trigger?.getAttribute('aria-expanded') ?? comboInput?.getAttribute('aria-expanded') ?? null,
         listboxCount: listboxes.length,
         optionCount: listboxes.reduce((count, listbox) => count + listbox.querySelectorAll('[role="option"]').length, 0),
       };
@@ -736,26 +760,90 @@ function computeDiversity(pngBase64) {
   return uniq.size / 256;
 }
 
-async function waitForStableRender(label) {
-  await withTimeout(send('Runtime.evaluate', {
+async function waitForStableRender(label, expectedTabLabel) {
+  const evaluation = await withTimeout(send('Runtime.evaluate', {
     expression: `(async () => {
-      if (document.fonts?.ready) await document.fonts.ready;
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const animations = document.getAnimations().filter((animation) => animation.playState === 'running');
-      await Promise.race([
-        Promise.allSettled(animations.map((animation) => animation.finished)),
-        new Promise((resolve) => setTimeout(resolve, 600)),
-      ]);
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      return true;
+      const expectedTabLabel = ${JSON.stringify(expectedTabLabel)};
+      const deadline = Date.now() + 9000;
+      let previousGeometry = null;
+      let stableSamples = 0;
+      let lastState = null;
+
+      while (Date.now() < deadline) {
+        const root = document.querySelector('.cipher-settings-root');
+        const body = root?.querySelector('.settings-body');
+        const activeTab = root
+          ?.querySelector('.settings-tabs [role="tab"][aria-selected="true"]')
+          ?.textContent?.trim() ?? null;
+        const rootRect = root?.getBoundingClientRect() ?? null;
+        const bodyRect = body?.getBoundingClientRect() ?? null;
+        const fontsReady = !document.fonts || document.fonts.status !== 'loading';
+        const runningAnimations = document
+          .getAnimations()
+          .filter((animation) => animation.playState === 'running').length;
+        const hasGeometry = Boolean(
+          rootRect && bodyRect
+          && rootRect.width > 0 && rootRect.height > 0
+          && bodyRect.width > 0 && bodyRect.height > 0
+        );
+        const ready = document.readyState === 'complete'
+          && activeTab === expectedTabLabel
+          && fontsReady
+          && hasGeometry;
+
+        let geometry = null;
+        if (ready) {
+          geometry = [
+            rootRect.width.toFixed(2),
+            rootRect.height.toFixed(2),
+            bodyRect.width.toFixed(2),
+            bodyRect.height.toFixed(2),
+            root.scrollWidth,
+            root.scrollHeight,
+            body.scrollWidth,
+            body.scrollHeight,
+          ].join(':');
+          stableSamples = geometry === previousGeometry ? stableSamples + 1 : 0;
+          previousGeometry = geometry;
+        } else {
+          stableSamples = 0;
+          previousGeometry = null;
+        }
+
+        lastState = {
+          readyState: document.readyState,
+          activeTab,
+          expectedTabLabel,
+          fontsReady,
+          runningAnimations,
+          hasRoot: Boolean(root),
+          hasBody: Boolean(body),
+          hasGeometry,
+          geometry,
+          stableSamples,
+        };
+
+        if (ready && stableSamples >= 3 && runningAnimations === 0) {
+          return { ready: true, lastState };
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      return { ready: false, lastState };
     })()`,
     awaitPromise: true,
     returnByValue: true,
-  }), 5000, `stable render ${label}`);
+  }), 12000, `stable render ${label}`);
+
+  const renderState = evaluation.result?.value;
+  if (!renderState?.ready) {
+    throw new Error(`stable render ${label} failed: ${JSON.stringify(renderState?.lastState ?? null)}`);
+  }
 }
 
 async function captureAndProbe(name, expectedTabLabel) {
-  await waitForStableRender(name);
+  await waitForStableRender(name, expectedTabLabel);
   const preCheck = await send('Runtime.evaluate', {
     expression: `(() => {
       const root = document.querySelector('.cipher-settings-root');

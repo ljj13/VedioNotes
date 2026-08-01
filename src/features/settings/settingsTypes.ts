@@ -4,7 +4,7 @@
 
 import type { SettingsSection } from '../../lib/workbenchNavigation';
 import type {
-  AppPreferences, AppProfiles, LocalModelStatus, SenseVoiceStatus,
+  AppPreferences, AppProfiles, CudaRuntimeStatus, LocalModelStatus, SenseVoiceStatus,
 } from '../../lib/types';
 
 /** SettingsEntryProps */
@@ -12,6 +12,11 @@ export interface SettingsEntryProps {
   section: SettingsSection;
   profiles: AppProfiles;
   localModels: LocalModelStatus[];
+  senseVoiceStatus?: SenseVoiceStatus | null;
+  cudaStatus?: CudaRuntimeStatus | null;
+  runtimeStatusLoading?: boolean;
+  runtimeStatusError?: string | null;
+  runtimeStatusLastCheckedAt?: number | null;
   preferences: AppPreferences;
   theme: 'light' | 'dark';
   sidebarCollapsed: boolean;
@@ -21,6 +26,7 @@ export interface SettingsEntryProps {
   onModelsChanged: () => void;
   onPreferencesChanged: (preferences: AppPreferences) => void;
   onSenseVoiceStatusChanged: (status: SenseVoiceStatus) => void;
+  onRuntimeStatusRefresh?: () => Promise<void>;
   onToggleTheme: () => void;
   onToggleSidebar: () => void;
 }

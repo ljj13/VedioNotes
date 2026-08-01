@@ -2,9 +2,10 @@
  *测试文件——测试 CipherSettingsShell 组件/模块的行为是否符合预期。
  */
 
+import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CipherSettingsShell from './CipherSettingsShell';
 import type { SettingsEntryProps } from './settingsTypes';
 
@@ -49,6 +50,12 @@ const baseProps: SettingsEntryProps = {
 
 // describe('CipherSettingsShell', () => {
 describe('CipherSettingsShell', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    platformMock.getSenseVoiceStatus.mockResolvedValue({ state: 'missing', selectedModel: 'int8', runtimeReady: false, tokensReady: false, modelPath: null, models: [], downloadedBytes: 0, totalBytes: 0 });
+    platformMock.getCudaRuntimeStatus.mockResolvedValue({ state: 'unavailable', gpuName: null, version: '', computeMode: 'auto', message: null });
+    platformMock.listLocalModels.mockResolvedValue([]);
+  });
   // it('renders five icon tabs with correct labels and active pa
   it('renders five icon tabs with correct labels and active page', async () => {
     render(<CipherSettingsShell {...baseProps} section="ai" />);
@@ -90,6 +97,9 @@ describe('CipherSettingsShell', () => {
       '外观', '语音转文字', 'AI 接入', '数据管理', '关于',
     ]);
     expect(within(tablist).getByRole('tab', { name: 'AI 接入' }).getAttribute('aria-selected')).toBe('true');
+    expect(tablist.classList.contains('cipher-settings-primary-tab-list')).toBe(true);
+    expect(Array.from(tablist.children).every((tab) => tab.classList.contains('cipher-settings-primary-tab'))).toBe(true);
+    expect(container.querySelector('.settings-navigation-tabs .tabs__indicator')).toBeNull();
   });
 
   it('keeps the existing controlled section change contract', async () => {
@@ -98,6 +108,49 @@ describe('CipherSettingsShell', () => {
     await userEvent.click(screen.getByRole('tab', { name: '数据管理' }));
     expect(onSelectSection).toHaveBeenCalledTimes(1);
     expect(onSelectSection).toHaveBeenCalledWith('data');
+  });
+
+  it('keeps cached runtime status and model selection without probing again while switching tabs', async () => {
+    const q8Model = {
+      id: 'large-v3-turbo-q8',
+      state: 'ready' as const,
+      downloadedBytes: 835_000_000,
+      totalBytes: 835_000_000,
+      isCurrent: true,
+    };
+    platformMock.getCudaRuntimeStatus.mockResolvedValue({
+      state: 'ready', gpuName: 'NVIDIA GeForce RTX 4060 Laptop GPU', version: '12.8', computeMode: 'auto', message: null,
+    });
+    platformMock.listLocalModels.mockResolvedValue([q8Model]);
+
+    function Harness() {
+      const [section, setSection] = useState<SettingsEntryProps['section']>('transcription');
+      return (
+        <CipherSettingsShell
+          {...baseProps}
+          section={section}
+          localModels={[q8Model]}
+          cudaStatus={{ state: 'ready', gpuName: 'NVIDIA GeForce RTX 4060 Laptop GPU', version: '12.8', computeMode: 'auto', message: null }}
+          senseVoiceStatus={{ state: 'missing', selectedModel: 'int8', runtimeReady: false, tokensReady: false, modelPath: null, models: [], downloadedBytes: 0, totalBytes: 0 }}
+          runtimeStatusLoading={false}
+          preferences={{ ...baseProps.preferences, transcriptionMode: 'whisper_local' }}
+          onSelectSection={setSection}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const q8Radio = await screen.findByRole('radio', { name: /Turbo-Q8 量化/ });
+    expect((q8Radio as HTMLInputElement).checked).toBe(true);
+    expect(platformMock.getCudaRuntimeStatus).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('tab', { name: '外观' }));
+    await userEvent.click(screen.getByRole('tab', { name: '语音转文字' }));
+
+    expect((screen.getByRole('radio', { name: /Turbo-Q8 量化/ }) as HTMLInputElement).checked).toBe(true);
+    expect(platformMock.getSenseVoiceStatus).not.toHaveBeenCalled();
+    expect(platformMock.getCudaRuntimeStatus).not.toHaveBeenCalled();
+    expect(platformMock.listLocalModels).not.toHaveBeenCalled();
   });
 
   // it('does not render excluded tabs', () => {

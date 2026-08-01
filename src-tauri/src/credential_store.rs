@@ -1,5 +1,5 @@
-//! 凭据存储——使用操作系统安全存储（Tauri Stronghold）保存 API Key.
-//! 前端只能查询"有无"，不能读取内容.
+//! 凭据存储——使用 Windows 凭据管理器保存 API Key.
+//! 常规前端流程只查询"有无"；仅用户主动点击显示时，可通过受限命令短暂读取总结服务商的 Bearer 凭据.
 
 use crate::domain::AppError;
 use serde::{Deserialize, Serialize};

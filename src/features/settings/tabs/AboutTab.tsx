@@ -9,6 +9,7 @@ import type { AboutComponent, AboutSnapshot } from '../../../lib/types';
 import { settingsPlatform } from '../../../platform/settings';
 import { CIPHERTALK_SETTINGS_SOURCE } from '../sourceManifest';
 import type { SettingsEntryProps } from '../settingsTypes';
+import appLogo from '../../../assets/app-logo.png';
 
 /** AboutTab */
 export default function AboutTab(_props: SettingsEntryProps) {
@@ -43,7 +44,7 @@ export default function AboutTab(_props: SettingsEntryProps) {
       {snapshot && (
         <>
           <section className="cipher-about-hero">
-            <div className="cipher-about-logo" aria-hidden="true">VN</div>
+            <img src={appLogo} alt="VedioNotes" className="cipher-about-logo" aria-hidden="true" />
             <div className="cipher-about-hero-copy">
               <div className="cipher-about-title-row">
                 <Typography.Heading level={2} className="text-2xl font-semibold text-foreground">VedioNotes</Typography.Heading>

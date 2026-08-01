@@ -26,6 +26,34 @@ describe('ProgressPanel percentage feedback', () => {
     expect(screen.getByText('正在转写音频...')).toBeTruthy();
   });
 
+  it('shows real media download bytes, speed and ETA from task telemetry', () => {
+    render(
+      <ProgressPanel
+        progress={{
+          stage: 'downloading',
+          message: '正在下载抖音视频',
+          percent: 15,
+          download: {
+            phase: 'downloading',
+            percent: 37.5,
+            downloadedBytes: 31_457_280,
+            totalBytes: 83_886_080,
+            speedBytesPerSecond: 2_097_152,
+            etaSeconds: 25,
+          },
+        }}
+        startedAtMs={Date.now()}
+        onCancel={vi.fn()}
+        disabled={false}
+      />,
+    );
+
+    expect(screen.getByText('37.5%')).toBeTruthy();
+    expect(screen.getByText('30.0 MB / 80.0 MB')).toBeTruthy();
+    expect(screen.getByText('2.0 MB/s')).toBeTruthy();
+    expect(screen.getByText('预计剩余 25 秒')).toBeTruthy();
+  });
+
   // it('clamps an invalid event percentage before rendering it',
   it('clamps an invalid event percentage before rendering it', () => {
     render(

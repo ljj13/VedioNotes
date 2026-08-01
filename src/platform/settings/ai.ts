@@ -13,6 +13,7 @@ import {
   testProfile,
   discoverSummaryModels,
   hasProfileCredential,
+  revealSummaryProfileCredential,
   getCapabilitySettings,
   getCapabilityStatus,
   saveVectorConfig,
@@ -30,6 +31,11 @@ import {
   detectLocalAgents,
 } from '../../lib/bridge';
 
+async function openExternal(url: string): Promise<void> {
+  const { openUrl } = await import('@tauri-apps/plugin-opener');
+  await openUrl(url);
+}
+
 export const aiPlatform = {
   getCatalog: getSummaryProviderCatalog,
   saveAndActivate: saveAndActivateCatalogSummaryProfile,
@@ -39,6 +45,12 @@ export const aiPlatform = {
   testProfile,
   discoverModels: discoverSummaryModels,
   hasCredential: hasProfileCredential,
+  revealCredential: (profileType: string, profileId: string) => {
+    if (profileType !== 'summary') {
+      return Promise.reject(new Error('仅支持读取总结服务商凭据'));
+    }
+    return revealSummaryProfileCredential(profileId);
+  },
   getCapabilitySettings,
   getCapabilityStatus,
   saveVector: saveVectorConfig,
@@ -54,4 +66,5 @@ export const aiPlatform = {
   testImage: testImageConfig,
   testLocalAgent: testLocalAgentConfig,
   detectLocalAgents,
+  openExternal,
 } as const;

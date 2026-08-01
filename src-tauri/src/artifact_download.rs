@@ -2,6 +2,9 @@
 //! 用于 AI 模型等大文件.
 
 use crate::domain::AppError;
+use crate::verified_file_cache::{
+    forget_file_verification, remember_file_verification, verify_file_cached,
+};
 use sha1::Digest as _;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -245,6 +248,13 @@ pub fn download_verified_artifact(
                         remove_owned_file(root, &final_path)?;
                     }
                     std::fs::rename(&part_path, &final_path).map_err(artifact_io_error)?;
+                    forget_file_verification(root, &part_path);
+                    remember_file_verification(
+                        root,
+                        &final_path,
+                        &expected_digest_key(descriptor),
+                        true,
+                    );
                     let _ = std::fs::remove_file(&failed_path);
                     return Ok(inspect_verified_artifact(root, descriptor));
                 }
@@ -302,6 +312,7 @@ pub fn delete_verified_artifact(
     ] {
         if path.exists() {
             remove_owned_file(root, &path)?;
+            forget_file_verification(root, &path);
         }
     }
     Ok(())
@@ -331,15 +342,27 @@ fn verify_file(path: &Path, descriptor: &ArtifactDescriptor) -> bool {
     if metadata.len() != descriptor.bytes {
         return false;
     }
+    let Some(root) = path.parent() else {
+        return false;
+    };
+    verify_file_cached(root, path, &expected_digest_key(descriptor), || {
+        Ok::<bool, ()>(match descriptor.digest {
+            ArtifactDigest::Sha1(expected) => digest_file::<sha1::Sha1>(path)
+                .is_some_and(|actual| actual.eq_ignore_ascii_case(expected)),
+            ArtifactDigest::Sha256(expected) => digest_file::<sha2::Sha256>(path)
+                .is_some_and(|actual| actual.eq_ignore_ascii_case(expected)),
+            ArtifactDigest::GitBlobSha1(expected) => git_blob_sha1(path, descriptor.bytes)
+                .is_some_and(|actual| actual.eq_ignore_ascii_case(expected)),
+        })
+    })
+    .unwrap_or(false)
+}
+
+fn expected_digest_key(descriptor: &ArtifactDescriptor) -> String {
     match descriptor.digest {
-        ArtifactDigest::Sha1(expected) => digest_file::<sha1::Sha1>(path)
-            .is_some_and(|actual| actual.eq_ignore_ascii_case(expected)),
-        ArtifactDigest::Sha256(expected) => digest_file::<sha2::Sha256>(path)
-            .is_some_and(|actual| actual.eq_ignore_ascii_case(expected)),
-        ArtifactDigest::GitBlobSha1(expected) => {
-            git_blob_sha1(path, descriptor.bytes)
-                .is_some_and(|actual| actual.eq_ignore_ascii_case(expected))
-        }
+        ArtifactDigest::Sha1(expected) => format!("sha1:{expected}"),
+        ArtifactDigest::Sha256(expected) => format!("sha256:{expected}"),
+        ArtifactDigest::GitBlobSha1(expected) => format!("git-blob-sha1:{expected}"),
     }
 }
 

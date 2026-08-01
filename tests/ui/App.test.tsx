@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
+import { resetProviderModelRegistryForTests } from '../../src/platform/settings/aiModelRegistry';
 
 const nativeMediaMocks = vi.hoisted(() => ({
   open: vi.fn(),
@@ -92,7 +93,7 @@ vi.mock('uuid', () => ({
 // is removed for the test environment.
 vi.mock('../../src/features/settings/SettingsEntry', async () => {
   const mod = await import('../../src/features/settings/CipherSettingsShell');
-  return { default: mod.default };
+  return { default: mod.default, preloadSettings: vi.fn().mockResolvedValue(undefined) };
 });
 
 vi.mock('@tauri-apps/api/core', () => {
@@ -235,6 +236,64 @@ describe('App UI', () => {
     expect(screen.queryByRole('dialog', { name: '设置' })).not.toBeInTheDocument();
     for (const label of ['外观', '语音转文字', 'AI 接入', '数据管理', '关于']) {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('probes runtime once at startup and reuses it across settings navigation', async () => {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('get_sensevoice_status');
+      expect(invoke).toHaveBeenCalledWith('list_local_models');
+    });
+
+    await user.click(screen.getByRole('button', { name: '设置' }));
+    await waitFor(() => expect(document.querySelector('.cipher-settings-root')).not.toBeNull());
+    await user.click(screen.getByRole('button', { name: '首页' }));
+    await user.click(screen.getByRole('button', { name: '设置' }));
+    await waitFor(() => expect(document.querySelector('.cipher-settings-root')).not.toBeNull());
+
+    const callCount = (command: string) => vi.mocked(invoke).mock.calls
+      .filter(([calledCommand]) => calledCommand === command).length;
+    expect(callCount('get_sensevoice_status')).toBe(1);
+    expect(callCount('get_cuda_runtime_status')).toBe(1);
+    expect(callCount('list_local_models')).toBe(1);
+  });
+
+  it('refreshes the active catalog provider once in the background and not on settings remount', async () => {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const invokeMock = vi.mocked(invoke);
+    const original = invokeMock.getMockImplementation();
+    resetProviderModelRegistryForTests();
+    invokeMock.mockImplementation((command: string, args?: Record<string, unknown>) => {
+      if (command === 'get_profiles') {
+        return Promise.resolve({
+          ...MOCK_PROFILES,
+          activeSummaryProfileId: 'catalog-deepseek',
+          summaryProfiles: [{ id: 'catalog-deepseek', name: 'DeepSeek', provider: 'deep_seek', baseUrl: 'https://api.deepseek.com', model: 'deepseek-chat', enabled: true, builtIn: true }],
+        });
+      }
+      if (command === 'discover_summary_models') return Promise.resolve(['deepseek-chat']);
+      return original?.(command, args);
+    });
+
+    try {
+      const user = userEvent.setup();
+      render(<App />);
+      await waitFor(() => expect(invokeMock).toHaveBeenCalledWith('discover_summary_models', { profileId: 'catalog-deepseek' }));
+      await user.click(screen.getByRole('button', { name: '设置' }));
+      await waitFor(() => expect(document.querySelector('.cipher-settings-root')).not.toBeNull());
+      await user.click(screen.getByRole('button', { name: '首页' }));
+      await user.click(screen.getByRole('button', { name: '设置' }));
+      await waitFor(() => expect(document.querySelector('.cipher-settings-root')).not.toBeNull());
+
+      const refreshCalls = invokeMock.mock.calls.filter(([command]) => command === 'discover_summary_models');
+      expect(refreshCalls).toHaveLength(1);
+    } finally {
+      invokeMock.mockImplementation(original!);
+      resetProviderModelRegistryForTests();
     }
   });
 

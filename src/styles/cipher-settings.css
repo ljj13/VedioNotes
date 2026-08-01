@@ -29,6 +29,91 @@
   --primary: var(--accent);
   --primary-hover: color-mix(in srgb, var(--accent) 85%, #000 15%);
   --primary-rgb: 79, 70, 229;
+
+  /* Closed semantic palette for HeroUI buttons inside Settings. */
+  --settings-button-primary-bg: var(--accent);
+  --settings-button-primary-hover: var(--accent-hover, color-mix(in srgb, var(--accent) 86%, #000 14%));
+  --settings-button-primary-pressed: color-mix(in srgb, var(--accent) 78%, #000 22%);
+  --settings-button-primary-fg: var(--accent-contrast, #fff);
+  --settings-button-danger-bg: var(--danger, #c2414b);
+  --settings-button-danger-hover: color-mix(in srgb, var(--danger, #c2414b) 84%, #000 16%);
+  --settings-button-danger-pressed: color-mix(in srgb, var(--danger, #c2414b) 72%, #000 28%);
+  --settings-button-danger-fg: #fff;
+  --settings-button-secondary-bg: var(--surface-2, var(--surface-hover));
+  --settings-button-secondary-hover: color-mix(in srgb, var(--surface-2, var(--surface-hover)) 90%, var(--text) 10%);
+  --settings-button-secondary-pressed: color-mix(in srgb, var(--surface-2, var(--surface-hover)) 82%, var(--text) 18%);
+  --settings-button-secondary-fg: var(--text);
+  --settings-button-outline-bg: color-mix(in srgb, var(--surface-hover) 52%, var(--surface) 48%);
+  --settings-button-outline-hover: color-mix(in srgb, var(--surface-hover) 90%, var(--text) 10%);
+  --settings-button-outline-pressed: color-mix(in srgb, var(--surface-hover) 82%, var(--text) 18%);
+  --settings-button-outline-fg: var(--text);
+  --settings-button-outline-border: color-mix(in srgb, var(--text) 22%, var(--border) 78%);
+}
+
+.cipher-settings-root.settings-loading-state {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--cipher-text-secondary, #68746f);
+  background: var(--cipher-surface, #ffffff);
+  border: 1px solid var(--cipher-border, #dce4e0);
+  border-radius: 24px;
+}
+
+/* HeroUI variants consume global token names. The application skin also uses
+   those names, so keep the Button palette closed inside the settings root. */
+.cipher-settings-root .button {
+  background-color: var(--button-bg);
+  color: var(--button-fg);
+}
+
+.cipher-settings-root .button:hover,
+.cipher-settings-root .button[data-hovered='true'] {
+  background-color: var(--button-bg-hover);
+}
+
+.cipher-settings-root .button:active,
+.cipher-settings-root .button[data-pressed='true'] {
+  background-color: var(--button-bg-pressed);
+}
+
+.cipher-settings-root .button.button--primary {
+  --button-bg: var(--settings-button-primary-bg);
+  --button-bg-hover: var(--settings-button-primary-hover);
+  --button-bg-pressed: var(--settings-button-primary-pressed);
+  --button-fg: var(--settings-button-primary-fg);
+}
+
+.cipher-settings-root .button.button--danger {
+  --button-bg: var(--settings-button-danger-bg);
+  --button-bg-hover: var(--settings-button-danger-hover);
+  --button-bg-pressed: var(--settings-button-danger-pressed);
+  --button-fg: var(--settings-button-danger-fg);
+}
+
+.cipher-settings-root .button.button--secondary {
+  --button-bg: var(--settings-button-secondary-bg);
+  --button-bg-hover: var(--settings-button-secondary-hover);
+  --button-bg-pressed: var(--settings-button-secondary-pressed);
+  --button-fg: var(--settings-button-secondary-fg);
+}
+
+.cipher-settings-root .button.button--outline {
+  --button-bg: var(--settings-button-outline-bg);
+  --button-bg-hover: var(--settings-button-outline-hover);
+  --button-bg-pressed: var(--settings-button-outline-pressed);
+  --button-fg: var(--settings-button-outline-fg);
+  border-color: var(--settings-button-outline-border);
+}
+
+.cipher-settings-root .button:disabled,
+.cipher-settings-root .button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.cipher-settings-root .button svg {
+  color: currentColor;
 }
 
 /* ---- Root layout ---- */
@@ -45,7 +130,7 @@
   position: relative;
   overflow: hidden;
   gap: 0;
-  padding: clamp(16px, 2.3%, 28px);
+  padding: 24px clamp(16px, 2.3%, 28px);
   background: var(--surface-0, var(--bg));
 }
 /* ---- Production settings shell ---- */
@@ -68,7 +153,7 @@
 .cipher-settings-root .settings-page-header h1 {
   margin: 2px 0 1px;
   color: var(--text);
-  font-size: clamp(30px, 3.2cqi, 34px);
+  font-size: clamp(30px, 3.2vw, 34px);
   font-weight: 720;
   line-height: 1.08;
   letter-spacing: -.035em;
@@ -96,7 +181,7 @@
 
 .cipher-settings-root .settings-shell-layout {
   display: grid;
-  grid-template-columns: minmax(250px, .56fr) minmax(560px, 1.44fr);
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: "header tabs" "body body";
   flex: 1;
@@ -109,13 +194,13 @@
   grid-area: tabs;
   min-width: 0;
   align-self: center;
-  padding: 5px;
+  padding: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: 0 8px 24px rgba(25, 48, 40, .06);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   scrollbar-width: thin;
 }
 
@@ -124,43 +209,67 @@
   position: static;
   width: 100%;
   min-width: 0;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
 }
 
-.cipher-settings-root .settings-navigation-tabs [role='tablist'] {
+.cipher-settings-root .cipher-settings-primary-tab-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-settings-primary-tab-list {
   width: 100%;
   min-width: 540px;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 5px;
-  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
   border: 0;
-  background: transparent;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  box-shadow: none;
 }
 
-.cipher-settings-root .settings-navigation-tabs [role='tab'] {
+.cipher-settings-root .cipher-settings-primary-tab {
   position: relative;
-  width: auto;
-  min-width: 102px;
+  width: 100%;
+  min-width: 0;
   min-height: 40px;
   display: flex;
-  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 0 12px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   color: var(--text-secondary);
   background: transparent;
+  box-shadow: none;
   font-size: 12px;
   font-weight: 650;
   text-align: center;
 }
 
-.cipher-settings-root .settings-navigation-tabs [role='tab']:hover { color: var(--text); background: var(--surface-hover); }
-.cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
-.cipher-settings-root .settings-navigation-tabs [role='tab'] svg { flex: 0 0 auto; }
+.cipher-settings-root .cipher-settings-primary-tab:hover:not([aria-selected='true']) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.cipher-settings-root .cipher-settings-primary-tab[aria-selected='true'] {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.cipher-settings-root .cipher-settings-primary-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: -2px;
+}
+
+.cipher-settings-root .cipher-settings-primary-tab svg { flex: 0 0 auto; }
 
 /* ---- Scrollable body ---- */
 .cipher-settings-root .settings-body {
@@ -169,7 +278,7 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: clamp(16px, 2.1cqi, 24px);
+  padding: 22px clamp(16px, 2.1cqi, 24px);
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
@@ -181,7 +290,17 @@
 
 .cipher-settings-root .settings-body > * { width: 100%; min-width: 0; margin: 0; }
 
-.cipher-settings-root .settings-body > .tab-content {
+.cipher-settings-root .settings-tab-panel[hidden] {
+  display: none;
+}
+
+.cipher-settings-root .settings-tab-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.cipher-settings-root .settings-body > .tab-content,
+.cipher-settings-root .settings-body > .settings-tab-panel {
   container-type: inline-size;
   container-name: settings-panel;
 }
@@ -212,14 +331,231 @@
 .cipher-settings-root .cipher-catalog-card,
 .cipher-settings-root .cipher-cache-card,
 .cipher-settings-root .cipher-export-card,
+/* GPU 模式右侧面板所有卡片的内边距调整 */
+.cipher-settings-root [data-slot="card"] {
+  padding: 15px !important;
+}
+
+.cipher-settings-root [data-slot="card-header"] {
+  padding: 0 0 4px 0 !important;
+}
+
+.cipher-settings-root [data-slot="card-content"] {
+  padding: 0 !important;
+}
+
+.cipher-settings-root [data-slot="card-footer"] {
+  padding: 12px 0 0 0 !important;
+}
+
+/* 确保右侧面板的卡片有足够的内边距 */
+.cipher-settings-root .cipher-gpu-sidebar [data-slot="card"] {
+  padding: 20px !important;
+}
+
+.cipher-settings-root .cipher-gpu-sidebar [data-slot="card-header"] {
+  padding: 0 0 12px 0 !important;
+}
+
+.cipher-settings-root .cipher-gpu-sidebar [data-slot="card-content"] {
+  padding: 0 !important;
+}
+
+.cipher-settings-root .cipher-gpu-sidebar [data-slot="card-footer"] {
+  padding: 12px 0 0 0 !important;
+}
+
+.cipher-settings-root .cipher-cuda-card [data-slot="card-footer"] {
+  padding-top: 12px;
+  padding-bottom: 16px;
+}
+
 .cipher-settings-root .cipher-cuda-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--settings-card-radius);
   border: 1px solid var(--settings-card-border);
   background: var(--settings-card-bg);
   box-shadow: var(--settings-shadow);
   padding: 16px 20px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.cipher-settings-root .cipher-cuda-card-header {
+  padding-bottom: 12px !important;
+}
+
+.cipher-settings-root .cipher-cuda-card-title,
+.cipher-settings-root .cipher-cuda-card-description {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-cuda-card-description {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.cipher-settings-root .cipher-cuda-card-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cipher-settings-root .cipher-cuda-requirement-alert,
+.cipher-settings-root .cipher-cuda-message-alert {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--settings-card-border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 2px 7px rgba(25, 48, 40, 0.08);
+}
+
+.cipher-settings-root .cipher-cuda-requirement-alert {
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.cipher-settings-root .cipher-cuda-requirement-indicator {
+  width: 20px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  line-height: 0;
+}
+
+.cipher-settings-root .cipher-cuda-requirement-content {
+  min-width: 0;
+  gap: 2px;
+}
+
+.cipher-settings-root .cipher-cuda-requirement-title {
+  margin: 0;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.cipher-settings-root .cipher-cuda-requirement-description {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-cuda-actions {
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px !important;
+}
+
+.cipher-settings-root .cipher-cuda-download-button {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.cipher-settings-root .cipher-cuda-delete-button {
+  min-height: 36px;
+  padding: 0 14px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px !important;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-gpu-acceleration-card {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-setting-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-switch {
+  --switch-control-bg: color-mix(in srgb, var(--text) 18%, var(--surface));
+  --switch-control-bg-hover: color-mix(in srgb, var(--text) 24%, var(--surface));
+  --switch-control-bg-pressed: color-mix(in srgb, var(--text) 30%, var(--surface));
+  --switch-control-bg-checked: var(--success, var(--accent));
+  --switch-control-bg-checked-hover: var(--accent-hover);
+  min-width: 42px;
+  align-self: start;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-switch-control {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  overflow: hidden;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-switch-thumb {
+  width: 18px;
+  height: 18px;
+  margin-inline-start: 3px;
+  border: 1px solid color-mix(in srgb, #000 10%, transparent);
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(0);
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-switch[aria-checked='true'] .cipher-whisper-gpu-switch-thumb,
+.cipher-settings-root .cipher-whisper-gpu-switch[data-selected='true'] .cipher-whisper-gpu-switch-thumb {
+  margin-inline-start: 3px;
+  background: #fff;
+  transform: translateX(18px);
+}
+
+.cipher-settings-root .cipher-whisper-gpu-setting-copy {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-setting-label {
+  display: block;
+  color: var(--text);
+  font-weight: 650;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.cipher-settings-root .cipher-whisper-gpu-setting-description {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cipher-settings-root .cipher-whisper-gpu-switch-control,
+  .cipher-settings-root .cipher-whisper-gpu-switch-thumb {
+    transition: none;
+  }
 }
 
 .cipher-settings-root .cipher-catalog-card:hover {
@@ -782,13 +1118,9 @@
   width: 72px;
   height: 72px;
   flex: 0 0 72px;
-  display: grid;
-  place-items: center;
+  display: block;
   border-radius: 20px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  font-size: 24px;
-  font-weight: 760;
+  object-fit: cover;
 }
 
 .cipher-settings-root .cipher-about-hero-copy,
@@ -1028,7 +1360,7 @@
 }
 
 /* ---- Settings shell container responsiveness ---- */
-@container settings-stage (max-width: 900px) {
+@container settings-stage (max-width: 760px) {
   .cipher-settings-root .settings-shell-layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr);
@@ -1044,8 +1376,8 @@
   }
 }
 
-@container settings-stage (max-width: 620px) {
-  .cipher-settings-root .settings-navigation-tabs [role='tablist'] {
+@container settings-stage (max-width: 520px) {
+  .cipher-settings-root .cipher-settings-primary-tab-list {
     width: max-content;
     min-width: 570px;
   }
@@ -1089,7 +1421,7 @@
 
 .cipher-settings-root .settings-page-header h1 {
   margin: 0 0 3px !important;
-  font-size: clamp(24px, 2.8cqi, 28px) !important;
+  font-size: clamp(24px, 2.8vw, 28px) !important;
   line-height: 1.1 !important;
 }
 
@@ -1099,42 +1431,7 @@
   line-height: 1.3 !important;
 }
 
-/* 2. 修复顶部导航选中态 - 只保留单层样式 */
-.cipher-settings-root .settings-navigation-tabs {
-  padding: 4px;
-  min-height: 52px;
-}
-
-.cipher-settings-root .settings-navigation-tabs [role='tab'] {
-  position: relative;
-  min-height: 44px;
-  padding: 0 14px;
-  transition: all 0.2s ease;
-}
-
-/* 移除选中项的双层背景 */
-.cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] {
-  color: var(--accent) !important;
-  background: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-[data-theme='dark'] .cipher-settings-root .settings-navigation-tabs [role='tab'][aria-selected='true'] {
-  background: color-mix(in srgb, var(--surface) 95%, var(--accent) 5%) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.cipher-settings-root .settings-navigation-tabs [role='tab']:hover:not([aria-selected='true']) {
-  background: var(--surface-hover);
-}
-
-/* 移除可能存在的 ::before / ::after 背景 */
-.cipher-settings-root .settings-navigation-tabs [role='tab']::before,
-.cipher-settings-root .settings-navigation-tabs [role='tab']::after {
-  display: none !important;
-}
-
-/* 3. 统一文字和容器约束 */
+/* 2. 统一文字和容器约束 */
 .cipher-settings-root *,
 .cipher-settings-root *::before,
 .cipher-settings-root *::after {
@@ -1378,6 +1675,729 @@
   margin: 0;
 }
 
+/* CipherTalk-derived AI provider connection panel. */
+.cipher-settings-root .cipher-ai-access-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-connection-card,
+.cipher-settings-root .cipher-ai-provider-summary-card {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-hover) 76%, var(--surface));
+  box-shadow: 0 2px 6px rgba(25, 48, 40, .08);
+}
+
+.cipher-settings-root .cipher-ai-connection-card {
+  min-height: 476px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+}
+
+.cipher-settings-root .cipher-ai-card-header {
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 12px !important;
+}
+
+.cipher-settings-root .cipher-ai-card-header [data-slot='card-title'] {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-ai-provider-logo {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  background-color: currentColor;
+}
+
+.cipher-settings-root .cipher-ai-form-content {
+  min-width: 0;
+  display: grid;
+  gap: 28px;
+  padding: 8px 24px 14px !important;
+}
+
+.cipher-settings-root .cipher-ai-provider-select .cipher-settings-select-value {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  white-space: normal;
+  font-size: inherit;
+}
+
+.cipher-settings-root .cipher-ai-provider-trigger {
+  position: relative;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  padding: 8px 42px 8px 16px;
+  border-color: transparent;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--text) 5%, var(--surface));
+}
+
+.cipher-settings-root .cipher-ai-provider-select:focus-within,
+.cipher-settings-root .cipher-ai-model-combobox:focus-within {
+  outline: none;
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-provider-trigger:focus-visible,
+.cipher-settings-root .cipher-ai-provider-trigger[data-focus-visible='true'],
+.cipher-settings-root .cipher-ai-provider-trigger[aria-expanded='true'] {
+  outline: none;
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-provider-trigger .cipher-settings-select-indicator {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin: 0;
+  margin-left: auto;
+  line-height: 0;
+  transform: none;
+}
+
+.cipher-settings-root .cipher-ai-provider-option-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.cipher-settings-root .cipher-ai-provider-option-copy {
+  align-self: stretch;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.cipher-settings-root .cipher-ai-provider-option-copy strong,
+.cipher-settings-root .cipher-ai-provider-option-copy span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-ai-provider-option-copy strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 18px;
+}
+
+.cipher-settings-root .cipher-ai-provider-option-copy span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-color: transparent;
+  border-radius: 16px;
+  outline: none;
+  background: color-mix(in srgb, var(--text) 5%, var(--surface));
+  box-shadow: none;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group:has([data-slot='input-group-input']:focus) {
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
+  outline: none;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group:has([data-slot='input-group-input']:focus-visible) {
+  border-color: color-mix(in srgb, var(--text) 30%, var(--border));
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-input'] {
+  min-width: 0;
+  height: 52px;
+  padding: 0 12px 0 20px;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  color: var(--text);
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 52px;
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-input']:focus,
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-input']:focus-visible,
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-input'][data-focused='true'],
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-input'][data-focus-visible='true'] {
+  border: 0;
+  outline: none;
+  outline-offset: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-api-key-input-group [data-slot='input-group-suffix'] {
+  height: 100%;
+  padding: 0 7px 0 0;
+  border: 0;
+  background: transparent;
+}
+
+.cipher-settings-root .cipher-ai-api-key-toggle {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  color: var(--text-secondary);
+}
+
+.cipher-settings-root .cipher-ai-api-key-toggle svg {
+  color: currentColor;
+}
+
+.cipher-settings-root .cipher-ai-model-field {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-model-control-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: end;
+  gap: 10px;
+}
+
+.cipher-settings-root .cipher-ai-model-combobox {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-model-input-group {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--text) 5%, var(--surface));
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.cipher-settings-root .cipher-ai-model-input-group:focus-within {
+  outline: none;
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-model-input {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 4px 0 16px;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 52px;
+}
+
+.cipher-settings-root .cipher-ai-model-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.cipher-settings-root .cipher-ai-model-trigger {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 12px !important;
+  color: var(--text-secondary);
+  background: transparent;
+  line-height: 0;
+}
+
+.cipher-settings-root .cipher-ai-model-trigger:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.cipher-settings-root .cipher-ai-model-trigger:focus-visible,
+.cipher-settings-root .cipher-ai-model-trigger[data-focus-visible='true'],
+.cipher-settings-root .cipher-ai-model-trigger[data-open='true'] {
+  outline: none;
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-ai-model-trigger svg {
+  display: block;
+  color: currentColor;
+  transition: transform .16s ease;
+}
+
+.cipher-settings-root .cipher-ai-model-trigger[data-open='true'] svg {
+  transform: rotate(180deg);
+}
+
+.cipher-settings-root .cipher-ai-model-refresh {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+  border-radius: 999px !important;
+}
+
+.cipher-settings-root .cipher-ai-model-option-content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cipher-settings-root .cipher-ai-model-option-content > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-ai-model-capabilities {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.cipher-settings-root .cipher-ai-model-capabilities [data-slot='chip'] {
+  max-width: 100%;
+}
+
+.cipher-settings-root .cipher-ai-model-capabilities--compact {
+  gap: 5px;
+  margin-top: 0;
+}
+
+.cipher-settings-root .cipher-ai-model-capabilities--compact [data-slot='chip'] {
+  min-width: 28px;
+  min-height: 24px;
+  justify-content: center;
+}
+
+.cipher-settings-root .cipher-ai-capability-muted {
+  opacity: .56;
+}
+
+.cipher-settings-root .cipher-ai-model-source {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cipher-settings-root .cipher-ai-model-unavailable-alert {
+  margin-top: -10px;
+}
+
+.cipher-settings-root .cipher-ai-card-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: auto;
+  padding: 4px 24px 22px !important;
+}
+
+.cipher-settings-root .cipher-ai-test-button,
+.cipher-settings-root .cipher-ai-save-button {
+  min-height: 42px;
+  border-radius: 999px !important;
+  font-weight: 650;
+}
+
+.cipher-settings-root .cipher-ai-save-button:not(:disabled) {
+  --button-bg: #0b87f7;
+  --button-bg-hover: #0877dc;
+  --button-bg-pressed: #0668c2;
+  --button-fg: #ffffff;
+}
+
+.cipher-settings-root .cipher-ai-summary-column {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-card {
+  padding: 0 !important;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-header {
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 24px 12px !important;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-copy {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-copy [data-slot='card-title'] {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-copy [data-slot='card-description'] {
+  min-width: 0;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-ai-provider-summary-card > [data-slot='card-content'] {
+  padding: 4px 24px 22px !important;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts dt,
+.cipher-settings-root .cipher-ai-provider-facts dd {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts .cipher-ai-provider-address {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts dt {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts dd {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.cipher-settings-root .cipher-ai-provider-facts dd [data-slot='chip'] {
+  max-width: 100%;
+}
+
+.cipher-settings-root .cipher-ai-provider-doc-link {
+  padding: 0 !important;
+  border: 0;
+  border-radius: 0 !important;
+  color: #087bf0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cipher-settings-root .cipher-ai-provider-doc-link:hover {
+  color: #0564c7;
+  text-decoration: underline;
+}
+
+.cipher-settings-root .cipher-ai-provider-doc-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 3px;
+}
+
+.cipher-settings-root .cipher-ai-local-note {
+  min-width: 0;
+  padding: 18px 22px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(25, 48, 40, .08);
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover {
+  min-width: max(var(--trigger-width, 340px), 340px);
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option {
+  min-height: 64px;
+  padding: 9px 40px 9px 14px;
+  border-radius: 12px;
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option[data-selected='true'] {
+  color: var(--text, #1d2522);
+  background: var(--surface-hover, #ededee);
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover {
+  width: var(--trigger-width, 520px);
+  min-width: min(var(--trigger-width, 520px), calc(100vw - 32px));
+  max-width: min(720px, calc(100vw - 32px));
+  max-height: min(430px, calc(100vh - 48px));
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border, #dce3e0);
+  border-radius: 22px;
+  background: var(--surface, #fff);
+  box-shadow: 0 18px 46px rgba(21, 42, 35, .18);
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-list {
+  max-height: 410px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option {
+  min-width: 0;
+  min-height: 84px;
+  padding: 12px 44px 12px 14px;
+  border-radius: 14px;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option-content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option-content > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text, #1d2522);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 0;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities [data-slot='chip'] {
+  max-width: 100%;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--text-secondary, #68746f);
+  background: color-mix(in srgb, var(--text, #1d2522) 7%, var(--surface, #fff));
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities [data-slot='chip'].chip--accent {
+  color: #1269ad;
+  background: #d9edff;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities [data-slot='chip'].chip--success {
+  color: #18744f;
+  background: #ddf6e9;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover:is([data-theme='dark'] *) .cipher-ai-model-capabilities [data-slot='chip'].chip--accent {
+  color: #9bcdf6;
+  background: rgba(31, 119, 186, .24);
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover:is([data-theme='dark'] *) .cipher-ai-model-capabilities [data-slot='chip'].chip--success {
+  color: #91dfbd;
+  background: rgba(37, 143, 99, .24);
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities [data-slot='chip'] svg {
+  display: block;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-capabilities [data-slot='chip-label'] {
+  line-height: 16px;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-capability-muted {
+  opacity: .56;
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option:hover,
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option[data-focused='true'] {
+  background: color-mix(in srgb, var(--accent, #16845f) 8%, var(--surface, #fff));
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-option[data-selected='true'] {
+  background: color-mix(in srgb, var(--accent, #16845f) 12%, var(--surface, #fff));
+}
+
+.cipher-settings-select-popover.cipher-ai-model-popover .cipher-ai-model-empty {
+  padding: 28px 18px;
+  color: var(--text-secondary, #68746f);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option .cipher-ai-provider-logo {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--text-secondary, #70747d);
+  background-color: currentColor;
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.35;
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option-copy strong {
+  color: var(--text, #1d2522);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.cipher-settings-select-popover.cipher-ai-provider-popover .cipher-ai-provider-option-copy span {
+  color: var(--text-secondary, #70747d);
+  font-size: 12px;
+}
+
+.cipher-settings-root .cipher-ai-spin {
+  animation: cipher-ai-spin 900ms linear infinite;
+}
+
+@keyframes cipher-ai-spin {
+  to { transform: rotate(360deg); }
+}
+
+@container settings-panel (max-width: 880px) {
+  .cipher-settings-root .cipher-ai-access-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-ai-summary-column {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@container settings-panel (max-width: 620px) {
+  .cipher-settings-root .cipher-ai-summary-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-ai-form-content,
+  .cipher-settings-root .cipher-ai-card-header,
+  .cipher-settings-root .cipher-ai-provider-summary-header,
+  .cipher-settings-root .cipher-ai-provider-summary-card > [data-slot='card-content'] {
+    padding-inline: 18px !important;
+  }
+
+  .cipher-settings-root .cipher-ai-card-actions {
+    flex-wrap: wrap;
+    padding-inline: 18px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cipher-settings-root .cipher-ai-spin {
+    animation: none;
+  }
+}
+
 /* 6. 数据管理页面 - 修复导出设置二级导航 */
 .cipher-settings-root .cipher-data-subnav {
   display: flex;
@@ -1535,26 +2555,13 @@
   }
 }
 
-/* 10. 确保所有 HeroUI 下拉框使用原生样式 */
+/* 10. Prevent browser-native select decorations; HeroUI renders one indicator. */
 .cipher-settings-root select,
 .cipher-settings-root .cipher-settings-select-trigger,
 .cipher-settings-select-popover {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-}
-
-/* 自定义下拉箭头 */
-.cipher-settings-root .cipher-settings-select-trigger {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 38px;
-}
-
-[data-theme='dark'] .cipher-settings-root .cipher-settings-select-trigger {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23aaa' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
 }
 
 /* GPU / 在线模式沿用原结构，但样式仍限定在设置中心内。 */
@@ -1625,6 +2632,11 @@
 /* 右侧面板 */
 .cipher-settings-root .cipher-transcription-right-panel {
   min-width: 0;
+}
+
+/* 减小右侧卡片之间的纵向间距 */
+.cipher-settings-root .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 12px !important;
 }
 
 /* 模型配置卡片 */
@@ -1887,7 +2899,8 @@
 }
 
 .cipher-settings-root .cipher-transcription-mode-switcher {
-  width: min(100%, 560px);
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   padding: 5px;
   overflow-x: auto;
@@ -1900,9 +2913,9 @@
 
 .cipher-settings-root .cipher-transcription-mode-list {
   width: 100%;
-  min-width: 420px;
+  min-width: 480px;
   display: flex;
-  gap: 5px;
+  gap: 12px;
   padding: 0;
   background: transparent;
 }
@@ -1972,7 +2985,14 @@
   border-radius: 16px;
   color: var(--text);
   background: var(--surface);
-  box-shadow: 0 8px 24px rgba(25, 48, 40, .055);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 增强所有 Card 组件的视觉效果 */
+.cipher-settings-root [data-slot="card"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .cipher-settings-root .cipher-model-config-card {
@@ -2013,6 +3033,109 @@
   word-break: break-word;
 }
 
+.cipher-settings-root .cipher-model-status-chip,
+.cipher-settings-root .cipher-gpu-model-status-chip,
+.cipher-settings-root .cipher-gpu-detection-status-chip,
+.cipher-settings-root .cipher-cuda-status-chip {
+  min-height: 28px;
+  padding: 4px 10px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-model-status-chip-label,
+.cipher-settings-root .cipher-gpu-model-status-chip-label,
+.cipher-settings-root .cipher-gpu-detection-status-chip-label,
+.cipher-settings-root .cipher-cuda-status-chip-label {
+  line-height: 18px;
+}
+
+.cipher-settings-root .cipher-model-status-chip-icon,
+.cipher-settings-root .cipher-gpu-model-status-chip-icon,
+.cipher-settings-root .cipher-gpu-detection-status-chip-icon,
+.cipher-settings-root .cipher-cuda-status-chip-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.cipher-settings-root .cipher-gpu-overview-content {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.cipher-settings-root .cipher-gpu-overview-section {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cipher-settings-root .cipher-gpu-overview-heading-row {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-gpu-overview-title {
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cipher-settings-root .cipher-gpu-overview-description {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-model-status-alert,
+.cipher-settings-root .cipher-gpu-model-status-alert {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cipher-settings-root .cipher-model-status-alert-indicator,
+.cipher-settings-root .cipher-gpu-model-status-alert-indicator {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  line-height: 0;
+}
+
+.cipher-settings-root .cipher-model-status-alert-indicator svg,
+.cipher-settings-root .cipher-gpu-model-status-alert-indicator svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.cipher-settings-root .cipher-model-status-alert-content,
+.cipher-settings-root .cipher-gpu-model-status-alert-content {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-model-status-alert-title,
+.cipher-settings-root .cipher-gpu-model-status-alert-title {
+  margin: 0;
+  line-height: 20px;
+}
+
 .cipher-settings-root .cipher-status-badge {
   max-width: min(42%, 150px);
   min-height: 26px;
@@ -2040,17 +3163,18 @@
   background: color-mix(in srgb, #d99b32 15%, var(--surface));
 }
 
-.cipher-settings-root .cipher-model-version-selector {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* 确保 HeroUI RadioGroup 显示为网格 */
+.cipher-settings-root .cipher-model-version-selector,
+.cipher-settings-root .cipher-model-version-selector[role="radiogroup"],
+.cipher-settings-root .cipher-model-version-selector > div[role="presentation"] {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 12px;
-  margin-bottom: 18px;
 }
 
 .cipher-settings-root .cipher-model-version-option {
   min-width: 0;
-  min-height: 112px;
+  min-height: 70px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -2061,17 +3185,21 @@
   background: var(--surface);
   cursor: pointer;
   transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+  position: relative;
 }
 
-.cipher-settings-root .cipher-model-version-option:hover {
-  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
-  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
-}
-
-.cipher-settings-root .cipher-model-version-option.selected {
+/* 选中状态 */
+.cipher-settings-root .cipher-model-version-option[data-selected="true"],
+.cipher-settings-root .cipher-model-version-option[aria-checked="true"] {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* 悬停状态 */
+.cipher-settings-root .cipher-model-version-option:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
 }
 
 .cipher-settings-root .cipher-model-version-option:focus-within {
@@ -2177,6 +3305,25 @@
 
 .cipher-settings-root .cipher-model-actions-row button {
   min-height: 40px;
+  border-radius: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* 所有 Card 中的按钮使用椭圆胶囊样式 */
+.cipher-settings-root [data-slot="card"] button,
+.cipher-settings-root .cipher-model-config-card button,
+.cipher-settings-root .cipher-language-card button {
+  border-radius: 20px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+/* 确保 Card.Footer 中的按钮也应用样式 */
+.cipher-settings-root [data-slot="card-footer"] button {
+  border-radius: 20px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
 }
 
 .cipher-settings-root .cipher-language-card {
@@ -2273,5 +3420,388 @@
 
   .cipher-settings-root .cipher-model-actions-row button {
     flex: 1 1 160px;
+  }
+}
+
+/* ---- Online transcription: provider form + privacy reminder ---- */
+.cipher-settings-root .cipher-online-stt-layout {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2.25fr) minmax(260px, .9fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.cipher-settings-root .cipher-online-stt-form-card,
+.cipher-settings-root .cipher-online-stt-reminder-card,
+.cipher-settings-root .cipher-online-stt-empty-card {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-hover) 70%, var(--surface));
+  box-shadow: 0 2px 8px rgba(25, 48, 40, .06);
+}
+
+.cipher-settings-root .cipher-online-stt-card-header,
+.cipher-settings-root .cipher-online-stt-reminder-card > [data-slot='card-header'] {
+  min-width: 0;
+  padding: 24px 24px 14px;
+}
+
+.cipher-settings-root .cipher-online-stt-card-header [data-slot='card-title'],
+.cipher-settings-root .cipher-online-stt-reminder-card [data-slot='card-title'] {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.cipher-settings-root .cipher-online-stt-card-header [data-slot='card-description'],
+.cipher-settings-root .cipher-online-stt-reminder-card [data-slot='card-description'] {
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-online-stt-form-content {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+  padding: 6px 24px 20px;
+}
+
+.cipher-settings-root .cipher-online-stt-form-content > *,
+.cipher-settings-root .cipher-online-stt-two-column-fields > *,
+.cipher-settings-root .cipher-online-stt-runtime-fields > *,
+.cipher-settings-root .cipher-online-stt-tencent-fields > * {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-online-stt-form-content [data-slot='label'] {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-online-stt-form-content [data-slot='description'] {
+  min-width: 0;
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cipher-settings-root .cipher-online-stt-provider-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-online-stt-provider-trigger:focus,
+.cipher-settings-root .cipher-online-stt-provider-trigger:focus-visible,
+.cipher-settings-root .cipher-online-stt-provider-trigger[data-focus-visible='true'] {
+  outline: none;
+  border-color: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.cipher-settings-root .cipher-online-stt-provider-value {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+}
+
+.cipher-settings-root .cipher-online-stt-provider-value strong,
+.cipher-settings-root .cipher-online-stt-provider-value span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cipher-settings-root .cipher-online-stt-provider-value strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.cipher-settings-root .cipher-online-stt-provider-value span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cipher-settings-select-popover.cipher-online-stt-provider-popover {
+  min-width: min(var(--trigger-width, 360px), calc(100vw - 32px));
+  max-width: min(620px, calc(100vw - 32px));
+}
+
+.cipher-settings-select-popover .cipher-online-stt-provider-option {
+  min-height: 58px;
+  padding: 8px 40px 8px 13px;
+}
+
+.cipher-settings-root .cipher-online-stt-input-group {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-online-stt-input-group:has([data-slot='input-group-input']:focus) {
+  border-color: color-mix(in srgb, var(--text-secondary) 42%, var(--border));
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.cipher-settings-root .cipher-online-stt-input-group [data-slot='input-group-input'] {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  color: var(--text);
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-online-stt-input-group [data-slot='input-group-input']:focus,
+.cipher-settings-root .cipher-online-stt-input-group [data-slot='input-group-input']:focus-visible {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-online-stt-secret-group [data-slot='input-group-input'] {
+  padding-right: 54px;
+}
+
+.cipher-settings-root .cipher-online-stt-secret-group [data-slot='input-group-suffix'] {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding-right: 5px;
+  border: 0;
+}
+
+.cipher-settings-root .cipher-online-stt-secret-group [data-slot='input-group-suffix'] button {
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0 !important;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.cipher-settings-root .cipher-online-stt-two-column-fields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.cipher-settings-root .cipher-online-stt-tencent-fields {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.cipher-settings-root .cipher-online-stt-runtime-fields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(180px, 1fr) minmax(150px, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.cipher-settings-root .cipher-online-stt-language-trigger,
+.cipher-settings-root .cipher-online-stt-number-group {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.cipher-settings-root .cipher-online-stt-language-trigger {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+}
+
+/*
+ * HeroUI's default Select indicator positioning is not vertically stable for
+ * these differently sized settings controls. Keep the chevron in the trigger's
+ * flex flow, matching the already verified AI provider Select implementation.
+ */
+.cipher-settings-root .cipher-online-stt-provider-trigger .cipher-settings-select-indicator,
+.cipher-settings-root .cipher-online-stt-language-trigger .cipher-settings-select-indicator,
+.cipher-settings-root .cipher-export-format-trigger .cipher-settings-select-indicator {
+  position: static;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  flex: 0 0 18px;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin: 0;
+  margin-left: auto;
+  line-height: 0;
+  transform: none;
+}
+
+.cipher-settings-root .cipher-export-format-trigger {
+  padding-right: 13px;
+}
+
+.cipher-settings-root .cipher-online-stt-number-group {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.cipher-settings-root .cipher-online-stt-number-group button {
+  min-width: 44px;
+  min-height: 48px;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  color: var(--text);
+  background: transparent;
+}
+
+.cipher-settings-root .cipher-online-stt-number-group input {
+  min-width: 0;
+  border: 0;
+  border-inline: 1px solid var(--border);
+  outline: none;
+  color: var(--text);
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cipher-settings-root .cipher-online-stt-feedback {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-online-stt-actions {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px 24px;
+}
+
+.cipher-settings-root .cipher-online-stt-actions button {
+  min-height: 40px;
+  padding-inline: 18px !important;
+}
+
+.cipher-settings-root .cipher-online-stt-reminder-card {
+  position: sticky;
+  top: 0;
+}
+
+.cipher-settings-root .cipher-online-stt-reminder-card > [data-slot='card-content'] {
+  min-width: 0;
+  padding: 4px 20px 20px;
+}
+
+.cipher-settings-root .cipher-online-stt-privacy-alert {
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, #c18a35 20%, var(--border));
+  border-radius: 16px;
+  color: #8b5b20;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(25, 48, 40, .06);
+}
+
+.cipher-settings-root .cipher-online-stt-privacy-alert [data-slot='alert-content'] {
+  min-width: 0;
+}
+
+.cipher-settings-root .cipher-online-stt-privacy-alert [data-slot='alert-title'] {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cipher-settings-root .cipher-online-stt-privacy-alert [data-slot='alert-description'] {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@container settings-panel (max-width: 900px) {
+  .cipher-settings-root .cipher-online-stt-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-online-stt-reminder-card {
+    position: static;
+  }
+}
+
+@container settings-panel (max-width: 680px) {
+  .cipher-settings-root .cipher-online-stt-two-column-fields,
+  .cipher-settings-root .cipher-online-stt-runtime-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cipher-settings-root .cipher-online-stt-card-header,
+  .cipher-settings-root .cipher-online-stt-form-content,
+  .cipher-settings-root .cipher-online-stt-actions {
+    padding-inline: 16px;
+  }
+
+  .cipher-settings-root .cipher-online-stt-actions button {
+    flex: 1 1 180px;
   }
 }

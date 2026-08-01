@@ -7,6 +7,7 @@
 //! 此模块实现 Rust 原生下载，参考 BiliNote 的 Python 实现。
 
 use crate::domain::AppError;
+use crate::process_utils::hidden_command;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use rand::Rng;
 use reqwest::blocking::Client;
@@ -15,7 +16,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
 
@@ -305,7 +306,7 @@ fn convert_to_mp3(input_path: &Path, output_path: &Path) -> Result<(), AppError>
         })
         .unwrap_or_else(|| PathBuf::from("ffmpeg.exe"));
 
-    let status = Command::new(&ffmpeg_path)
+    let status = hidden_command(&ffmpeg_path)
         .args(&[
             "-i",
             input_path.to_str().unwrap(),

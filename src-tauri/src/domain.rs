@@ -190,11 +190,30 @@ pub struct KeyEvidence {
 
 /// Progress event emitted during processing
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+/// DownloadTelemetry
+pub struct DownloadTelemetry {
+    pub phase: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub percent: Option<f64>,
+    pub downloaded_bytes: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speed_bytes_per_second: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub eta_seconds: Option<u64>,
+}
+
+/// Progress event emitted during processing
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// TaskProgress
 pub struct TaskProgress {
     pub stage: TaskStage,
     pub message: String,
     pub percent: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download: Option<DownloadTelemetry>,
 }
 
 /// The final distillation output

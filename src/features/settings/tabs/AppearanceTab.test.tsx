@@ -81,6 +81,8 @@ describe('AppearanceTab', () => {
     render(<Harness />);
     expect(screen.getByRole('heading', { name: '外观' })).toBeTruthy();
     expect(screen.queryByText(/微信|回复气泡|关闭到托盘/)).toBeNull();
+    expect(screen.queryByText('导航布局')).toBeNull();
+    expect(screen.queryByText(/侧边栏当前/)).toBeNull();
   });
 
   // it('applies a theme immediately without a save button', asyn

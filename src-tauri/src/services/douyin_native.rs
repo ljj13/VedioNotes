@@ -9,12 +9,15 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use md5::{Digest, Md5};
 use rand::{distributions::Alphanumeric, Rng};
 use reqwest::header::{
-    HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, COOKIE, REFERER, USER_AGENT,
+    HeaderMap, HeaderValue, ACCEPT, ACCEPT_LANGUAGE, CONTENT_RANGE, CONTENT_TYPE, COOKIE, RANGE,
+    REFERER, USER_AGENT,
 };
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
+
+use super::download::{DownloadPhase, DownloadProgress};
 
 const DOUYIN_DOMAIN: &str = "https://www.douyin.com";
 const DOUYIN_DETAIL_PATH: &str = "/aweme/v1/web/aweme/detail/";
@@ -23,7 +26,86 @@ const MOBILE_USER_AGENT: &str = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Ma
 const TTWID_REGISTER_URL: &str = "https://ttwid.bytedance.com/ttwid/union/register/";
 const TTWID_REGISTER_BODY: &str = r#"{"region":"cn","aid":1768,"needFid":false,"service":"www.ixigua.com","migrate_info":{"ticket":"","source":"node"},"cbUrlProtocol":"https","union":true}"#;
 const API_REQUEST_TIMEOUT: Duration = Duration::from_secs(12);
-const MEDIA_REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
+const MEDIA_CHUNK_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+const PROGRESS_REPORT_INTERVAL: Duration = Duration::from_millis(250);
+
+fn report(
+    progress: &mut dyn FnMut(DownloadProgress),
+    phase: DownloadPhase,
+    message: impl Into<String>,
+) {
+    progress(DownloadProgress::message(phase, message));
+}
+
+fn validate_media_response(status: reqwest::StatusCode, content_type: Option<&str>) -> Result<()> {
+    if status != reqwest::StatusCode::OK && status != reqwest::StatusCode::PARTIAL_CONTENT {
+        return Err(anyhow!("抖音媒体地址返回 HTTP {status}"));
+    }
+    let normalized = content_type.unwrap_or("").to_ascii_lowercase();
+    if normalized.starts_with("text/html") || normalized.starts_with("application/json") {
+        return Err(anyhow!("抖音媒体地址返回了网页或 JSON，而不是媒体文件"));
+    }
+    if !(normalized.starts_with("video/")
+        || normalized.starts_with("audio/")
+        || normalized.starts_with("application/octet-stream"))
+    {
+        return Err(anyhow!("抖音媒体响应类型无法确认"));
+    }
+    Ok(())
+}
+
+fn content_range_total(value: Option<&str>) -> Option<u64> {
+    value?
+        .rsplit_once('/')
+        .and_then(|(_, total)| total.trim().parse::<u64>().ok())
+        .filter(|total| *total > 0)
+}
+
+fn calculate_download_progress(
+    downloaded_bytes: u64,
+    total_bytes: Option<u64>,
+    elapsed: Duration,
+) -> DownloadProgress {
+    let elapsed_seconds = elapsed.as_secs_f64();
+    let speed = (elapsed_seconds > 0.0)
+        .then(|| (downloaded_bytes as f64 / elapsed_seconds).round() as u64)
+        .filter(|value| *value > 0);
+    let percent = total_bytes
+        .filter(|total| *total > 0)
+        .map(|total| (downloaded_bytes as f64 * 100.0 / total as f64).clamp(0.0, 100.0));
+    let eta_seconds = total_bytes.and_then(|total| {
+        speed.filter(|speed| *speed > 0)
+            .map(|speed| total.saturating_sub(downloaded_bytes).div_ceil(speed))
+    });
+    DownloadProgress {
+        phase: DownloadPhase::Downloading,
+        message: "正在下载抖音媒体...".to_string(),
+        percent,
+        downloaded_bytes,
+        total_bytes,
+        speed_bytes_per_second: speed,
+        eta_seconds,
+    }
+}
+
+fn should_attach_cookie(url: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(url) else {
+        return false;
+    };
+    let host = parsed.host_str().unwrap_or("").to_ascii_lowercase();
+    host == "douyin.com"
+        || host.ends_with(".douyin.com")
+        || host == "iesdouyin.com"
+        || host.ends_with(".iesdouyin.com")
+}
+
+fn ensure_not_cancelled(cancelled: &dyn Fn() -> bool) -> Result<()> {
+    if cancelled() {
+        Err(anyhow!("用户取消下载"))
+    } else {
+        Ok(())
+    }
+}
 
 fn unix_timestamp_seconds() -> u32 {
     SystemTime::now()
@@ -327,9 +409,8 @@ impl DouyinNativeDownloader {
             HeaderValue::from_static("zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"),
         );
         if let Some(cookie_value) = cookie.as_deref() {
-            if let Ok(value) = HeaderValue::from_str(cookie_value.trim()) {
-                headers.insert(COOKIE, value);
-            }
+            HeaderValue::from_str(cookie_value.trim())
+                .context("抖音 Cookie 格式错误，无法创建安全请求头")?;
         }
 
         let client = reqwest::Client::builder()
@@ -347,11 +428,18 @@ impl DouyinNativeDownloader {
         })
     }
 
+    fn get(&self, url: &str) -> reqwest::RequestBuilder {
+        let request = self.client.get(url);
+        match self.cookie.as_deref().filter(|_| should_attach_cookie(url)) {
+            Some(cookie) => request.header(COOKIE, cookie),
+            None => request,
+        }
+    }
+
     /// Extract a video ID from canonical, user/modal, or short Douyin links.
     pub async fn extract_video_id(&self, url: &str) -> Result<String> {
         let real_url = if url.contains("v.douyin.com") {
-            self.client
-                .get(url)
+            self.get(url)
                 .timeout(Duration::from_secs(10))
                 .send()
                 .await
@@ -387,12 +475,15 @@ impl DouyinNativeDownloader {
         Err(anyhow!("无法从抖音链接提取视频编号"))
     }
 
-    async fn initialize_anonymous_session(&self, progress: &mut dyn FnMut(&str)) {
+    async fn initialize_anonymous_session(
+        &self,
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
+    ) {
         if cookie_value(self.cookie.as_deref(), "ttwid").is_some() {
             return;
         }
 
-        progress("正在建立抖音匿名会话...");
+        report(progress, DownloadPhase::Resolving, "正在建立抖音匿名会话...");
         if self
             .client
             .post(TTWID_REGISTER_URL)
@@ -403,20 +494,27 @@ impl DouyinNativeDownloader {
             .await
             .is_err()
         {
-            progress("匿名会话初始化未完成，继续尝试签名接口...");
+            report(
+                progress,
+                DownloadPhase::Resolving,
+                "匿名会话初始化未完成，继续尝试签名接口...",
+            );
         }
     }
 
     async fn resolve_share_page_video(
         &self,
         video_id: &str,
-        progress: &mut dyn FnMut(&str),
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
     ) -> Result<String> {
-        progress("正在读取抖音公开分享页...");
+        report(
+            progress,
+            DownloadPhase::Resolving,
+            "[router_data] 正在读取抖音公开分享页...",
+        );
         let share_url = format!("https://www.iesdouyin.com/share/video/{video_id}/");
         let response = self
-            .client
-            .get(share_url)
+            .get(&share_url)
             .header(USER_AGENT, MOBILE_USER_AGENT)
             .header(REFERER, "https://www.douyin.com/")
             .timeout(Duration::from_secs(15))
@@ -433,7 +531,7 @@ impl DouyinNativeDownloader {
     async fn fetch_video_info(
         &self,
         video_id: &str,
-        progress: &mut dyn FnMut(&str),
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
     ) -> Result<DouyinAwemeDetail> {
         let ms_token =
             cookie_value(self.cookie.as_deref(), "msToken").unwrap_or_else(fallback_ms_token);
@@ -441,7 +539,11 @@ impl DouyinNativeDownloader {
         let mut last_error = "抖音接口未返回视频信息".to_string();
 
         for (aid, attempt) in attempts {
-            progress(&format!("正在请求抖音视频信息（第 {attempt}/3 次）..."));
+            report(
+                progress,
+                DownloadPhase::Resolving,
+                format!("[legacy_api] 正在请求抖音旧签名接口（第 {attempt}/3 次）..."),
+            );
             let query = detail_query(video_id, aid, &ms_token);
             let signature = self.signer.generate(&query);
             let request_url = format!(
@@ -450,8 +552,7 @@ impl DouyinNativeDownloader {
             );
 
             match self
-                .client
-                .get(request_url)
+                .get(&request_url)
                 .timeout(API_REQUEST_TIMEOUT)
                 .send()
                 .await
@@ -501,7 +602,11 @@ impl DouyinNativeDownloader {
 
             if attempt < 3 {
                 let delay = Duration::from_secs(attempt as u64);
-                progress(&format!("{last_error}，{} 秒后重试...", delay.as_secs()));
+                report(
+                    progress,
+                    DownloadPhase::Resolving,
+                    format!("{last_error}，{} 秒后重试...", delay.as_secs()),
+                );
                 tokio::time::sleep(delay).await;
             }
         }
@@ -514,7 +619,8 @@ impl DouyinNativeDownloader {
         media_url: &str,
         output_path: &Path,
         media_label: &str,
-        progress: &mut dyn FnMut(&str),
+        cancelled: &(dyn Fn() -> bool + Send + Sync),
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
     ) -> Result<()> {
         let partial_path = PathBuf::from(format!("{}.part", output_path.display()));
         if let Some(parent) = output_path.parent() {
@@ -522,41 +628,57 @@ impl DouyinNativeDownloader {
         }
 
         let result = async {
-            let mut response = self
+            ensure_not_cancelled(cancelled)?;
+            let request = self
                 .client
                 .get(media_url)
                 .header(USER_AGENT, MOBILE_USER_AGENT)
                 .header(REFERER, "https://www.douyin.com/")
-                .timeout(MEDIA_REQUEST_TIMEOUT)
-                .send()
+                .header(RANGE, "bytes=0-")
+                .send();
+            let mut response = tokio::time::timeout(Duration::from_secs(20), request)
                 .await
+                .map_err(|_| anyhow!("请求抖音媒体地址超时"))?
                 .context("请求抖音音频地址失败")?;
-            if !response.status().is_success() {
-                return Err(anyhow!("抖音音频地址返回 HTTP {}", response.status()));
-            }
+            let content_type = response
+                .headers()
+                .get(CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok());
+            validate_media_response(response.status(), content_type)?;
 
-            let total = response.content_length();
+            let total = content_range_total(
+                response
+                    .headers()
+                    .get(CONTENT_RANGE)
+                    .and_then(|value| value.to_str().ok()),
+            )
+            .or_else(|| response.content_length());
             let mut file = tokio::fs::File::create(&partial_path).await?;
             let mut downloaded = 0_u64;
-            let mut last_reported_percent = u64::MAX;
-            while let Some(chunk) = response.chunk().await.context("读取抖音音频数据失败")?
-            {
+            let started = Instant::now();
+            let mut last_reported = Instant::now()
+                .checked_sub(PROGRESS_REPORT_INTERVAL)
+                .unwrap_or_else(Instant::now);
+            let mut initial = calculate_download_progress(0, total, Duration::ZERO);
+            initial.message = format!("正在下载抖音{media_label}...");
+            progress(initial);
+
+            loop {
+                ensure_not_cancelled(cancelled)?;
+                let next_chunk = tokio::time::timeout(MEDIA_CHUNK_IDLE_TIMEOUT, response.chunk())
+                    .await
+                    .map_err(|_| anyhow!("抖音媒体下载长时间没有收到数据"))?
+                    .context("读取抖音音频数据失败")?;
+                let Some(chunk) = next_chunk else {
+                    break;
+                };
                 file.write_all(&chunk).await?;
                 downloaded += chunk.len() as u64;
-                let percent = total
-                    .filter(|total| *total > 0)
-                    .map(|total| (downloaded.saturating_mul(100) / total).min(100));
-                if percent != Some(last_reported_percent) {
-                    match percent {
-                        Some(percent) => {
-                            progress(&format!("正在下载抖音{media_label}... {percent}%"))
-                        }
-                        None => progress(&format!(
-                            "正在下载抖音{media_label}... {:.1} MB",
-                            downloaded as f64 / 1_048_576_f64
-                        )),
-                    }
-                    last_reported_percent = percent.unwrap_or(last_reported_percent);
+                if last_reported.elapsed() >= PROGRESS_REPORT_INTERVAL {
+                    let mut update = calculate_download_progress(downloaded, total, started.elapsed());
+                    update.message = format!("正在下载抖音{media_label}...");
+                    progress(update);
+                    last_reported = Instant::now();
                 }
             }
             file.flush().await?;
@@ -569,6 +691,14 @@ impl DouyinNativeDownloader {
                 tokio::fs::remove_file(output_path).await?;
             }
             tokio::fs::rename(&partial_path, output_path).await?;
+            let mut completed = calculate_download_progress(
+                downloaded,
+                total.or(Some(downloaded)),
+                started.elapsed(),
+            );
+            completed.percent = Some(100.0);
+            completed.message = format!("抖音{media_label}下载完成");
+            progress(completed);
             Ok(())
         }
         .await;
@@ -584,17 +714,21 @@ impl DouyinNativeDownloader {
         &self,
         video_url: &str,
         output_path: &Path,
-        progress: &mut dyn FnMut(&str),
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
     ) -> Result<()> {
-        progress("正在解析抖音视频编号...");
+        report(progress, DownloadPhase::Resolving, "正在解析抖音视频编号...");
         let video_id = self.extract_video_id(video_url).await?;
         self.initialize_anonymous_session(progress).await;
         let detail = self.fetch_video_info(&video_id, progress).await?;
         let audio_url = detail
             .audio_url()
             .ok_or_else(|| anyhow!("抖音视频信息中没有可下载的音频流"))?;
-        progress("视频信息已获取，开始下载音频...");
-        self.stream_to_file(audio_url, output_path, "音频", progress)
+        report(
+            progress,
+            DownloadPhase::Downloading,
+            "视频信息已获取，开始下载音频...",
+        );
+        self.stream_to_file(audio_url, output_path, "音频", &|| false, progress)
             .await
     }
 
@@ -605,32 +739,47 @@ impl DouyinNativeDownloader {
         &self,
         video_url: &str,
         work_dir: &Path,
-        progress: &mut dyn FnMut(&str),
+        cancelled: &(dyn Fn() -> bool + Send + Sync),
+        progress: &mut (dyn FnMut(DownloadProgress) + Send),
     ) -> Result<PathBuf> {
-        progress("正在解析抖音视频编号...");
+        ensure_not_cancelled(cancelled)?;
+        report(progress, DownloadPhase::Resolving, "正在解析抖音视频编号...");
         let video_id = self.extract_video_id(video_url).await?;
 
         match self.resolve_share_page_video(&video_id, progress).await {
             Ok(media_url) => {
-                progress("公开分享页解析成功，开始下载视频媒体...");
+                report(
+                    progress,
+                    DownloadPhase::Downloading,
+                    "[router_data] 公开分享页解析成功，开始下载视频媒体...",
+                );
                 let output_path = work_dir.join("source.mp4");
-                self.stream_to_file(&media_url, &output_path, "视频", progress)
+                self.stream_to_file(&media_url, &output_path, "视频", cancelled, progress)
                     .await?;
                 return Ok(output_path);
             }
             Err(error) => {
-                progress(&format!("公开分享页未能解析：{error}。正在尝试签名接口..."));
+                report(
+                    progress,
+                    DownloadPhase::Resolving,
+                    format!("[router_data] 解析失败：{error}。[legacy_api] 正在尝试旧签名接口..."),
+                );
             }
         }
 
+        ensure_not_cancelled(cancelled)?;
         self.initialize_anonymous_session(progress).await;
         let detail = self.fetch_video_info(&video_id, progress).await?;
         let audio_url = detail
             .audio_url()
             .ok_or_else(|| anyhow!("抖音视频信息中没有可下载的音频流"))?;
-        progress("签名接口解析成功，开始下载音频...");
+        report(
+            progress,
+            DownloadPhase::Downloading,
+            "[legacy_api] 解析成功，开始下载音频...",
+        );
         let output_path = work_dir.join("source.mp3");
-        self.stream_to_file(audio_url, &output_path, "音频", progress)
+        self.stream_to_file(audio_url, &output_path, "音频", cancelled, progress)
             .await?;
         Ok(output_path)
     }
@@ -693,17 +842,67 @@ mod tests {
         assert_eq!(media_url, "https://aweme.snssdk.com/example.mp4");
     }
 
+    #[test]
+    fn accepts_video_media_responses_and_rejects_html_or_json() {
+        assert!(validate_media_response(reqwest::StatusCode::OK, Some("video/mp4")).is_ok());
+        assert!(validate_media_response(
+            reqwest::StatusCode::PARTIAL_CONTENT,
+            Some("application/octet-stream")
+        )
+        .is_ok());
+        assert!(validate_media_response(
+            reqwest::StatusCode::OK,
+            Some("text/html; charset=utf-8")
+        )
+        .is_err());
+        assert!(validate_media_response(
+            reqwest::StatusCode::OK,
+            Some("application/json")
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn progress_math_reports_bytes_speed_percent_and_eta() {
+        let progress = calculate_download_progress(
+            25 * 1_048_576,
+            Some(100 * 1_048_576),
+            Duration::from_secs(5),
+        );
+
+        assert_eq!(progress.percent, Some(25.0));
+        assert_eq!(progress.downloaded_bytes, 25 * 1_048_576);
+        assert_eq!(progress.total_bytes, Some(100 * 1_048_576));
+        assert_eq!(progress.speed_bytes_per_second, Some(5 * 1_048_576));
+        assert_eq!(progress.eta_seconds, Some(15));
+    }
+
+    #[test]
+    fn cookie_is_only_attached_to_douyin_page_and_api_hosts() {
+        assert!(should_attach_cookie("https://www.douyin.com/video/123"));
+        assert!(should_attach_cookie(
+            "https://www.iesdouyin.com/share/video/123/"
+        ));
+        assert!(!should_attach_cookie(
+            "https://aweme.snssdk.com/aweme/v1/play/"
+        ));
+        assert!(!should_attach_cookie(
+            "https://v5-colda.douyinvod.com/media.mp4"
+        ));
+    }
+
     #[tokio::test]
     #[ignore = "requires live Douyin network access"]
     async fn live_downloads_public_douyin_audio_without_hanging() {
         let temp = tempfile::tempdir().expect("temporary directory should be created");
         let downloader = DouyinNativeDownloader::new(None).expect("client should initialize");
-        let mut messages = Vec::new();
+        let mut updates = Vec::new();
         let output = downloader
             .download_source(
                 "https://www.douyin.com/video/7663687865578163499",
                 temp.path(),
-                &mut |message| messages.push(message.to_string()),
+                &|| false,
+                &mut |update| updates.push(update),
             )
             .await
             .expect("public video media should download");
@@ -712,8 +911,15 @@ mod tests {
             .metadata()
             .map(|meta| meta.len() > 0)
             .unwrap_or(false));
-        assert!(messages
+        assert!(updates
             .iter()
-            .any(|message| message.contains("下载抖音视频")));
+            .any(|update| update.message.contains("下载抖音视频")));
+        assert!(updates.iter().any(|update| update.downloaded_bytes > 0));
+        assert!(updates
+            .iter()
+            .any(|update| update.speed_bytes_per_second.is_some()));
+        assert!(updates
+            .iter()
+            .any(|update| update.percent == Some(100.0)));
     }
 }

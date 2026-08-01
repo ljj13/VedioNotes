@@ -62,7 +62,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { openPath } from '@tauri-apps/plugin-opener';
 // 调用系统的默认程序打开文件/文件夹（类似 C 中调用 ShellExecute）
 
-import type { AppError, AppPreferences, AppProfiles, Distillation, DistillationResult, HistoryEntry, InputSource, LocalModelStatus, ProviderFallbackEvent, SenseVoiceStatus, TaskOptions, TaskProgress, TaskRetryRequest } from './lib/types';
+import type { AppError, AppPreferences, AppProfiles, CudaRuntimeStatus, Distillation, DistillationResult, HistoryEntry, InputSource, LocalModelStatus, ProviderFallbackEvent, SenseVoiceStatus, TaskOptions, TaskProgress, TaskRetryRequest } from './lib/types';
 
 import {
   invokeStartDistillation,   // 向 Rust 发起"开始蒸馏"命令
@@ -80,6 +80,7 @@ import {
   setActiveProfile,
   getPreferences,
   getSenseVoiceStatus,
+  getCudaRuntimeStatus,
   setTranscriptionPreferences,
 } from './lib/bridge';
 
@@ -89,7 +90,8 @@ import ProfileSelectors from './components/ProfileSelectors';
 import FallbackNotice from './components/FallbackNotice';
 import MigrationNotice from './components/MigrationNotice';
 import WorkbenchShell from './components/WorkbenchShell';
-import SettingsEntry from './features/settings/SettingsEntry';
+import SettingsEntry, { preloadSettings } from './features/settings/SettingsEntry';
+import { ensureProviderModelsFresh } from './platform/settings/aiModelRegistry';
 import CreateWorkspace from './components/CreateWorkspace';
 import HomeWorkspace from './components/HomeWorkspace';
 import ProgressWorkspace, { BackgroundTaskPill } from './components/ProgressWorkspace';
@@ -102,9 +104,24 @@ import ErrorPanel from './components/ErrorPanel';
 // 导入导航状态机
 import { initialWorkbenchNavigationState, workbenchNavigationReducer } from './lib/workbenchNavigation';
 import type { PrimaryWorkbenchView, SettingsSection } from './lib/workbenchNavigation';
-
 import './styles/app.css';
 import './styles/concept-workbench.css';
+
+const localWhisperModelLabels: Record<string, string> = {
+  tiny: 'Tiny',
+  base: 'Base',
+  small: 'Small',
+  medium: 'Medium',
+  'large-v3-turbo-q5': 'Turbo-Q5',
+  'large-v3-turbo-q8': 'Turbo-Q8',
+  'large-v3-turbo': 'Large-v3-Turbo',
+  'large-v3': 'Large-v3',
+};
+
+function localWhisperModelLabel(modelId: string | undefined): string {
+  if (!modelId) return '未选择模型';
+  return localWhisperModelLabels[modelId] ?? modelId;
+}
 
 /**
  * AppView：应用所处的"全局阶段"——不是"哪个页面"，而是业务层面的状态。
@@ -159,7 +176,12 @@ function App() {
     logLevel: 'info',
   });
   const [senseVoiceStatus, setSenseVoiceStatus] = useState<SenseVoiceStatus | null>(null);
+  const [cudaStatus, setCudaStatus] = useState<CudaRuntimeStatus | null>(null);
   const [localModels, setLocalModels] = useState<LocalModelStatus[]>([]);
+  const [runtimeStatusLoading, setRuntimeStatusLoading] = useState(true);
+  const [runtimeStatusError, setRuntimeStatusError] = useState<string | null>(null);
+  const [runtimeStatusLastCheckedAt, setRuntimeStatusLastCheckedAt] = useState<number | null>(null);
+  const runtimeStatusRequestRef = useRef<Promise<void> | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [fallbackEvent, setFallbackEvent] = useState<ProviderFallbackEvent | null>(null);
   const fallbackEventRef = useRef<ProviderFallbackEvent | null>(null);
@@ -174,26 +196,65 @@ function App() {
   const taskBackgrounded = useRef(false);
 
   const reloadProfiles = useCallback(() => {
-    Promise.all([getProfiles(), listLocalModels().catch(() => [])])
-      .then(([nextProfiles, models]) => { setProfiles(nextProfiles); setLocalModels(Array.isArray(models) ? models : []); })
+    getProfiles()
+      .then((nextProfiles) => {
+        setProfiles(nextProfiles);
+        const activeId = nextProfiles.activeSummaryProfileId;
+        const activeProfile = nextProfiles.summaryProfiles.find((profile) => profile.id === activeId);
+        if (activeProfile?.enabled && activeProfile.id.startsWith('catalog-')) {
+          void hasProfileCredential('summary', activeProfile.id)
+            .then((ready) => ready ? ensureProviderModelsFresh(activeProfile.id) : undefined)
+            .catch(() => undefined);
+        }
+      })
       .catch((e: AppError) => setProfileError(e.message ?? '配置档加载失败'));
   }, []);
 
   const reloadTranscriptionPreferences = useCallback(() => {
-    const preferencesRequest = typeof getPreferences === 'function'
-      ? getPreferences()
-      : Promise.resolve(null);
-    const senseVoiceRequest = typeof getSenseVoiceStatus === 'function'
-      ? getSenseVoiceStatus().catch(() => null)
-      : Promise.resolve(null);
-    Promise.all([preferencesRequest, senseVoiceRequest])
-      .then(([nextPreferences, nextSenseVoiceStatus]) => {
+    (typeof getPreferences === 'function' ? getPreferences() : Promise.resolve(null))
+      .then((nextPreferences) => {
         setPreferences(nextPreferences && typeof nextPreferences.schemaVersion === 'number'
           ? nextPreferences
           : defaultPreferences());
-        if (nextSenseVoiceStatus && Array.isArray(nextSenseVoiceStatus.models)) setSenseVoiceStatus(nextSenseVoiceStatus);
       })
       .catch(() => setPreferences(defaultPreferences()));
+  }, []);
+
+  const refreshRuntimeStatus = useCallback((): Promise<void> => {
+    if (runtimeStatusRequestRef.current) return runtimeStatusRequestRef.current;
+
+    setRuntimeStatusLoading(true);
+    setRuntimeStatusError(null);
+    const request = Promise.allSettled([
+      getSenseVoiceStatus(),
+      getCudaRuntimeStatus(),
+      listLocalModels(),
+    ]).then(([senseVoiceResult, cudaResult, modelsResult]) => {
+      const failures: string[] = [];
+      if (senseVoiceResult.status === 'fulfilled') {
+        setSenseVoiceStatus(senseVoiceResult.value);
+      } else {
+        failures.push('SenseVoice');
+      }
+      if (cudaResult.status === 'fulfilled') {
+        setCudaStatus(cudaResult.value);
+      } else {
+        failures.push('GPU/CUDA');
+      }
+      if (modelsResult.status === 'fulfilled') {
+        setLocalModels(Array.isArray(modelsResult.value) ? modelsResult.value : []);
+      } else {
+        failures.push('Whisper 模型');
+      }
+      setRuntimeStatusLastCheckedAt(Date.now());
+      setRuntimeStatusError(failures.length > 0 ? `${failures.join('、')}状态检测失败` : null);
+    }).finally(() => {
+      runtimeStatusRequestRef.current = null;
+      setRuntimeStatusLoading(false);
+    });
+
+    runtimeStatusRequestRef.current = request;
+    return request;
   }, []);
 
   const reloadHistoryOverview = useCallback(() => {
@@ -247,11 +308,26 @@ function App() {
   useEffect(() => {
     reloadProfiles();
     reloadTranscriptionPreferences();
+    void refreshRuntimeStatus();
     reloadHistoryOverview();
     return () => {
       unlisteners.current.forEach((fn) => fn());
     };
-  }, [reloadProfiles, reloadHistoryOverview, reloadTranscriptionPreferences]);
+  }, [refreshRuntimeStatus, reloadProfiles, reloadHistoryOverview, reloadTranscriptionPreferences]);
+
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') return;
+    const windowWithIdle = window as Window & {
+      requestIdleCallback?: (callback: () => void) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (windowWithIdle.requestIdleCallback) {
+      const handle = windowWithIdle.requestIdleCallback(() => { void preloadSettings(); });
+      return () => windowWithIdle.cancelIdleCallback?.(handle);
+    }
+    const handle = window.setTimeout(() => { void preloadSettings(); }, 250);
+    return () => window.clearTimeout(handle);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -527,7 +603,7 @@ function App() {
   const serviceDetail = transcriptionMode === 'sensevoice_cpu'
     ? `SenseVoice CPU · ${senseVoiceStatus?.selectedModel ?? preferences?.sensevoiceModel ?? 'int8'}${transcriptionReady ? ' 就绪' : ' 未安装'}`
     : transcriptionMode === 'whisper_local'
-      ? `本地 Whisper · ${localTranscriptionProfile?.model ?? '未选择模型'}${transcriptionReady ? ' 就绪' : ' 未就绪'}`
+      ? `本地 Whisper · ${localWhisperModelLabel(localTranscriptionProfile?.model)}${transcriptionReady ? ' 就绪' : ' 未就绪'}`
       : activeTranscriptionProfile
         ? `${activeTranscriptionProfile.name} · ${activeTranscriptionProfile.model || '默认模型'}${serviceReady ? ' 就绪' : ''}`
         : (profiles ? '尚未选择在线转写服务' : '正在检查服务');
@@ -559,15 +635,21 @@ function App() {
           section={navigation.settingsSection}
           profiles={profiles ?? { schemaVersion: 1, activeTranscriptionProfileId: null, activeSummaryProfileId: null, fallbackTranscriptionProfileId: null, migrationRequired: false, transcriptionProfiles: [], summaryProfiles: [] }}
           localModels={localModels}
+          senseVoiceStatus={senseVoiceStatus}
+          cudaStatus={cudaStatus}
+          runtimeStatusLoading={runtimeStatusLoading}
+          runtimeStatusError={runtimeStatusError}
+          runtimeStatusLastCheckedAt={runtimeStatusLastCheckedAt}
           preferences={preferences}
           theme={theme}
           sidebarCollapsed={navigation.sidebarCollapsed}
           onSelectSection={(section) => dispatchNavigation({ type: 'select-settings-section', section })}
           onReturn={handleCloseSettings}
           onProfilesChanged={reloadProfiles}
-          onModelsChanged={reloadProfiles}
+          onModelsChanged={() => { void refreshRuntimeStatus(); }}
           onPreferencesChanged={setPreferences}
           onSenseVoiceStatusChanged={setSenseVoiceStatus}
+          onRuntimeStatusRefresh={refreshRuntimeStatus}
           onToggleTheme={handleThemeToggle}
           onToggleSidebar={() => dispatchNavigation({ type: 'toggle-sidebar' })}
         />

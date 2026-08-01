@@ -6,7 +6,23 @@ import { lazy, Suspense } from 'react';
 import LegacySettingsWorkspace from '../../components/SettingsWorkspace';
 import type { SettingsEntryProps } from './settingsTypes';
 
-const CipherSettingsShell = lazy(() => import('./CipherSettingsShell'));
+let cipherSettingsModule: ReturnType<typeof importCipherSettings> | null = null;
+
+function importCipherSettings() {
+  return import('./CipherSettingsShell');
+}
+
+function loadCipherSettings() {
+  cipherSettingsModule ??= importCipherSettings();
+  return cipherSettingsModule;
+}
+
+const CipherSettingsShell = lazy(loadCipherSettings);
+
+/** Warm the settings chunk after the main workbench has rendered. */
+export function preloadSettings() {
+  return loadCipherSettings().then(() => undefined);
+}
 
 /** SettingsEntry */
 export default function SettingsEntry({
@@ -17,7 +33,7 @@ export default function SettingsEntry({
     ?? (import.meta.env.VITE_SETTINGS_IMPLEMENTATION === 'legacy' ? 'legacy' : 'cipher');
   if (implementation === 'legacy') return <LegacySettingsWorkspace {...props} />;
   return (
-    <Suspense fallback={<div role="status">正在加载设置…</div>}>
+    <Suspense fallback={<div className="cipher-settings-root settings-loading-state" role="status">正在加载设置…</div>}>
       <CipherSettingsShell {...props} />
     </Suspense>
   );

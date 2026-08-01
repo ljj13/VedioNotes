@@ -88,6 +88,7 @@ for (const file of allFiles) {
   try { source = readFileSync(file, 'utf8'); } catch { continue; }
 
   const testFile = isTestFile(file);
+  const normalizedFile = file.replace(/\\/g, '/');
 
   // PRIV-001: Hardcoded secrets in production code (8+ chars)
   if (!testFile) {
@@ -110,7 +111,7 @@ for (const file of allFiles) {
   }
 
   // PRIV-004: Credential rehydration in non-settings frontend (TS/TSX, non-test, non-settings)
-  if (!file.includes('features/settings') && !testFile && /\.(ts|tsx)$/.test(file)) {
+  if (!normalizedFile.includes('/features/settings/') && !testFile && /\.(ts|tsx)$/.test(file)) {
     check(file, source, 'PRIV-004',
       /(get|fetch|read|load)\w*(?:Credential|Secret|ApiKey|Token)\w*\s*\(/i,
       'credential rehydration (get/read/fetch secret) outside settings boundary');

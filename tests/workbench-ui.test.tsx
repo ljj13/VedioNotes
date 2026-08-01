@@ -13,7 +13,8 @@ const bridge = vi.hoisted(() => ({
   listTaskRecords: vi.fn(), retryTaskRecord: vi.fn(), setActiveProfile: vi.fn(), getDiagnosticLogPath: vi.fn(),
   askHistoryNote: vi.fn(),
   listLocalModels: vi.fn(),
-  getPreferences: vi.fn(), getSenseVoiceStatus: vi.fn(),
+  getPreferences: vi.fn(), getSenseVoiceStatus: vi.fn(), getCudaRuntimeStatus: vi.fn(),
+  discoverSummaryModels: vi.fn(),
   getCapabilityStatus: vi.fn(),
 }));
 
@@ -46,6 +47,8 @@ describe('workbench UI', () => {
     bridge.listLocalModels.mockResolvedValue([]);
     bridge.getPreferences.mockResolvedValue({ schemaVersion: 1, markdownOutputDir: null, localComputeMode: 'auto' });
     bridge.getSenseVoiceStatus.mockResolvedValue(null);
+    bridge.getCudaRuntimeStatus.mockResolvedValue({ state: 'unavailable', version: null, gpuName: null, error: null });
+    bridge.discoverSummaryModels.mockResolvedValue([]);
     bridge.getCapabilityStatus.mockResolvedValue({
       vector: { enabled: false, configured: false, credentialReady: false, providerId: '' },
       rerank: { enabled: false, configured: false, credentialReady: false, providerId: '' },

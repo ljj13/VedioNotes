@@ -120,6 +120,7 @@ fn fake_profile(id: &str, kind: TranscriptionProviderKind) -> TranscriptionProfi
         model: "test-model".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     }
 }
 
@@ -184,6 +185,7 @@ impl TestEnv {
                 model: "test".into(),
                 enabled: true,
                 built_in: false,
+                online_options: Default::default(),
             });
         }
 
@@ -200,6 +202,7 @@ impl TestEnv {
                 model: "test".into(),
                 enabled: true,
                 built_in: false,
+                online_options: Default::default(),
             });
         }
 

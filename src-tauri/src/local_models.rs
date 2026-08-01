@@ -1,8 +1,12 @@
 //! 本地 Whisper 模型管理——管理本地下载的 GGML 格式语音识别模型文件.
 
 use crate::domain::AppError;
+use crate::verified_file_cache::{
+    forget_file_verification, remember_file_verification, verify_file_cached,
+};
 use serde::Serialize;
 use sha1::{Digest, Sha1};
+use sha2::Sha256;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
@@ -28,6 +32,7 @@ pub struct LocalModelDescriptor {
     pub file_name: &'static str,
     pub bytes: u64,
     pub sha1: &'static str,
+    pub sha256: Option<&'static str>,
     pub hugging_face_url: &'static str,
     pub model_scope_url: &'static str,
 }
@@ -127,12 +132,13 @@ impl ModelHttpClient for ReqwestModelHttpClient {
     }
 }
 
-const MODEL_DESCRIPTORS: [LocalModelDescriptor; 5] = [
+const MODEL_DESCRIPTORS: [LocalModelDescriptor; 8] = [
     LocalModelDescriptor {
         id: "tiny",
         file_name: "ggml-tiny.bin",
         bytes: 75_000_000,
         sha1: "bd577a113a864445d4c299885e0cb97d4ba92b5f",
+        sha256: None,
         hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
         model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-tiny.bin",
     },
@@ -141,6 +147,7 @@ const MODEL_DESCRIPTORS: [LocalModelDescriptor; 5] = [
         file_name: "ggml-base.bin",
         bytes: 142_000_000,
         sha1: "465707469ff3a37a2b9b8d8f89f2f99de7299dac",
+        sha256: None,
         hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
         model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-base.bin",
     },
@@ -149,14 +156,34 @@ const MODEL_DESCRIPTORS: [LocalModelDescriptor; 5] = [
         file_name: "ggml-small.bin",
         bytes: 466_000_000,
         sha1: "55356645c2b361a969dfd0ef2c5a50d530afd8d5",
+        sha256: None,
         hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
         model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-small.bin",
+    },
+    LocalModelDescriptor {
+        id: "large-v3-turbo-q5",
+        file_name: "ggml-large-v3-turbo-q5_0.bin",
+        bytes: 574_041_195,
+        sha1: "e050f7970618a659205450ad97eb95a18d69c9ee",
+        sha256: None,
+        hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+        model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-large-v3-turbo-q5_0.bin",
+    },
+    LocalModelDescriptor {
+        id: "large-v3-turbo-q8",
+        file_name: "ggml-large-v3-turbo-q8_0.bin",
+        bytes: 874_188_075,
+        sha1: "",
+        sha256: Some("317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1"),
+        hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin",
+        model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-large-v3-turbo-q8_0.bin",
     },
     LocalModelDescriptor {
         id: "medium",
         file_name: "ggml-medium.bin",
         bytes: 1_500_000_000,
         sha1: "fd9727b6e1217c2f614f9b698455c4ffd82463b4",
+        sha256: None,
         hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin",
         model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-medium.bin",
     },
@@ -165,8 +192,18 @@ const MODEL_DESCRIPTORS: [LocalModelDescriptor; 5] = [
         file_name: "ggml-large-v3-turbo.bin",
         bytes: 1_620_000_000,
         sha1: "4af2b29d7ec73d781377bfd1758ca957a807e941",
+        sha256: None,
         hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
         model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-large-v3-turbo.bin",
+    },
+    LocalModelDescriptor {
+        id: "large-v3",
+        file_name: "ggml-large-v3.bin",
+        bytes: 3_095_033_483,
+        sha1: "ad82bf6a9043ceed055076d0fd39f5f186ff8062",
+        sha256: None,
+        hugging_face_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin",
+        model_scope_url: "https://modelscope.cn/models/AI-ModelScope/whisper.cpp/resolve/master/ggml-large-v3.bin",
     },
 ];
 
@@ -191,7 +228,7 @@ pub fn inspect_models(root: &Path, current_id: Option<&str>) -> Vec<LocalModelSt
             let part_path = root.join(format!("{}.part", descriptor.file_name));
             let failure_marker_path = failed_marker_path(root, descriptor);
             let (state, downloaded_bytes) = if model_path.is_file() {
-                match has_expected_sha1(&model_path, descriptor.sha1) {
+                match has_expected_digest(&model_path, descriptor) {
                     Ok(true) => (LocalModelState::Ready, file_len(&model_path)),
                     Ok(false) | Err(()) => (LocalModelState::Corrupt, file_len(&model_path)),
                 }
@@ -230,7 +267,7 @@ pub fn ready_model_path(root: &Path, model_id: &str) -> Result<PathBuf, AppError
     })?;
     let model_path = root.join(descriptor.file_name);
 
-    if has_expected_sha1(&model_path, descriptor.sha1).unwrap_or(false) {
+    if has_expected_digest(&model_path, descriptor).unwrap_or(false) {
         Ok(model_path)
     } else {
         Err(AppError::new(
@@ -266,7 +303,7 @@ pub fn download_model_for_descriptor(
     let part_path = root.join(format!("{}.part", descriptor.file_name));
     let failure_marker_path = failed_marker_path(root, descriptor);
 
-    if has_expected_sha1(&final_path, descriptor.sha1).unwrap_or(false) {
+    if has_expected_digest(&final_path, descriptor).unwrap_or(false) {
         return Ok(status_for(
             descriptor,
             LocalModelState::Ready,
@@ -291,11 +328,13 @@ pub fn download_model_for_descriptor(
         return Err(download_error());
     }
 
-    if !has_expected_sha1(&part_path, descriptor.sha1).unwrap_or(false) {
+    if !has_expected_digest(&part_path, descriptor).unwrap_or(false) {
         mark_failed(&failure_marker_path)?;
         return Err(download_error());
     }
     std::fs::rename(&part_path, &final_path).map_err(|_| download_error())?;
+    forget_file_verification(root, &part_path);
+    remember_file_verification(root, &final_path, &expected_digest_key(descriptor), true);
     Ok(status_for(
         descriptor,
         LocalModelState::Ready,
@@ -334,6 +373,7 @@ pub fn delete_model(
             return Err(delete_error());
         }
         std::fs::remove_file(canonical_path).map_err(|_| delete_error())?;
+        forget_file_verification(root, &path);
     }
     Ok(())
 }
@@ -403,4 +443,38 @@ fn has_expected_sha1(path: &Path, expected_sha1: &str) -> Result<bool, ()> {
     }
 
     Ok(format!("{:x}", sha1.finalize()) == expected_sha1)
+}
+
+fn has_expected_sha256(path: &Path, expected_sha256: &str) -> Result<bool, ()> {
+    let file = File::open(path).map_err(|_| ())?;
+    let mut reader = BufReader::new(file);
+    let mut sha256 = Sha256::new();
+    let mut buffer = [0; 64 * 1024];
+
+    loop {
+        let bytes_read = reader.read(&mut buffer).map_err(|_| ())?;
+        if bytes_read == 0 {
+            break;
+        }
+        sha256.update(&buffer[..bytes_read]);
+    }
+
+    Ok(format!("{:x}", sha256.finalize()) == expected_sha256)
+}
+
+fn has_expected_digest(path: &Path, descriptor: &LocalModelDescriptor) -> Result<bool, ()> {
+    let root = path.parent().ok_or(())?;
+    verify_file_cached(root, path, &expected_digest_key(descriptor), || {
+        match descriptor.sha256 {
+            Some(expected) => has_expected_sha256(path, expected),
+            None => has_expected_sha1(path, descriptor.sha1),
+        }
+    })
+}
+
+fn expected_digest_key(descriptor: &LocalModelDescriptor) -> String {
+    match descriptor.sha256 {
+        Some(expected) => format!("sha256:{expected}"),
+        None => format!("sha1:{}", descriptor.sha1),
+    }
 }

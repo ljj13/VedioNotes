@@ -14,10 +14,11 @@ use tempfile::tempdir;
 
 use video_distiller_lib::commands::{
     get_summary_provider_catalog, persist_fallback_active, rollback_credential,
+    reveal_summary_profile_credential_for_services,
     save_and_activate_catalog_summary_profile_with_services, ManagedServices,
 };
 use video_distiller_lib::credential_store::{
-    CredentialBackend, CredentialBackendError, CredentialStore, InMemoryBackend,
+    CredentialBackend, CredentialBackendError, CredentialStore, InMemoryBackend, SecretPayload,
 };
 use video_distiller_lib::domain::{AppError, SecretInput};
 use video_distiller_lib::profile_store::ProfileStore;
@@ -66,6 +67,29 @@ impl TestEnv {
     fn profiles_json_path(&self) -> String {
         self.services.profile_path.to_string_lossy().to_string()
     }
+}
+
+#[test]
+fn reveal_summary_profile_credential_returns_the_stored_bearer_value() {
+    let env = TestEnv::new();
+    env.services
+        .credential_store()
+        .set(
+            "summary",
+            "catalog-deepseek",
+            &SecretPayload::Bearer {
+                api_key: "sk-test-not-a-real-secret".into(),
+            },
+        )
+        .unwrap();
+
+    let revealed = reveal_summary_profile_credential_for_services(
+        &env.services,
+        "catalog-deepseek",
+    )
+    .unwrap();
+
+    assert_eq!(revealed, "sk-test-not-a-real-secret");
 }
 
 /// A credential backend that fails on `set_password` to simulate credential
@@ -187,6 +211,7 @@ fn trans_profile(id: &str) -> TranscriptionProfile {
         model: "whisper-1".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     }
 }
 
@@ -442,6 +467,7 @@ fn delete_profile_restores_credential_on_json_failure() {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     });
     initial.fallback_transcription_profile_id = Some("mimo-asr".into());
 
@@ -615,6 +641,7 @@ fn save_empty_profile_name_rejected_by_validation() {
         model: "whisper-1".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     };
 
     let mut profiles = env.services.profile_store().load().unwrap();
@@ -641,6 +668,7 @@ fn validate_proposed_profile_set_before_credential_write() {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     };
     profiles.transcription_profiles.push(bad_profile);
 
@@ -716,6 +744,7 @@ fn init_for_delete(dir: &tempfile::TempDir, enabled: bool) -> ManagedServices {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     });
     initial.active_transcription_profile_id = Some("tencent-flash".into());
     initial.fallback_transcription_profile_id = Some("mimo-asr".into());
@@ -794,6 +823,7 @@ fn delete_profile_snapshot_failure_propagates() {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     });
     initial.active_transcription_profile_id = Some("tencent-flash".into());
     profile_store.save(&initial).unwrap();
@@ -835,6 +865,7 @@ fn delete_profile_credential_delete_failure_leaves_everything_unchanged() {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     });
     initial.active_transcription_profile_id = Some("tencent-flash".into());
     profile_store.save(&initial).unwrap();
@@ -921,6 +952,7 @@ fn delete_profile_json_failure_reports_rollback_error() {
         model: "test".into(),
         enabled: true,
         built_in: false,
+        online_options: Default::default(),
     });
     initial.active_transcription_profile_id = Some("tencent-flash".into());
     profile_store.save(&initial).unwrap();

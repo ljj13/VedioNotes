@@ -1,6 +1,6 @@
 use video_distiller_lib::domain::{
-    AppError, Distillation, InputSource, KeyEvidence, SecretInput, TaskOptions, TaskProgress,
-    TaskStage,
+    AppError, Distillation, DownloadTelemetry, InputSource, KeyEvidence, SecretInput, TaskOptions,
+    TaskProgress, TaskStage,
 };
 
 #[test]
@@ -79,6 +79,7 @@ fn task_progress_serializes_a_bounded_numeric_percentage() {
         stage: TaskStage::Transcribing,
         message: "正在转写音频...".into(),
         percent: 52,
+        download: None,
     };
 
     assert_eq!(
@@ -87,6 +88,35 @@ fn task_progress_serializes_a_bounded_numeric_percentage() {
             "stage": "transcribing",
             "message": "正在转写音频...",
             "percent": 52
+        })
+    );
+}
+
+#[test]
+fn task_progress_serializes_optional_download_telemetry_in_camel_case() {
+    let progress = TaskProgress {
+        stage: TaskStage::Downloading,
+        message: "正在下载抖音视频".into(),
+        percent: 15,
+        download: Some(DownloadTelemetry {
+            phase: "downloading".into(),
+            percent: Some(37.5),
+            downloaded_bytes: 31_457_280,
+            total_bytes: Some(83_886_080),
+            speed_bytes_per_second: Some(2_097_152),
+            eta_seconds: Some(25),
+        }),
+    };
+
+    assert_eq!(
+        serde_json::to_value(progress).unwrap()["download"],
+        serde_json::json!({
+            "phase": "downloading",
+            "percent": 37.5,
+            "downloadedBytes": 31_457_280,
+            "totalBytes": 83_886_080,
+            "speedBytesPerSecond": 2_097_152,
+            "etaSeconds": 25
         })
     );
 }

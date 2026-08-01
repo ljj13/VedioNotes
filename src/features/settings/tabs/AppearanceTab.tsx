@@ -14,10 +14,8 @@ const defaults: AppearancePreferences = { theme: 'system', compactDensity: false
 /** AppearanceTab */
 export default function AppearanceTab({
   preferences,
-  sidebarCollapsed,
   onPreferencesChanged,
-  onToggleSidebar,
-}: Pick<SettingsEntryProps, 'preferences' | 'sidebarCollapsed' | 'onPreferencesChanged' | 'onToggleSidebar'>) {
+}: Pick<SettingsEntryProps, 'preferences' | 'onPreferencesChanged'>) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [error, setError] = useState('');
   const saveSeq = useRef(0);
@@ -100,14 +98,6 @@ export default function AppearanceTab({
           </Card.Content>
         </Card>
       </section>
-
-      <Card className="max-w-2xl">
-        <Card.Header><Card.Title>导航布局</Card.Title><Card.Description>当前工作台使用侧边栏导航。</Card.Description></Card.Header>
-        <Card.Content className="flex items-center justify-between gap-4">
-          <span className="text-sm text-muted">侧边栏当前{sidebarCollapsed ? '已折叠' : '已展开'}</span>
-          <button type="button" className="btn btn-secondary" onClick={onToggleSidebar} aria-label={sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}>{sidebarCollapsed ? '展开' : '折叠'}</button>
-        </Card.Content>
-      </Card>
 
       <div aria-live="polite">
         {status === 'saving' && <p className="text-sm text-muted" role="status">正在自动保存...</p>}

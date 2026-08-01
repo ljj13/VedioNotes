@@ -13,6 +13,21 @@ use crate::providers::endpoint::{resolve_endpoint, EndpointKind};
 use crate::providers::error::{self, ProviderError, ProviderErrorKind};
 use crate::providers::TranscriptionAdapter;
 
+fn online_client(profile: &TranscriptionProfile) -> Result<reqwest::Client, ProviderError> {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(
+            profile.online_options.timeout_ms,
+        ))
+        .build()
+        .map_err(|e| {
+            ProviderError::new(
+                ProviderErrorKind::ProviderError,
+                format!("创建在线转写客户端失败: {e}"),
+                "请检查在线转写配置后重试。",
+            )
+        })
+}
+
 // =========================================================================
 //  OpenAiCompatibleAsrAdapter
 // =========================================================================
@@ -78,11 +93,17 @@ impl TranscriptionAdapter for OpenAiCompatibleAsrAdapter {
                 )
             })?;
 
-        let form = reqwest::multipart::Form::new()
+        let mut form = reqwest::multipart::Form::new()
             .part("file", file_part)
             .text("model", profile.model.clone());
+        if profile.online_options.language.as_str() != "auto" {
+            form = form.text(
+                "language",
+                profile.online_options.language.as_str().to_owned(),
+            );
+        }
 
-        let client = reqwest::Client::new();
+        let client = online_client(profile)?;
         let response = client
             .post(url)
             .header("Authorization", format!("Bearer {}", api_key))
@@ -231,14 +252,14 @@ impl TranscriptionAdapter for MiMoAsrAdapter {
                 }]
             }],
             "asr_options": {
-                "language": "auto"
+                "language": profile.online_options.language.as_str()
             }
         });
 
         // Drop data_url — no longer needed after building request
         drop(data_url);
 
-        let client = reqwest::Client::new();
+        let client = online_client(profile)?;
         let response = client
             .post(url)
             .header("Authorization", format!("Bearer {}", api_key))
@@ -407,7 +428,7 @@ impl TranscriptionAdapter for TencentFlashAsrAdapter {
 
         let full_url = format!("{}/asr/flash/v1/{}?{}", base, app_id, canonical_query);
 
-        let client = reqwest::Client::new();
+        let client = online_client(profile)?;
         let response = client
             .post(&full_url)
             .header("Content-Type", "application/octet-stream")

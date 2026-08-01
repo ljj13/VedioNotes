@@ -21,6 +21,67 @@ pub enum TranscriptionProviderKind {
     LocalWhisperCpp,
 }
 
+/// Language hint accepted by online transcription providers.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum OnlineTranscriptionLanguage {
+    Auto,
+    Zh,
+    En,
+    Ja,
+    Ko,
+    Yue,
+}
+
+impl Default for OnlineTranscriptionLanguage {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
+impl OnlineTranscriptionLanguage {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Zh => "zh",
+            Self::En => "en",
+            Self::Ja => "ja",
+            Self::Ko => "ko",
+            Self::Yue => "yue",
+        }
+    }
+}
+
+/// Runtime controls stored with an online transcription profile.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct OnlineTranscriptionOptions {
+    #[serde(default)]
+    pub language: OnlineTranscriptionLanguage,
+    #[serde(default = "default_online_timeout_ms")]
+    pub timeout_ms: u64,
+    #[serde(default = "default_online_max_concurrency")]
+    pub max_concurrency: u8,
+}
+
+const fn default_online_timeout_ms() -> u64 {
+    60_000
+}
+
+const fn default_online_max_concurrency() -> u8 {
+    2
+}
+
+impl Default for OnlineTranscriptionOptions {
+    fn default() -> Self {
+        Self {
+            language: OnlineTranscriptionLanguage::Auto,
+            timeout_ms: default_online_timeout_ms(),
+            max_concurrency: default_online_max_concurrency(),
+        }
+    }
+}
+
 /// Kinds of summary providers supported.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -56,6 +117,9 @@ pub struct TranscriptionProfile {
     pub base_url: String,
     /// Model identifier.
     pub model: String,
+    /// Online-only language, timeout, and bounded batch concurrency settings.
+    #[serde(default)]
+    pub online_options: OnlineTranscriptionOptions,
     /// Whether this profile is enabled for selection.
     pub enabled: bool,
     /// Whether this is a built-in preset (vs. user-created).
@@ -243,6 +307,7 @@ impl AppProfiles {
             provider: TranscriptionProviderKind::LocalWhisperCpp,
             base_url: String::new(),
             model: String::new(),
+            online_options: OnlineTranscriptionOptions::default(),
             enabled: false,
             built_in: true,
         }
@@ -296,6 +361,7 @@ impl AppProfiles {
                     provider: TranscriptionProviderKind::TencentFlash,
                     base_url: "https://asr.cloud.tencent.com".into(),
                     model: "16k_zh".into(),
+                    online_options: OnlineTranscriptionOptions::default(),
                     enabled: false,
                     built_in: true,
                 },
@@ -305,6 +371,7 @@ impl AppProfiles {
                     provider: TranscriptionProviderKind::MimoAsr,
                     base_url: "https://api.xiaomimimo.com".into(),
                     model: "mimo-v2.5-asr".into(),
+                    online_options: OnlineTranscriptionOptions::default(),
                     enabled: false,
                     built_in: true,
                 },
@@ -314,6 +381,7 @@ impl AppProfiles {
                     provider: TranscriptionProviderKind::OpenAiCompatible,
                     base_url: "https://api.openai.com".into(),
                     model: "whisper-1".into(),
+                    online_options: OnlineTranscriptionOptions::default(),
                     enabled: false,
                     built_in: true,
                 },
@@ -432,12 +500,21 @@ fn validate_transcription_profile(profile: &TranscriptionProfile) -> Result<(), 
             }
             Ok(())
         }
-        _ => validate_profile_base(
-            &profile.id,
-            &profile.name,
-            &profile.base_url,
-            &profile.model,
-        ),
+        _ => {
+            validate_profile_base(
+                &profile.id,
+                &profile.name,
+                &profile.base_url,
+                &profile.model,
+            )?;
+            if !(5_000..=300_000).contains(&profile.online_options.timeout_ms) {
+                return Err("online transcription timeout must be between 5000 and 300000 ms".into());
+            }
+            if !(1..=10).contains(&profile.online_options.max_concurrency) {
+                return Err("online transcription max concurrency must be between 1 and 10".into());
+            }
+            Ok(())
+        }
     }
 }
 

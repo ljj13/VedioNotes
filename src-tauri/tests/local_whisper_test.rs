@@ -178,6 +178,7 @@ fn local_profile() -> TranscriptionProfile {
         model: "tiny".into(),
         enabled: true,
         built_in: true,
+        online_options: Default::default(),
     }
 }
 

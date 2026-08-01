@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use super::douyin_native::DouyinNativeDownloader;
+use super::download::DownloadProgress;
 
 /// 抖音下载策略
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,10 +33,11 @@ pub async fn download_douyin_dual_strategy(
     video_url: &str,
     work_dir: PathBuf,
     cookie: Option<String>,
-    progress: &mut dyn FnMut(&str),
+    cancelled: &(dyn Fn() -> bool + Send + Sync),
+    progress: &mut (dyn FnMut(DownloadProgress) + Send),
 ) -> Result<DouyinDownloadResult> {
     // 策略 C：尝试 Rust 原生下载
-    match try_native_download(video_url, &work_dir, cookie, progress).await {
+    match try_native_download(video_url, &work_dir, cookie, cancelled, progress).await {
         Ok(file_path) => {
             return Ok(DouyinDownloadResult {
                 file_path,
@@ -55,12 +57,13 @@ async fn try_native_download(
     video_url: &str,
     work_dir: &PathBuf,
     cookie: Option<String>,
-    progress: &mut dyn FnMut(&str),
+    cancelled: &(dyn Fn() -> bool + Send + Sync),
+    progress: &mut (dyn FnMut(DownloadProgress) + Send),
 ) -> Result<String> {
     tokio::fs::create_dir_all(work_dir).await?;
     let downloader = DouyinNativeDownloader::new(cookie)?;
     let output_path = downloader
-        .download_source(video_url, work_dir, progress)
+        .download_source(video_url, work_dir, cancelled, progress)
         .await?;
 
     Ok(output_path.to_string_lossy().to_string())

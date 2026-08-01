@@ -12,8 +12,19 @@ const FIXTURE_DESCRIPTOR: LocalModelDescriptor = LocalModelDescriptor {
     file_name: "ggml-tiny.bin",
     bytes: 3,
     sha1: "a9993e364706816aba3e25717850c26c9cd0d89d",
+    sha256: None,
     hugging_face_url: "https://fixture.invalid/hugging-face",
     model_scope_url: "https://fixture.invalid/model-scope",
+};
+
+const SHA256_FIXTURE_DESCRIPTOR: LocalModelDescriptor = LocalModelDescriptor {
+    id: "fixture-sha256",
+    file_name: "fixture-sha256.bin",
+    bytes: 3,
+    sha1: "",
+    sha256: Some("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+    hugging_face_url: "https://fixture.invalid/hugging-face-sha256",
+    model_scope_url: "https://fixture.invalid/model-scope-sha256",
 };
 
 struct ScriptedClient {
@@ -61,6 +72,22 @@ fn download_hugging_face_success_never_calls_model_scope() {
         client.calls.lock().unwrap().as_slice(),
         [FIXTURE_DESCRIPTOR.hugging_face_url]
     );
+}
+
+#[test]
+fn download_accepts_a_complete_sha256_validated_model() {
+    let root = tempdir().unwrap();
+    let client = ScriptedClient::new(vec![Ok(b"abc".to_vec())]);
+
+    let status =
+        download_model_for_descriptor(root.path(), &SHA256_FIXTURE_DESCRIPTOR, &client, |_, _| {})
+            .unwrap();
+
+    assert_eq!(status.state, LocalModelState::Ready);
+    assert!(root
+        .path()
+        .join(SHA256_FIXTURE_DESCRIPTOR.file_name)
+        .is_file());
 }
 
 #[test]
@@ -151,24 +178,31 @@ fn registry_exposes_exactly_the_supported_local_model_ids() {
         .map(|status| status.id)
         .collect::<Vec<_>>();
 
-    assert_eq!(ids, ["tiny", "base", "small", "medium", "large-v3-turbo"]);
-    let expected_sha1 = [
-        ("tiny", "bd577a113a864445d4c299885e0cb97d4ba92b5f"),
-        ("base", "465707469ff3a37a2b9b8d8f89f2f99de7299dac"),
-        ("small", "55356645c2b361a969dfd0ef2c5a50d530afd8d5"),
-        ("medium", "fd9727b6e1217c2f614f9b698455c4ffd82463b4"),
-        ("large-v3-turbo", "4af2b29d7ec73d781377bfd1758ca957a807e941"),
-    ];
-    for id in ids {
-        let descriptor = descriptor(&id).unwrap();
-        assert_eq!(descriptor.file_name, format!("ggml-{id}.bin"));
-        assert_eq!(
-            descriptor.sha1,
-            expected_sha1
-                .iter()
-                .find(|(name, _)| *name == id)
-                .unwrap()
-                .1
-        );
-    }
+    assert_eq!(
+        ids,
+        [
+            "tiny",
+            "base",
+            "small",
+            "large-v3-turbo-q5",
+            "large-v3-turbo-q8",
+            "medium",
+            "large-v3-turbo",
+            "large-v3",
+        ]
+    );
+    let q5 = descriptor("large-v3-turbo-q5").unwrap();
+    assert_eq!(q5.file_name, "ggml-large-v3-turbo-q5_0.bin");
+    assert_eq!(q5.sha1, "e050f7970618a659205450ad97eb95a18d69c9ee");
+
+    let q8 = descriptor("large-v3-turbo-q8").unwrap();
+    assert_eq!(q8.file_name, "ggml-large-v3-turbo-q8_0.bin");
+    assert_eq!(
+        q8.sha256,
+        Some("317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1")
+    );
+
+    let large_v3 = descriptor("large-v3").unwrap();
+    assert_eq!(large_v3.file_name, "ggml-large-v3.bin");
+    assert_eq!(large_v3.sha1, "ad82bf6a9043ceed055076d0fd39f5f186ff8062");
 }

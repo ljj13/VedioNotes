@@ -95,6 +95,10 @@ export default function ProgressPanel({ progress, startedAtMs, onCancel, disable
 
       <p className="progress-message">{progress.message}</p>
 
+      {progress.stage === 'downloading' && progress.download && (
+        <DownloadTelemetryView download={progress.download} />
+      )}
+
       {!disabled && currentIndex >= 0 && currentIndex < stages.length - 1 && (
         <button className="cancel-button" onClick={onCancel} type="button">
           取消任务
@@ -117,4 +121,44 @@ function CheckIcon() {
 /** normalizePercent */
 function normalizePercent(value: number) {
   return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
+}
+
+function DownloadTelemetryView({ download }: { download: NonNullable<TaskProgress['download']> }) {
+  const percent = download.percent === undefined
+    ? null
+    : Math.max(0, Math.min(100, download.percent));
+  const bytes = download.totalBytes
+    ? `${formatBytes(download.downloadedBytes)} / ${formatBytes(download.totalBytes)}`
+    : `${formatBytes(download.downloadedBytes)} 已下载`;
+
+  return (
+    <div className="download-telemetry" aria-label="媒体下载详情">
+      <div>
+        <strong>{percent === null ? '下载中' : `${formatPercent(percent)}%`}</strong>
+        <span>{bytes}</span>
+      </div>
+      <div>
+        <span>{download.speedBytesPerSecond ? `${formatBytes(download.speedBytesPerSecond)}/s` : '正在计算速度'}</span>
+        <span>{download.etaSeconds === undefined ? '剩余时间计算中' : `预计剩余 ${formatEta(download.etaSeconds)}`}</span>
+      </div>
+    </div>
+  );
+}
+
+function formatPercent(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function formatBytes(value: number) {
+  if (value >= 1_073_741_824) return `${(value / 1_073_741_824).toFixed(2)} GB`;
+  if (value >= 1_048_576) return `${(value / 1_048_576).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${value} B`;
+}
+
+function formatEta(seconds: number) {
+  if (seconds < 60) return `${seconds} 秒`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes} 分 ${remainder} 秒`;
 }

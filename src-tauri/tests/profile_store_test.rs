@@ -8,7 +8,8 @@ use tempfile::tempdir;
 use video_distiller_lib::local_models::LOCAL_WHISPER_PROFILE_ID;
 use video_distiller_lib::profile_store::ProfileStore;
 use video_distiller_lib::profiles::{
-    AppProfiles, SummaryProviderKind, TranscriptionProfile, TranscriptionProviderKind,
+    AppProfiles, OnlineTranscriptionLanguage, OnlineTranscriptionOptions, SummaryProviderKind,
+    TranscriptionProfile, TranscriptionProviderKind,
 };
 
 // ---------------------------------------------------------------------------
@@ -225,6 +226,46 @@ fn provider_kind_serializes_snake_case() {
     );
 }
 
+#[test]
+fn old_online_profile_json_receives_safe_runtime_defaults() {
+    let profile: TranscriptionProfile = serde_json::from_value(serde_json::json!({
+        "id": "legacy-online",
+        "name": "Legacy online",
+        "provider": "open_ai_compatible",
+        "baseUrl": "https://api.example.com",
+        "model": "whisper-1",
+        "enabled": true,
+        "builtIn": false
+    }))
+    .unwrap();
+
+    assert_eq!(profile.online_options.language, OnlineTranscriptionLanguage::Auto);
+    assert_eq!(profile.online_options.timeout_ms, 60_000);
+    assert_eq!(profile.online_options.max_concurrency, 2);
+}
+
+#[test]
+fn rejects_online_runtime_options_outside_safe_bounds() {
+    let mut profiles = AppProfiles::defaults();
+    profiles.transcription_profiles.push(TranscriptionProfile {
+        id: "unsafe-online-options".into(),
+        name: "Unsafe options".into(),
+        provider: TranscriptionProviderKind::OpenAiCompatible,
+        base_url: "https://api.example.com".into(),
+        model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions {
+            language: OnlineTranscriptionLanguage::Auto,
+            timeout_ms: 1_000,
+            max_concurrency: 99,
+        },
+        enabled: true,
+        built_in: false,
+    });
+
+    let message = profiles.validate().unwrap_err();
+    assert!(message.contains("timeout") || message.contains("超时"));
+}
+
 // ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
@@ -238,6 +279,7 @@ fn rejects_empty_stable_id() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "https://api.example.com".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -251,6 +293,7 @@ fn rejects_empty_stable_id() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "https://api.example.com".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -272,6 +315,7 @@ fn rejects_empty_name() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "https://api.example.com".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -289,6 +333,7 @@ fn rejects_empty_base_url() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -306,6 +351,7 @@ fn rejects_empty_model() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "https://api.example.com".into(),
         model: "".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -323,6 +369,7 @@ fn rejects_http_without_localhost() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "http://api.example.com".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -340,6 +387,7 @@ fn allows_http_localhost() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "http://127.0.0.1:8080".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -359,6 +407,7 @@ fn allows_http_localhost_hostname() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "http://localhost:11434".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };
@@ -600,6 +649,7 @@ fn save_validates_before_writing() {
         provider: TranscriptionProviderKind::OpenAiCompatible,
         base_url: "https://api.example.com".into(),
         model: "whisper-1".into(),
+        online_options: OnlineTranscriptionOptions::default(),
         enabled: true,
         built_in: false,
     };

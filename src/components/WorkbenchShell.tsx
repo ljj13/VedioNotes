@@ -31,6 +31,7 @@ import { type ReactNode, useState } from 'react';
 import type { PrimaryWorkbenchView, WorkbenchNavigationState } from '../lib/workbenchNavigation';
 import WorkbenchSidebar from './WorkbenchSidebar';
 import WindowControls from './WindowControls';
+import appLogo from '../assets/app-logo.png';
 
 /**
  * isTauriEnv：检测当前代码是否运行在 Tauri 桌面环境（而非浏览器中）。
@@ -79,12 +80,11 @@ export default function WorkbenchShell({ navigation, onNavigate, onOpenSettings 
   return (
     <>
       {tauri && (
-        <div className={`window-top-bar theme-${theme}${navigation.sidebarCollapsed ? ' sidebar-collapsed' : ''}`} data-theme={theme} data-tauri-drag-region="deep">
+        <div className={`window-top-bar theme-${theme}`} data-theme={theme} data-tauri-drag-region="deep">
           <div className="window-title-identity" aria-label="VedioNotes 应用标题" data-tauri-drag-region="deep">
-            <span className="window-title-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 7 8 5-8 5z" /></svg></span>
-            <strong>VedioNotes</strong>
+            <img src={appLogo} alt="VedioNotes" className="window-title-mark" aria-hidden="true" />
+            <strong className="window-title-name">VedioNotes</strong>
           </div>
-          <span className="window-title-caption" data-tauri-drag-region="deep">本地视频提炼工作台</span>
           <div className="window-drag-spacer" data-tauri-drag-region="deep" />
           <WindowControls />
         </div>

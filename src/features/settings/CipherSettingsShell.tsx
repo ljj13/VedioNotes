@@ -84,6 +84,7 @@ import { CircleInfo, HardDrive, Microphone, Palette, Sparkles } from '@gravity-u
 // 从重力 UI 图标库导入五个 SVG 图标组件
 
 import { ScrollShadow, Tabs, type Key } from '@heroui/react';
+import { useEffect, useState } from 'react';
 // ScrollShadow：可滚动容器，自带边缘淡出阴影效果，隐藏滚动条
 // Tabs：选项卡组件（类似浏览器标签页），管理"选哪个/显示哪个"的逻辑
 // type Key：Tabs 组件的选中键类型（实际是 string | number）
@@ -142,6 +143,16 @@ export default function CipherSettingsShell(props: SettingsEntryProps) {
   // 从 props 中读取"当前应该显示哪个选项卡"。
   // 为什么不是 state？因为这个信息由父组件管理，本组件只负责读取。
   const activeTab = props.section;
+  const [mountedTabs, setMountedTabs] = useState<Set<CipherSettingsPageId>>(() => new Set([activeTab]));
+
+  useEffect(() => {
+    setMountedTabs((current) => {
+      if (current.has(activeTab)) return current;
+      const next = new Set(current);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
 
   /**
    * selectTab：用户点击选项卡时的回调函数。
@@ -156,7 +167,11 @@ export default function CipherSettingsShell(props: SettingsEntryProps) {
    *   as SettingsEntryProps['section']：TS 的"类型断言"——
    *     告诉编译器"我知道这个值是什么类型"，类似 C 的强制类型转换。
    */
-  const selectTab = (key: Key) => props.onSelectSection(String(key) as SettingsEntryProps['section']);
+  const selectTab = (key: Key) => {
+    const nextTab = String(key) as SettingsEntryProps['section'];
+    setMountedTabs((current) => current.has(nextTab) ? current : new Set(current).add(nextTab));
+    props.onSelectSection(nextTab);
+  };
   const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label ?? '设置';
 
   /**
@@ -182,19 +197,18 @@ export default function CipherSettingsShell(props: SettingsEntryProps) {
           {/* selectedKey 控制哪个选项卡是"选中状态" */}
           {/* onSelectionChange 是用户点击不同选项卡时触发的回调 */}
           <Tabs selectedKey={activeTab} onSelectionChange={selectTab} className="settings-tabs">
-            <Tabs.ListContainer>
+            <Tabs.ListContainer className="cipher-settings-primary-tab-container">
               {/* aria-label 是"无障碍标签"——屏幕阅读器用 */}
-              <Tabs.List aria-label="设置分类">
+              <Tabs.List aria-label="设置分类" className="cipher-settings-primary-tab-list">
                 {/* {tabs.map(...)}  ：JSX 中用花括号嵌入 JS 表达式 */}
                 {/* .map() 对数组每个元素执行函数并返回新数组——类似 C 的循环 */}
                 {tabs.map((tab) => (
                   // key={tab.id}：React 要求列表项有唯一 key，用于高效更新 DOM
-                  <Tabs.Tab key={tab.id} id={tab.id}>
+                  <Tabs.Tab key={tab.id} id={tab.id} className="cipher-settings-primary-tab">
                     {/* tab.icon 是 SVG 组件，width/height 控制图标尺寸 */}
                     {/* aria-hidden 告诉屏幕阅读器忽略这个纯装饰元素 */}
                     <tab.icon width={17} height={17} aria-hidden />
                     {tab.label}
-                    <Tabs.Indicator />
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
@@ -209,8 +223,16 @@ export default function CipherSettingsShell(props: SettingsEntryProps) {
           {/* 这不同于 C 中 && 只返回布尔值：JS 的 && 会返回最后一个"真"值 */}
           {/* {...props} 是 JS 的"展开运算符"——把 props 对象的每个字段展开为子组件的属性 */}
           {/* 类似 C 中手动写 prop1={props.prop1} prop2={props.prop2} ... 但更简洁 */}
-          {activeTab === 'appearance' && <AppearanceTab {...props} />}
-          {activeTab === 'transcription' && <TranscriptionTab {...props} />}
+          {mountedTabs.has('appearance') && (
+            <div className="settings-tab-panel" hidden={activeTab !== 'appearance'} aria-hidden={activeTab !== 'appearance'}>
+              <AppearanceTab {...props} />
+            </div>
+          )}
+          {mountedTabs.has('transcription') && (
+            <div className="settings-tab-panel" hidden={activeTab !== 'transcription'} aria-hidden={activeTab !== 'transcription'}>
+              <TranscriptionTab {...props} />
+            </div>
+          )}
           {activeTab === 'ai' && <AiAccessTab {...props} />}
           {activeTab === 'data' && <DataManagementTab {...props} />}
           {activeTab === 'about' && <AboutTab {...props} />}

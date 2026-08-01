@@ -24,6 +24,7 @@ pub mod services;
 pub mod sensevoice_models;
 pub mod subtitles;
 pub mod task_store;
+pub mod verified_file_cache;
 
 use commands::ManagedServices;
 use std::path::PathBuf;
@@ -81,6 +82,7 @@ pub fn run() {
             commands::save_api_key_command,
             commands::check_api_key,
             commands::has_profile_credential,
+            commands::reveal_summary_profile_credential,
             commands::check_legacy_credential,
             commands::complete_migration,
             commands::get_migration_state,

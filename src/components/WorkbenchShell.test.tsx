@@ -80,8 +80,34 @@ describe('WorkbenchShell', () => {
     render(<WorkbenchShell {...baseProps} />);
 
     expect(screen.getByLabelText('VedioNotes 应用标题').textContent).toContain('VedioNotes');
-    expect(screen.getByText('本地视频提炼工作台')).toBeTruthy();
+    expect(screen.queryByText('本地视频提炼工作台')).toBeNull();
     expect(document.querySelector('.window-controls')).toBeTruthy();
+  });
+
+  it('keeps the exact same title-bar DOM and visible brand when the sidebar collapses', () => {
+    (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {};
+    const { rerender } = render(<WorkbenchShell {...baseProps} />);
+
+    const titleBar = document.querySelector('.window-top-bar') as HTMLElement;
+    const identity = screen.getByLabelText('VedioNotes 应用标题');
+    const brandName = screen.getByText('VedioNotes');
+    const dragRegion = document.querySelector('.window-drag-spacer');
+    const controls = document.querySelector('.window-controls');
+    const expandedClassName = titleBar.className;
+
+    rerender(<WorkbenchShell {...baseProps} navigation={{ ...navigation, sidebarCollapsed: true }} />);
+
+    expect(document.querySelector('.window-top-bar')).toBe(titleBar);
+    expect(screen.getByLabelText('VedioNotes 应用标题')).toBe(identity);
+    expect(screen.getByText('VedioNotes')).toBe(brandName);
+    expect(document.querySelector('.window-drag-spacer')).toBe(dragRegion);
+    expect(document.querySelector('.window-controls')).toBe(controls);
+    expect(titleBar.className).toBe(expandedClassName);
+    expect(titleBar.classList.contains('sidebar-collapsed')).toBe(false);
+    expect(identity.getAttribute('aria-label')).toBe('VedioNotes 应用标题');
+    expect(brandName?.classList.contains('window-title-name')).toBe(true);
+    expect(brandName?.getAttribute('aria-hidden')).toBeNull();
+    expect(screen.queryByText('本地视频提炼工作台')).toBeNull();
   });
 
   it('marks the title identity and blank title-bar space as deep drag regions without marking window buttons', () => {
